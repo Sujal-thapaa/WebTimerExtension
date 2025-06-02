@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebTimeTracker</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="lib/chart.min.js"></script>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>WebTimeTracker</h1>
+      <div class="time-period">
+        <button id="todayBtn" class="active">Today</button>
+        <button id="weekBtn">This Week</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="total-time">
+        <h2>Total Time</h2>
+        <div id="totalTime" class="time-value">0h 0m</div>
+      </div>
+
+      <div class="productivity">
+        <h2>Productivity Goal</h2>
+        <div class="goal-progress">
+          <progress id="goalProgress" value="0" max="100"></progress>
+          <span id="goalPercentage">0%</span>
+        </div>
+        <div class="streak">
+          <span>🔥 Current Streak:</span>
+          <span id="streakCount">0 days</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </section>
+
+    <section class="top-sites">
+      <h2>Top Sites</h2>
+      <div id="topSitesList" class="sites-list"></div>
+    </section>
+
+    <section class="actions">
+      <button id="exportBtn">Export Data</button>
+      <button id="settingsBtn">Settings</button>
+    </section>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      
+      <div class="goals-editor">
+        <h3>Daily Goals</h3>
+        <div class="goal-setting">
+          <label>Productive Time Goal (hours):</label>
+          <input type="number" id="productiveGoal" min="0" max="24" step="0.5" value="4">
+        </div>
+        <div class="goal-setting">
+          <label>Entertainment Limit (hours):</label>
+          <input type="number" id="entertainmentLimit" min="0" max="24" step="0.5" value="2">
+        </div>
+      </div>
+
+      <div class="categories-editor">
+        <h3>Website Categories</h3>
+        <div id="categoriesList"></div>
+        
+        <div id="editCategoryModal" class="sub-modal" style="display: none;">
+          <div class="sub-modal-content">
+            <h4>Edit Category</h4>
+            <div class="category-form">
+              <div class="form-group">
+                <label>Category Name:</label>
+                <input type="text" id="categoryName" readonly>
+              </div>
+              <div class="form-group">
+                <label>Description:</label>
+                <textarea id="categoryDescription" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Example Sites (comma-separated):</label>
+                <textarea id="categoryExamples" rows="3"></textarea>
+              </div>
+              <div class="form-actions">
+                <button id="saveCategoryBtn">Save</button>
+                <button id="cancelCategoryBtn">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="saveSettingsBtn">Save Settings</button>
+        <button id="closeSettingsBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 
