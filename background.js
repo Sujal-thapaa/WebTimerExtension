@@ -118,11 +118,12 @@ const CATEGORY_KEYWORDS = {
   }
 };
 
-// Track current active tab
+// Track current active tab and session
 let currentTab = null;
 let trackingStartTime = null;
 let isTracking = false;
 let trackingInterval = null;
+let currentSession = null;
 
 // Debug function to log storage state
 async function logStorageState(message) {
@@ -147,7 +148,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     await chrome.storage.local.set({ categories: SITE_CATEGORIES });
     console.log('Default categories initialized');
 
-    // Initialize empty time data for today
+    // Initialize empty time data and session data for today
     const today = getTodayDate();
     await chrome.storage.local.set({
       timeData: {
@@ -156,9 +157,15 @@ chrome.runtime.onInstalled.addListener(async () => {
           categories: {},
           lastUpdated: Date.now()
         }
+      },
+      sessionData: {
+        [today]: {
+          sites: {},
+          categories: {}
+        }
       }
     });
-    console.log('Time data initialized for today:', today);
+    console.log('Time and session data initialized for today:', today);
 
     // Initialize goals
     await chrome.storage.local.set({
@@ -572,74 +579,85 @@ async function updateTimeForCurrentTab(tabId) {
 
 // Start tracking function
 async function startTracking(tab) {
-  try {
-    if (!tab || !tab.url) {
-      console.log('Invalid tab or URL for tracking');
-      return;
-    }
+  if (!tab || !shouldTrackUrl(tab.url)) {
+    console.log('Not tracking tab:', tab);
+    return;
+  }
 
-    // Don't restart tracking if we're already tracking this tab
-    if (currentTab && currentTab.id === tab.id && isTracking) {
-      console.log('Already tracking this tab:', tab.url);
-      return;
-    }
+  currentTab = tab;
+  trackingStartTime = Date.now();
+  isTracking = true;
 
-    // Stop any existing tracking
-    await stopTracking();
+  // Start a new session
+  const domain = getDomainFromUrl(tab.url);
+  const category = await getCategoryForDomain(domain, tab.id);
+  
+  currentSession = {
+    domain,
+    category,
+    startTime: trackingStartTime
+  };
 
-    // Check if the URL should be tracked
-    if (!shouldTrackUrl(tab.url)) {
-      console.log('URL should not be tracked:', tab.url);
-      return;
-    }
+  console.log('Started tracking tab:', tab.url);
+  console.log('Started new session:', currentSession);
 
-    currentTab = tab;
-    trackingStartTime = Date.now();
-    isTracking = true;
-
-    const domain = getDomainFromUrl(tab.url);
-    console.log(`Started tracking for ${domain}`);
-
-    // Clear any existing interval
-    if (trackingInterval) {
-      clearInterval(trackingInterval);
-    }
-
-    // Set up new tracking interval
-    trackingInterval = setInterval(async () => {
-      if (isTracking) {
-        await updateTimeForCurrentTab(tab.id);
-      }
-    }, 1000);
-
-    // Initial update with content analysis
-    await updateTimeForCurrentTab(tab.id);
-
-  } catch (error) {
-    console.error('Error starting tracking:', error);
+  if (!trackingInterval) {
+    trackingInterval = setInterval(() => updateTimeForCurrentTab(tab.id), 1000);
   }
 }
 
 // Stop tracking function
 async function stopTracking() {
-  try {
-    if (isTracking) {
-      await updateTimeForCurrentTab(currentTab.id);
-    }
-    
-    if (trackingInterval) {
-      clearInterval(trackingInterval);
-      trackingInterval = null;
-    }
-    
-    currentTab = null;
-    trackingStartTime = null;
-    isTracking = false;
-    
-    console.log('Tracking stopped');
-  } catch (error) {
-    console.error('Error stopping tracking:', error);
+  if (!isTracking || !currentSession) {
+    return;
   }
+
+  clearInterval(trackingInterval);
+  trackingInterval = null;
+  isTracking = false;
+
+  if (currentSession && trackingStartTime) {
+    const duration = Date.now() - trackingStartTime;
+    
+    // Only record sessions that are longer than 5 seconds
+    if (duration >= 5000) {
+      const today = getTodayDate();
+      const { sessionData = {} } = await chrome.storage.local.get('sessionData');
+      
+      if (!sessionData[today]) {
+        sessionData[today] = { sites: {}, categories: {} };
+      }
+
+      // Update site sessions
+      if (!sessionData[today].sites[currentSession.domain]) {
+        sessionData[today].sites[currentSession.domain] = [];
+      }
+      sessionData[today].sites[currentSession.domain].push({
+        duration,
+        startTime: currentSession.startTime
+      });
+
+      // Update category sessions
+      if (!sessionData[today].categories[currentSession.category]) {
+        sessionData[today].categories[currentSession.category] = [];
+      }
+      sessionData[today].categories[currentSession.category].push({
+        duration,
+        startTime: currentSession.startTime
+      });
+
+      await chrome.storage.local.set({ sessionData });
+      console.log('Session recorded:', {
+        domain: currentSession.domain,
+        category: currentSession.category,
+        duration
+      });
+    }
+  }
+
+  currentTab = null;
+  trackingStartTime = null;
+  currentSession = null;
 }
 
 // Handle extension unload

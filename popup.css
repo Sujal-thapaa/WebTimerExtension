@@ -6,6 +6,10 @@
   --border-color: #dcdde1;
   --success-color: #27ae60;
   --warning-color: #e67e22;
+  --danger-color: #e74c3c;
+  --text-secondary: #7f8c8d;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f6fa;
 }
 
 * {
@@ -16,7 +20,7 @@
 
 body {
   width: 400px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background-color: var(--background-color);
   color: var(--text-color);
 }
@@ -329,4 +333,395 @@ input[type="number"] {
 #cancelCategoryBtn {
   background-color: var(--secondary-color);
   color: white;
+}
+
+/* New styles for the goals section */
+.goals {
+  background: var(--bg-secondary);
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.goal-item {
+  margin: 10px 0;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.goal-name {
+  font-weight: 500;
+}
+
+.goal-time {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.goal-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.goal-bar {
+  flex-grow: 1;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.goal-percentage {
+  min-width: 45px;
+  text-align: right;
+  font-size: 0.9em;
+}
+
+.streak {
+  margin-top: 15px;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* New progress bar colors */
+progress.progress-complete::-webkit-progress-value {
+  background-color: var(--success-color);
+}
+
+progress.progress-good::-webkit-progress-value {
+  background-color: var(--primary-color);
+}
+
+progress::-webkit-progress-value {
+  background-color: var(--warning-color);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* New top sites section */
+.top-sites {
+  background: var(--bg-secondary);
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.site-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  margin: 5px 0;
+  background: white;
+  border-radius: 5px;
+}
+
+/* New goals editor */
+.goals-editor {
+  margin: 20px 0;
+}
+
+.goal-setting {
+  margin: 10px 0;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.goal-setting input {
+  width: 60px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.category-item {
+  margin: 15px 0;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.category-description {
+  margin: 5px 0;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.category-examples {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+/* New buttons */
+button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Add these new styles at the end of the file */
+
+/* Action Buttons */
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.button-icon {
+  font-size: 1.2em;
+}
+
+/* Goals Modal Specific Styles */
+.goals-container {
+  margin: 20px 0;
+}
+
+.goal-card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.goal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.goal-card-title {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.goal-card-time {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.goal-card-progress {
+  margin: 10px 0;
+}
+
+.goal-card-progress progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.goal-card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.close-btn:hover {
+  color: var(--text-color);
+}
+
+.streak-info {
+  text-align: center;
+  padding: 15px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.streak-count {
+  font-size: 1.2em;
+  font-weight: 500;
+  color: var(--success-color);
+}
+
+/* Edit Goals Modal */
+#categoryGoals {
+  margin: 20px 0;
+}
+
+.category-goal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.category-goal-name {
+  font-weight: 500;
+}
+
+.category-goal-input {
+  width: 80px;
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* More Modal and Insights Styles */
+.insights-container {
+  padding: 10px 0;
+}
+
+.insights-section {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.insights-section h3 {
+  font-size: 1.1em;
+  margin-bottom: 15px;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.session-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.session-site {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+
+.session-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.9em;
+  padding: 4px 0;
+}
+
+.session-stat-value {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-color);
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.session-category {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.session-category-title {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+
+.no-sessions {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 20px;
+  font-style: italic;
 } 

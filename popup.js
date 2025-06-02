@@ -92,7 +92,7 @@ function getWeekData(timeData) {
 function updateUI(data, goals) {
   console.log('Updating UI with data:', data);
   updateTotalTime(data);
-  updateProductivityGoal(data, goals);
+  updateAllGoals(data, goals);
   updateCategoryChart(data);
   updateTopSites(data);
 }
@@ -105,60 +105,70 @@ function updateTotalTime(data) {
   document.getElementById('totalTime').textContent = `${hours}h ${minutes}m ${seconds}s`;
 }
 
-function updateProductivityGoal(data, goals) {
+// Helper function to format time
+function formatTime(milliseconds) {
+  const hours = Math.floor(milliseconds / 3600000);
+  const minutes = Math.floor((milliseconds % 3600000) / 60000);
+  const seconds = Math.floor((milliseconds % 60000) / 1000);
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+function updateAllGoals(data, goals) {
   try {
-    console.log('Updating productivity goal with data:', data);
-    console.log('Goals:', goals);
+    console.log('Updating goals with data:', data);
+    const goalsContainer = document.getElementById('goalsContainer');
+    goalsContainer.innerHTML = ''; // Clear existing goals
 
-    // Get productive time (convert from milliseconds to hours)
-    const productiveTime = (data.categories['Productive / Educational'] || 0) / (1000 * 60 * 60);
-    console.log('Productive time (hours):', productiveTime);
-
-    // Get goal (default to 4 hours if not set)
-    const goalHours = goals?.productiveHours || 4;
-    console.log('Goal hours:', goalHours);
-
-    // Calculate progress percentage (cap at 100%)
-    const progress = Math.min((productiveTime / goalHours) * 100, 100);
-    console.log('Progress percentage:', progress);
-
-    // Update progress bar and percentage text
-    const progressBar = document.getElementById('goalProgress');
-    const percentageText = document.getElementById('goalPercentage');
-    
-    if (progressBar && percentageText) {
-      progressBar.value = progress;
-      percentageText.textContent = `${Math.round(progress)}%`;
+    // Process each category
+    Object.entries(data.categories).forEach(([category, timeSpent]) => {
+      const goalHours = goals?.[`${category.toLowerCase()}Hours`] || 0;
       
-      // Add color coding based on progress
-      if (progress >= 100) {
-        progressBar.className = 'progress-complete';
-        percentageText.style.color = 'var(--success-color)';
-      } else if (progress >= 50) {
-        progressBar.className = 'progress-good';
-        percentageText.style.color = 'var(--primary-color)';
-      } else {
-        progressBar.className = '';
-        percentageText.style.color = 'var(--text-color)';
-      }
-    }
+      // Only show categories that have goals set
+      if (goalHours > 0) {
+        const progress = Math.min((timeSpent / (goalHours * 3600000)) * 100, 100);
+        
+        const goalDiv = document.createElement('div');
+        goalDiv.className = 'goal-item';
+        goalDiv.innerHTML = `
+          <div class="goal-header">
+            <span class="goal-name">${category}</span>
+            <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
+          </div>
+          <div class="goal-progress">
+            <progress class="goal-bar" value="${progress}" max="100"></progress>
+            <span class="goal-percentage">${Math.round(progress)}%</span>
+          </div>
+        `;
 
-    // Update streak
-    const streakCount = document.getElementById('streakCount');
-    if (streakCount) {
-      const streak = goals?.streak || 0;
-      streakCount.textContent = `${streak} day${streak !== 1 ? 's' : ''}`;
-      
-      // Add visual indicator for streak
-      if (streak > 0) {
-        streakCount.style.color = 'var(--success-color)';
-      } else {
-        streakCount.style.color = 'var(--text-color)';
+        // Add color coding based on progress
+        const progressBar = goalDiv.querySelector('.goal-bar');
+        const percentageText = goalDiv.querySelector('.goal-percentage');
+        
+        if (progress >= 100) {
+          progressBar.classList.add('progress-complete');
+          percentageText.style.color = 'var(--success-color)';
+        } else if (progress >= 50) {
+          progressBar.classList.add('progress-good');
+          percentageText.style.color = 'var(--primary-color)';
+        }
+
+        goalsContainer.appendChild(goalDiv);
       }
+    });
+
+    // Add streak if any goals are met
+    if (goals?.streak > 0) {
+      const streakDiv = document.createElement('div');
+      streakDiv.className = 'streak';
+      streakDiv.innerHTML = `
+        <span>🔥 Current Streak: ${goals.streak} day${goals.streak !== 1 ? 's' : ''}</span>
+      `;
+      streakDiv.style.color = 'var(--success-color)';
+      goalsContainer.appendChild(streakDiv);
     }
 
   } catch (error) {
-    console.error('Error updating productivity goal:', error);
+    console.error('Error updating goals:', error);
   }
 }
 
@@ -240,49 +250,268 @@ function updateTopSites(data) {
 function setupEventListeners() {
   console.log('Setting up event listeners');
   try {
+    const elements = {
+      todayBtn: document.getElementById('todayBtn'),
+      weekBtn: document.getElementById('weekBtn'),
+      moreBtn: document.getElementById('moreBtn'),
+      closeMoreBtn: document.getElementById('closeMoreBtn'),
+      exportDataBtn: document.getElementById('exportDataBtn'),
+      goalsBtn: document.getElementById('goalsBtn'),
+      closeGoalsBtn: document.getElementById('closeGoalsBtn'),
+      editGoalsBtn: document.getElementById('editGoalsBtn'),
+      closeEditGoalsBtn: document.getElementById('closeEditGoalsBtn'),
+      saveGoalsBtn: document.getElementById('saveGoalsBtn'),
+      settingsBtn: document.getElementById('settingsBtn'),
+      closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+      saveSettingsBtn: document.getElementById('saveSettingsBtn')
+    };
+
+    // Check if all elements exist
+    Object.entries(elements).forEach(([name, element]) => {
+      if (!element) {
+        console.error(`Element not found: ${name}`);
+      }
+    });
+
     // Time period buttons
-    document.getElementById('todayBtn').addEventListener('click', async (e) => {
-      document.querySelector('.time-period .active').classList.remove('active');
-      e.target.classList.add('active');
-      await loadData('today');
-    });
+    if (elements.todayBtn && elements.weekBtn) {
+      elements.todayBtn.addEventListener('click', async (e) => {
+        document.querySelector('.time-period .active')?.classList.remove('active');
+        e.target.classList.add('active');
+        await loadData('today');
+      });
 
-    document.getElementById('weekBtn').addEventListener('click', async (e) => {
-      document.querySelector('.time-period .active').classList.remove('active');
-      e.target.classList.add('active');
-      await loadData('week');
-    });
+      elements.weekBtn.addEventListener('click', async (e) => {
+        document.querySelector('.time-period .active')?.classList.remove('active');
+        e.target.classList.add('active');
+        await loadData('week');
+      });
+    }
 
-    // Settings button
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-      document.getElementById('settingsModal').style.display = 'block';
-      loadSettings();
-    });
+    // More button and modal
+    if (elements.moreBtn && elements.closeMoreBtn) {
+      elements.moreBtn.addEventListener('click', () => {
+        const moreModal = document.getElementById('moreModal');
+        if (moreModal) {
+          moreModal.style.display = 'block';
+          updateSessionInsights();
+        }
+      });
 
-    // Close settings
-    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-      document.getElementById('settingsModal').style.display = 'none';
-    });
-
-    // Save settings
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+      elements.closeMoreBtn.addEventListener('click', () => {
+        const moreModal = document.getElementById('moreModal');
+        if (moreModal) {
+          moreModal.style.display = 'none';
+        }
+      });
+    }
 
     // Export button
-    document.getElementById('exportBtn').addEventListener('click', exportData);
-    
+    if (elements.exportDataBtn) {
+      elements.exportDataBtn.addEventListener('click', exportData);
+    }
+
+    // Goals button and modal
+    if (elements.goalsBtn && elements.closeGoalsBtn) {
+      elements.goalsBtn.addEventListener('click', () => {
+        const goalsModal = document.getElementById('goalsModal');
+        if (goalsModal) {
+          goalsModal.style.display = 'block';
+          updateGoalsDisplay();
+        }
+      });
+
+      elements.closeGoalsBtn.addEventListener('click', () => {
+        const goalsModal = document.getElementById('goalsModal');
+        if (goalsModal) {
+          goalsModal.style.display = 'none';
+        }
+      });
+    }
+
+    // Edit goals
+    if (elements.editGoalsBtn && elements.closeEditGoalsBtn && elements.saveGoalsBtn) {
+      elements.editGoalsBtn.addEventListener('click', () => {
+        const editGoalsModal = document.getElementById('editGoalsModal');
+        if (editGoalsModal) {
+          editGoalsModal.style.display = 'block';
+          loadGoalsEditor();
+        }
+      });
+
+      elements.closeEditGoalsBtn.addEventListener('click', () => {
+        const editGoalsModal = document.getElementById('editGoalsModal');
+        if (editGoalsModal) {
+          editGoalsModal.style.display = 'none';
+        }
+      });
+
+      elements.saveGoalsBtn.addEventListener('click', saveGoals);
+    }
+
+    // Settings
+    if (elements.settingsBtn && elements.closeSettingsBtn && elements.saveSettingsBtn) {
+      elements.settingsBtn.addEventListener('click', () => {
+        const settingsModal = document.getElementById('settingsModal');
+        if (settingsModal) {
+          settingsModal.style.display = 'block';
+          loadSettings();
+        }
+      });
+
+      elements.closeSettingsBtn.addEventListener('click', () => {
+        const settingsModal = document.getElementById('settingsModal');
+        if (settingsModal) {
+          settingsModal.style.display = 'none';
+        }
+      });
+
+      elements.saveSettingsBtn.addEventListener('click', saveSettings);
+    }
+
     console.log('Event listeners set up successfully');
   } catch (error) {
     console.error('Error setting up event listeners:', error);
   }
 }
 
+async function updateGoalsDisplay() {
+  try {
+    const { timeData, goals = {} } = await chrome.storage.local.get(['timeData', 'goals']);
+    const today = getTodayString();
+    const todayData = timeData[today] || { categories: {} };
+
+    const goalsContainer = document.querySelector('.goals-container');
+    if (!goalsContainer) {
+      console.error('Goals container not found');
+      return;
+    }
+    goalsContainer.innerHTML = '';
+
+    // Create a goal card for each category that has a goal set
+    Object.entries(todayData.categories).forEach(([category, timeSpent]) => {
+      const goalHours = goals[`${category.toLowerCase()}Hours`] || 0;
+      
+      if (goalHours > 0) {
+        const progress = Math.min((timeSpent / (goalHours * 3600000)) * 100, 100);
+        const goalCard = document.createElement('div');
+        goalCard.className = 'goal-card';
+        
+        goalCard.innerHTML = `
+          <div class="goal-card-header">
+            <span class="goal-card-title">${category}</span>
+            <span class="goal-card-time">${formatTime(timeSpent)} / ${goalHours}h</span>
+          </div>
+          <div class="goal-card-progress">
+            <progress value="${progress}" max="100" class="${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}"></progress>
+          </div>
+          <div class="goal-card-stats">
+            <span>${Math.round(progress)}% Complete</span>
+            <span>${formatTime(Math.max(goalHours * 3600000 - timeSpent, 0))} Remaining</span>
+          </div>
+        `;
+        
+        goalsContainer.appendChild(goalCard);
+      }
+    });
+
+    // Update streak information
+    const streakInfo = document.querySelector('.streak-info');
+    if (streakInfo) {
+      if (goals.streak > 0) {
+        streakInfo.innerHTML = `
+          <div class="streak-count">🔥 ${goals.streak}</div>
+          <div>Day Streak</div>
+        `;
+      } else {
+        streakInfo.innerHTML = `
+          <div>Start achieving your goals to build a streak!</div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Error updating goals display:', error);
+  }
+}
+
+async function loadGoalsEditor() {
+  try {
+    const { categories, goals = {} } = await chrome.storage.local.get(['categories', 'goals']);
+    const categoryGoals = document.getElementById('categoryGoals');
+    categoryGoals.innerHTML = '';
+
+    Object.keys(categories || {}).forEach(category => {
+      const goalItem = document.createElement('div');
+      goalItem.className = 'category-goal-item';
+      goalItem.innerHTML = `
+        <span class="category-goal-name">${category}</span>
+        <input type="number" 
+               class="category-goal-input" 
+               data-category="${category}"
+               value="${goals[`${category.toLowerCase()}Hours`] || 0}"
+               min="0" 
+               max="24" 
+               step="0.5">
+      `;
+      categoryGoals.appendChild(goalItem);
+    });
+  } catch (error) {
+    console.error('Error loading goals editor:', error);
+  }
+}
+
+async function saveGoals() {
+  try {
+    const goals = { streak: 0 }; // Reset streak when saving new goals
+    
+    // Get all category goal inputs
+    const goalInputs = document.querySelectorAll('.category-goal-input');
+    goalInputs.forEach(input => {
+      const category = input.dataset.category;
+      const hours = parseFloat(input.value);
+      
+      if (!isNaN(hours) && hours >= 0 && hours <= 24) {
+        goals[`${category.toLowerCase()}Hours`] = hours;
+      }
+    });
+
+    // Preserve existing streak
+    const existingGoals = (await chrome.storage.local.get('goals')).goals || {};
+    goals.streak = existingGoals.streak || 0;
+
+    await chrome.storage.local.set({ goals });
+    document.getElementById('editGoalsModal').style.display = 'none';
+    updateGoalsDisplay(); // Refresh the goals display
+  } catch (error) {
+    console.error('Error saving goals:', error);
+  }
+}
+
 async function loadSettings() {
   try {
-    const { categories, goals } = await chrome.storage.local.get(['categories', 'goals']);
+    const { categories, goals = {} } = await chrome.storage.local.get(['categories', 'goals']);
     
-    // Update goals inputs
-    document.getElementById('productiveGoal').value = goals?.productiveHours || 4;
-    document.getElementById('entertainmentLimit').value = goals?.entertainmentHours || 2;
+    // Update category goals
+    const categoryGoals = document.getElementById('categoryGoals');
+    categoryGoals.innerHTML = '';
+
+    Object.entries(categories || {}).forEach(([category, data]) => {
+      const goalDiv = document.createElement('div');
+      goalDiv.className = 'goal-setting';
+      goalDiv.innerHTML = `
+        <div class="goal-header">
+          <label>${category} Goal (hours):</label>
+          <input type="number" 
+                 class="category-goal-input" 
+                 data-category="${category}"
+                 value="${goals[`${category.toLowerCase()}Hours`] || 0}"
+                 min="0" 
+                 max="24" 
+                 step="0.5">
+        </div>
+      `;
+      categoryGoals.appendChild(goalDiv);
+    });
 
     // Update categories list
     const categoriesList = document.getElementById('categoriesList');
@@ -352,25 +581,24 @@ function openCategoryEditor(category, data) {
 
 async function saveSettings() {
   try {
-    const productiveHours = parseFloat(document.getElementById('productiveGoal').value);
-    const entertainmentHours = parseFloat(document.getElementById('entertainmentLimit').value);
-
-    // Validate inputs
-    if (isNaN(productiveHours) || isNaN(entertainmentHours) ||
-        productiveHours < 0 || productiveHours > 24 ||
-        entertainmentHours < 0 || entertainmentHours > 24) {
-      alert('Please enter valid hours between 0 and 24');
-      return;
-    }
-
-    await chrome.storage.local.set({
-      goals: {
-        productiveHours,
-        entertainmentHours,
-        streak: (await chrome.storage.local.get('goals')).goals?.streak || 0
+    const goals = { streak: 0 }; // Reset streak when saving new goals
+    
+    // Get all category goal inputs
+    const goalInputs = document.querySelectorAll('.category-goal-input');
+    goalInputs.forEach(input => {
+      const category = input.dataset.category;
+      const hours = parseFloat(input.value);
+      
+      if (!isNaN(hours) && hours >= 0 && hours <= 24) {
+        goals[`${category.toLowerCase()}Hours`] = hours;
       }
     });
 
+    // Preserve existing streak
+    const existingGoals = (await chrome.storage.local.get('goals')).goals || {};
+    goals.streak = existingGoals.streak || 0;
+
+    await chrome.storage.local.set({ goals });
     document.getElementById('settingsModal').style.display = 'none';
     await loadData(currentTimeframe);
   } catch (error) {
@@ -391,4 +619,87 @@ async function exportData() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+async function updateSessionInsights() {
+  try {
+    const { timeData, sessionData = {} } = await chrome.storage.local.get(['timeData', 'sessionData']);
+    const today = getTodayString();
+    const todaySessions = sessionData[today] || { sites: {}, categories: {} };
+    
+    const sessionInsights = document.getElementById('sessionInsights');
+    if (!sessionInsights) {
+      console.error('Session insights container not found');
+      return;
+    }
+    sessionInsights.innerHTML = '';
+
+    // If no sessions today, show message
+    if (Object.keys(todaySessions.sites || {}).length === 0) {
+      sessionInsights.innerHTML = `
+        <div class="no-sessions">
+          No browsing sessions recorded today
+        </div>
+      `;
+      return;
+    }
+
+    // Process site sessions
+    Object.entries(todaySessions.sites || {}).forEach(([site, sessions]) => {
+      if (sessions && sessions.length > 0) {
+        const longestSession = Math.max(...sessions.map(s => s.duration));
+        const averageSession = sessions.reduce((acc, s) => acc + s.duration, 0) / sessions.length;
+        
+        const siteCard = document.createElement('div');
+        siteCard.className = 'session-card';
+        siteCard.innerHTML = `
+          <div class="session-site">${site}</div>
+          <div class="session-stat">
+            <span>Longest Session</span>
+            <span class="session-stat-value">${formatTime(longestSession)}</span>
+          </div>
+          <div class="session-stat">
+            <span>Average Session</span>
+            <span class="session-stat-value">${formatTime(averageSession)}</span>
+          </div>
+          <div class="session-stat">
+            <span>Number of Sessions</span>
+            <span class="session-stat-value">${sessions.length}</span>
+          </div>
+        `;
+        sessionInsights.appendChild(siteCard);
+      }
+    });
+
+    // Process category sessions
+    Object.entries(todaySessions.categories || {}).forEach(([category, sessions]) => {
+      if (sessions && sessions.length > 0) {
+        const categorySection = document.createElement('div');
+        categorySection.className = 'session-category';
+        
+        const longestSession = Math.max(...sessions.map(s => s.duration));
+        const averageSession = sessions.reduce((acc, s) => acc + s.duration, 0) / sessions.length;
+        
+        categorySection.innerHTML = `
+          <div class="session-category-title">${category}</div>
+          <div class="session-stat">
+            <span>Longest Session</span>
+            <span class="session-stat-value">${formatTime(longestSession)}</span>
+          </div>
+          <div class="session-stat">
+            <span>Average Session</span>
+            <span class="session-stat-value">${formatTime(averageSession)}</span>
+          </div>
+          <div class="session-stat">
+            <span>Total Sessions</span>
+            <span class="session-stat-value">${sessions.length}</span>
+          </div>
+        `;
+        sessionInsights.appendChild(categorySection);
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating session insights:', error);
+  }
 } 
