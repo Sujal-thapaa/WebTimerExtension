@@ -1,10 +1,12 @@
 let categoryChart = null;
 let currentTimeframe = 'today';
 let refreshInterval;
+let elements = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup initialized');
   try {
+    initializeElements();
     await loadData('today');
     setupEventListeners();
     setupAutoRefresh();
@@ -14,8 +16,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+function initializeElements() {
+  elements = {
+    // Time period
+    todayBtn: document.getElementById('todayBtn'),
+    weekBtn: document.getElementById('weekBtn'),
+    
+    // Main buttons
+    goalsBtn: document.getElementById('goalsBtn'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    moreBtn: document.getElementById('moreBtn'),
+    
+    // Modals
+    moreModal: document.getElementById('moreModal'),
+    goalsModal: document.getElementById('goalsModal'),
+    settingsModal: document.getElementById('settingsModal'),
+    editGoalsModal: document.getElementById('editGoalsModal'),
+    
+    // Close buttons
+    closeMoreBtn: document.getElementById('closeMoreBtn'),
+    closeGoalsBtn: document.getElementById('closeGoalsBtn'),
+    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+    closeEditGoalsBtn: document.getElementById('closeEditGoalsBtn'),
+    
+    // Action buttons
+    exportDataBtn: document.getElementById('exportDataBtn'),
+    editGoalsBtn: document.getElementById('editGoalsBtn'),
+    saveGoalsBtn: document.getElementById('saveGoalsBtn'),
+    saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+    
+    // Containers
+    goalsContainer: document.querySelector('.goals-container'),
+    sessionInsights: document.getElementById('sessionInsights'),
+    streakInfo: document.querySelector('.streak-info'),
+    categoryGoals: document.getElementById('categoryGoals'),
+    categoriesList: document.getElementById('categoriesList')
+  };
+
+  // Log any missing elements
+  Object.entries(elements).forEach(([name, element]) => {
+    if (!element) {
+      console.error(`Missing element: ${name}`);
+    }
+  });
+}
+
 function setupAutoRefresh() {
-  // Refresh data every second while popup is open
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
   refreshInterval = setInterval(async () => {
     await loadData(currentTimeframe);
   }, 1000);
@@ -250,59 +299,32 @@ function updateTopSites(data) {
 function setupEventListeners() {
   console.log('Setting up event listeners');
   try {
-    const elements = {
-      todayBtn: document.getElementById('todayBtn'),
-      weekBtn: document.getElementById('weekBtn'),
-      moreBtn: document.getElementById('moreBtn'),
-      closeMoreBtn: document.getElementById('closeMoreBtn'),
-      exportDataBtn: document.getElementById('exportDataBtn'),
-      goalsBtn: document.getElementById('goalsBtn'),
-      closeGoalsBtn: document.getElementById('closeGoalsBtn'),
-      editGoalsBtn: document.getElementById('editGoalsBtn'),
-      closeEditGoalsBtn: document.getElementById('closeEditGoalsBtn'),
-      saveGoalsBtn: document.getElementById('saveGoalsBtn'),
-      settingsBtn: document.getElementById('settingsBtn'),
-      closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-      saveSettingsBtn: document.getElementById('saveSettingsBtn')
-    };
-
-    // Check if all elements exist
-    Object.entries(elements).forEach(([name, element]) => {
-      if (!element) {
-        console.error(`Element not found: ${name}`);
-      }
-    });
-
     // Time period buttons
     if (elements.todayBtn && elements.weekBtn) {
       elements.todayBtn.addEventListener('click', async (e) => {
         document.querySelector('.time-period .active')?.classList.remove('active');
         e.target.classList.add('active');
+        currentTimeframe = 'today';
         await loadData('today');
       });
 
       elements.weekBtn.addEventListener('click', async (e) => {
         document.querySelector('.time-period .active')?.classList.remove('active');
         e.target.classList.add('active');
+        currentTimeframe = 'week';
         await loadData('week');
       });
     }
 
     // More button and modal
-    if (elements.moreBtn && elements.closeMoreBtn) {
+    if (elements.moreBtn && elements.moreModal && elements.closeMoreBtn) {
       elements.moreBtn.addEventListener('click', () => {
-        const moreModal = document.getElementById('moreModal');
-        if (moreModal) {
-          moreModal.style.display = 'block';
-          updateSessionInsights();
-        }
+        elements.moreModal.style.display = 'block';
+        updateSessionInsights();
       });
 
       elements.closeMoreBtn.addEventListener('click', () => {
-        const moreModal = document.getElementById('moreModal');
-        if (moreModal) {
-          moreModal.style.display = 'none';
-        }
+        elements.moreModal.style.display = 'none';
       });
     }
 
@@ -312,58 +334,40 @@ function setupEventListeners() {
     }
 
     // Goals button and modal
-    if (elements.goalsBtn && elements.closeGoalsBtn) {
+    if (elements.goalsBtn && elements.goalsModal && elements.closeGoalsBtn) {
       elements.goalsBtn.addEventListener('click', () => {
-        const goalsModal = document.getElementById('goalsModal');
-        if (goalsModal) {
-          goalsModal.style.display = 'block';
-          updateGoalsDisplay();
-        }
+        elements.goalsModal.style.display = 'block';
+        updateGoalsDisplay();
       });
 
       elements.closeGoalsBtn.addEventListener('click', () => {
-        const goalsModal = document.getElementById('goalsModal');
-        if (goalsModal) {
-          goalsModal.style.display = 'none';
-        }
+        elements.goalsModal.style.display = 'none';
       });
     }
 
     // Edit goals
-    if (elements.editGoalsBtn && elements.closeEditGoalsBtn && elements.saveGoalsBtn) {
+    if (elements.editGoalsBtn && elements.editGoalsModal && elements.closeEditGoalsBtn && elements.saveGoalsBtn) {
       elements.editGoalsBtn.addEventListener('click', () => {
-        const editGoalsModal = document.getElementById('editGoalsModal');
-        if (editGoalsModal) {
-          editGoalsModal.style.display = 'block';
-          loadGoalsEditor();
-        }
+        elements.editGoalsModal.style.display = 'block';
+        loadGoalsEditor();
       });
 
       elements.closeEditGoalsBtn.addEventListener('click', () => {
-        const editGoalsModal = document.getElementById('editGoalsModal');
-        if (editGoalsModal) {
-          editGoalsModal.style.display = 'none';
-        }
+        elements.editGoalsModal.style.display = 'none';
       });
 
       elements.saveGoalsBtn.addEventListener('click', saveGoals);
     }
 
     // Settings
-    if (elements.settingsBtn && elements.closeSettingsBtn && elements.saveSettingsBtn) {
+    if (elements.settingsBtn && elements.settingsModal && elements.closeSettingsBtn && elements.saveSettingsBtn) {
       elements.settingsBtn.addEventListener('click', () => {
-        const settingsModal = document.getElementById('settingsModal');
-        if (settingsModal) {
-          settingsModal.style.display = 'block';
-          loadSettings();
-        }
+        elements.settingsModal.style.display = 'block';
+        loadSettings();
       });
 
       elements.closeSettingsBtn.addEventListener('click', () => {
-        const settingsModal = document.getElementById('settingsModal');
-        if (settingsModal) {
-          settingsModal.style.display = 'none';
-        }
+        elements.settingsModal.style.display = 'none';
       });
 
       elements.saveSettingsBtn.addEventListener('click', saveSettings);
@@ -377,16 +381,16 @@ function setupEventListeners() {
 
 async function updateGoalsDisplay() {
   try {
+    if (!elements.goalsContainer || !elements.streakInfo) {
+      console.error('Required elements for goals display not found');
+      return;
+    }
+
     const { timeData, goals = {} } = await chrome.storage.local.get(['timeData', 'goals']);
     const today = getTodayString();
     const todayData = timeData[today] || { categories: {} };
 
-    const goalsContainer = document.querySelector('.goals-container');
-    if (!goalsContainer) {
-      console.error('Goals container not found');
-      return;
-    }
-    goalsContainer.innerHTML = '';
+    elements.goalsContainer.innerHTML = '';
 
     // Create a goal card for each category that has a goal set
     Object.entries(todayData.categories).forEach(([category, timeSpent]) => {
@@ -411,23 +415,20 @@ async function updateGoalsDisplay() {
           </div>
         `;
         
-        goalsContainer.appendChild(goalCard);
+        elements.goalsContainer.appendChild(goalCard);
       }
     });
 
     // Update streak information
-    const streakInfo = document.querySelector('.streak-info');
-    if (streakInfo) {
-      if (goals.streak > 0) {
-        streakInfo.innerHTML = `
-          <div class="streak-count">🔥 ${goals.streak}</div>
-          <div>Day Streak</div>
-        `;
-      } else {
-        streakInfo.innerHTML = `
-          <div>Start achieving your goals to build a streak!</div>
-        `;
-      }
+    if (goals.streak > 0) {
+      elements.streakInfo.innerHTML = `
+        <div class="streak-count">🔥 ${goals.streak}</div>
+        <div>Day Streak</div>
+      `;
+    } else {
+      elements.streakInfo.innerHTML = `
+        <div>Start achieving your goals to build a streak!</div>
+      `;
     }
   } catch (error) {
     console.error('Error updating goals display:', error);
@@ -436,24 +437,31 @@ async function updateGoalsDisplay() {
 
 async function loadGoalsEditor() {
   try {
-    const { categories, goals = {} } = await chrome.storage.local.get(['categories', 'goals']);
-    const categoryGoals = document.getElementById('categoryGoals');
-    categoryGoals.innerHTML = '';
+    if (!elements.categoryGoals) {
+      console.error('Category goals container not found');
+      return;
+    }
 
-    Object.keys(categories || {}).forEach(category => {
+    const { categories = {}, goals = {} } = await chrome.storage.local.get(['categories', 'goals']);
+    elements.categoryGoals.innerHTML = '';
+
+    Object.keys(categories).forEach(category => {
       const goalItem = document.createElement('div');
       goalItem.className = 'category-goal-item';
       goalItem.innerHTML = `
         <span class="category-goal-name">${category}</span>
-        <input type="number" 
-               class="category-goal-input" 
-               data-category="${category}"
-               value="${goals[`${category.toLowerCase()}Hours`] || 0}"
-               min="0" 
-               max="24" 
-               step="0.5">
+        <div class="goal-input-wrapper">
+          <input type="number" 
+                 class="category-goal-input" 
+                 data-category="${category}"
+                 value="${goals[`${category.toLowerCase()}Hours`] || 0}"
+                 min="0" 
+                 max="24" 
+                 step="0.5">
+          <span class="goal-unit">hours</span>
+        </div>
       `;
-      categoryGoals.appendChild(goalItem);
+      elements.categoryGoals.appendChild(goalItem);
     });
   } catch (error) {
     console.error('Error loading goals editor:', error);
@@ -462,10 +470,20 @@ async function loadGoalsEditor() {
 
 async function saveGoals() {
   try {
+    if (!elements.categoryGoals || !elements.editGoalsModal) {
+      console.error('Required elements for saving goals not found');
+      return;
+    }
+
     const goals = { streak: 0 }; // Reset streak when saving new goals
     
     // Get all category goal inputs
-    const goalInputs = document.querySelectorAll('.category-goal-input');
+    const goalInputs = elements.categoryGoals.querySelectorAll('.category-goal-input');
+    if (!goalInputs || goalInputs.length === 0) {
+      console.error('No goal inputs found');
+      return;
+    }
+
     goalInputs.forEach(input => {
       const category = input.dataset.category;
       const hours = parseFloat(input.value);
@@ -480,12 +498,52 @@ async function saveGoals() {
     goals.streak = existingGoals.streak || 0;
 
     await chrome.storage.local.set({ goals });
-    document.getElementById('editGoalsModal').style.display = 'none';
+    elements.editGoalsModal.style.display = 'none';
     updateGoalsDisplay(); // Refresh the goals display
   } catch (error) {
     console.error('Error saving goals:', error);
   }
 }
+
+// Add CSS styles for the goal input wrapper
+const style = document.createElement('style');
+style.textContent = `
+  .goal-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .category-goal-input {
+    width: 60px;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9em;
+  }
+
+  .goal-unit {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+  }
+
+  .category-goal-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .category-goal-name {
+    font-weight: 500;
+    color: var(--text-color);
+  }
+`;
+document.head.appendChild(style);
 
 async function loadSettings() {
   try {
@@ -623,20 +681,20 @@ async function exportData() {
 
 async function updateSessionInsights() {
   try {
-    const { timeData, sessionData = {} } = await chrome.storage.local.get(['timeData', 'sessionData']);
-    const today = getTodayString();
-    const todaySessions = sessionData[today] || { sites: {}, categories: {} };
-    
-    const sessionInsights = document.getElementById('sessionInsights');
-    if (!sessionInsights) {
+    if (!elements.sessionInsights) {
       console.error('Session insights container not found');
       return;
     }
-    sessionInsights.innerHTML = '';
+
+    const { sessionData = {} } = await chrome.storage.local.get('sessionData');
+    const today = getTodayString();
+    const todaySessions = sessionData[today] || { sites: {}, categories: {} };
+    
+    elements.sessionInsights.innerHTML = '';
 
     // If no sessions today, show message
     if (Object.keys(todaySessions.sites || {}).length === 0) {
-      sessionInsights.innerHTML = `
+      elements.sessionInsights.innerHTML = `
         <div class="no-sessions">
           No browsing sessions recorded today
         </div>
@@ -667,7 +725,7 @@ async function updateSessionInsights() {
             <span class="session-stat-value">${sessions.length}</span>
           </div>
         `;
-        sessionInsights.appendChild(siteCard);
+        elements.sessionInsights.appendChild(siteCard);
       }
     });
 
@@ -695,7 +753,7 @@ async function updateSessionInsights() {
             <span class="session-stat-value">${sessions.length}</span>
           </div>
         `;
-        sessionInsights.appendChild(categorySection);
+        elements.sessionInsights.appendChild(categorySection);
       }
     });
 
