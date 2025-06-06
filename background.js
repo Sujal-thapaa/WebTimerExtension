@@ -125,6 +125,13 @@ let isTracking = false;
 let trackingInterval = null;
 let currentSession = null;
 
+// Initialize notification state
+let notificationsSent = {
+  socialMedia: false,
+  productive: false,
+  goals: new Set()
+};
+
 // Debug function to log storage state
 async function logStorageState(message) {
   const storage = await chrome.storage.local.get(null);
@@ -137,53 +144,86 @@ function getTodayDate() {
   return now.toISOString().split('T')[0];
 }
 
+// Function to get next midnight timestamp
+function getNextMidnight() {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return midnight.getTime();
+}
+
 // Initialize storage with default categories if not exists
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Extension installed/updated');
   try {
-    // Clear existing data for testing
-    await chrome.storage.local.clear();
-    
-    // Initialize categories
-    await chrome.storage.local.set({ categories: SITE_CATEGORIES });
-    console.log('Default categories initialized');
-
-    // Initialize empty time data and session data for today
+    // Get existing data
+    const existingData = await chrome.storage.local.get(null);
     const today = getTodayDate();
-    await chrome.storage.local.set({
-      timeData: {
-        [today]: {
-          sites: {},
-          categories: {},
-          lastUpdated: Date.now()
-        }
-      },
-      sessionData: {
-        [today]: {
-          sites: {},
-          categories: {}
-        }
-      }
-    });
-    console.log('Time and session data initialized for today:', today);
 
-    // Initialize goals
-    await chrome.storage.local.set({
-      goals: {
-        productiveHours: 4,
-        entertainmentHours: 2,
-        streak: 0
-      }
-    });
-    console.log('Default goals initialized');
+    // Only initialize if data doesn't exist
+    if (!existingData.categories) {
+      await chrome.storage.local.set({ categories: SITE_CATEGORIES });
+      console.log('Categories initialized');
+    }
 
-    // Set up daily notification alarm
-    chrome.alarms.create('dailySummary', {
-      periodInMinutes: 1440 // 24 hours
-    });
-    console.log('Daily summary alarm created');
+    // Initialize time data for today if it doesn't exist
+    if (!existingData.timeData || !existingData.timeData[today]) {
+      const timeData = existingData.timeData || {};
+      timeData[today] = {
+        sites: {},
+        categories: {},
+        lastUpdated: Date.now()
+      };
+      await chrome.storage.local.set({ timeData });
+      console.log('Time data initialized for today');
+    }
+
+    // Initialize session data for today if it doesn't exist
+    if (!existingData.sessionData || !existingData.sessionData[today]) {
+      const sessionData = existingData.sessionData || {};
+      sessionData[today] = {
+        sites: {},
+        categories: {}
+      };
+      await chrome.storage.local.set({ sessionData });
+      console.log('Session data initialized for today');
+    }
+
+    // Initialize goals if they don't exist
+    if (!existingData.goals) {
+      await chrome.storage.local.set({
+        goals: {
+          productiveHours: 4,
+          entertainmentHours: 2,
+          newsHours: 0.01,
+          streak: 0
+        }
+      });
+      console.log('Goals initialized');
+    }
+
+    // Set up alarms
+    const alarms = await chrome.alarms.getAll();
+    
+    if (!alarms.find(a => a.name === 'dailySummary')) {
+      chrome.alarms.create('dailySummary', {
+        periodInMinutes: 1440 // 24 hours
+      });
+      console.log('Daily summary alarm created');
+    }
+
+    if (!alarms.find(a => a.name === 'resetNotifications')) {
+      chrome.alarms.create('resetNotifications', {
+        when: getNextMidnight(),
+        periodInMinutes: 1440 // 24 hours
+      });
+      console.log('Reset notifications alarm created');
+    }
 
     await logStorageState('after initialization');
+    
+    // Initialize tracking for current tab
+    await initializeTracking();
   } catch (error) {
     console.error('Error during initialization:', error);
   }
@@ -507,7 +547,117 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
   }
 });
 
-// Update updateTimeForCurrentTab to use content analysis
+// Add this function to handle notifications
+async function checkAndSendNotifications(category, timeSpent) {
+  try {
+    // Social Media threshold notification (30 minutes)
+    if (category === 'Social Media' && timeSpent >= 1800000 && !notificationsSent.socialMedia) {
+      await chrome.notifications.create('social_media_alert', {
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: 'Social Media Usage Alert',
+        message: 'You\'ve spent over 30 minutes on social media today. Consider taking a break!'
+      });
+      notificationsSent.socialMedia = true;
+    }
+
+    // Productive/Educational threshold notification (1 hour)
+    if (category === 'Productive / Educational' && timeSpent >= 3600000 && !notificationsSent.productive) {
+      await chrome.notifications.create('productive_milestone', {
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: 'Productivity Milestone!',
+        message: 'Great job! You\'ve spent an hour on productive activities today!'
+      });
+      notificationsSent.productive = true;
+    }
+  } catch (error) {
+    console.error('Error sending notifications:', error);
+  }
+}
+
+// Add this function to check goal completion
+async function checkGoalCompletion(category, timeSpent) {
+  try {
+    // Get both goals and notification data
+    const [goalsData, notifData] = await Promise.all([
+      chrome.storage.local.get('goals'),
+      chrome.storage.local.get('notificationsSent')
+    ]);
+
+    const goals = goalsData.goals || {};
+    const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
+    const goalHours = goals[goalKey] || 0;
+
+    // Rehydrate the Set from stored array
+    notificationsSent.goals = new Set(notifData?.notificationsSent?.goals || []);
+    
+    // Log current state for debugging
+    console.log('Checking goal completion:', {
+      category,
+      timeSpent: Math.round(timeSpent / 1000), // seconds
+      goalHours,
+      goalInMilliseconds: goalHours * 3600000,
+      alreadyNotified: notificationsSent.goals.has(category),
+      storedNotifications: notifData?.notificationsSent?.goals || []
+    });
+
+    if (goalHours > 0) {
+      const goalMilliseconds = goalHours * 3600000;
+      
+      // Check if goal is newly completed
+      if (timeSpent >= goalMilliseconds && !notificationsSent.goals.has(category)) {
+        console.log(`Goal reached for ${category}! Creating notification...`);
+        
+        // Format time for display
+        const timeSpentMinutes = Math.round(timeSpent / 60000);
+        const goalMinutes = Math.round(goalMilliseconds / 60000);
+        
+        // Create a more noticeable notification
+        const notificationId = `goal_complete_${category}_${Date.now()}`;
+        await chrome.notifications.create(notificationId, {
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: '🎉 Goal Achieved! 🎉',
+          message: `You've reached your ${category} goal!\nTime spent: ${timeSpentMinutes} minutes\nGoal: ${goalMinutes} minutes`,
+          priority: 2,
+          requireInteraction: true,
+          silent: false
+        });
+        
+        console.log('Created notification with ID:', notificationId);
+        
+        // Add to notified set
+        notificationsSent.goals.add(category);
+        
+        // Save notification state - convert Set to Array
+        await chrome.storage.local.set({
+          notificationsSent: {
+            ...notificationsSent,
+            goals: Array.from(notificationsSent.goals)
+          }
+        });
+        
+        console.log("✅ Notification triggered for goal:", category);
+        console.log('Updated notification state:', {
+          ...notificationsSent,
+          goals: Array.from(notificationsSent.goals)
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error in checkGoalCompletion:', error);
+  }
+}
+
+// Add notification click handler
+chrome.notifications.onClicked.addListener((notificationId) => {
+  console.log('Notification clicked:', notificationId);
+  // Clear the notification when clicked
+  chrome.notifications.clear(notificationId);
+});
+
+// Modify updateTimeForCurrentTab to ensure accurate goal checking
 async function updateTimeForCurrentTab(tabId) {
   try {
     if (!currentTab || !isTracking || !trackingStartTime) {
@@ -528,8 +678,7 @@ async function updateTimeForCurrentTab(tabId) {
     console.log(`Updating time for ${domain}: ${timeSpent}ms`);
 
     const today = getTodayDate();
-    console.log('Updating data for date:', today);
-
+    
     // Get existing time data
     const { timeData = {} } = await chrome.storage.local.get('timeData');
     
@@ -548,32 +697,31 @@ async function updateTimeForCurrentTab(tabId) {
     }
     timeData[today].sites[domain] += timeSpent;
 
-    // Update category time using AI-based categorization
+    // Get category and update category time
     const category = await getCategoryForDomain(domain, tabId || currentTab.id);
     if (!timeData[today].categories[category]) {
       timeData[today].categories[category] = 0;
     }
+    
+    // Update category time and log for debugging
+    const previousTime = timeData[today].categories[category];
     timeData[today].categories[category] += timeSpent;
-
-    // Update last updated timestamp
-    timeData[today].lastUpdated = now;
-
-    // Clean up old data (keep only last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-
-    Object.keys(timeData).forEach(date => {
-      if (date < thirtyDaysAgoStr) {
-        delete timeData[date];
-      }
+    
+    console.log(`Category ${category} time updated:`, {
+      previous: Math.round(previousTime / 1000), // seconds
+      added: Math.round(timeSpent / 1000), // seconds
+      new: Math.round(timeData[today].categories[category] / 1000) // seconds
     });
 
+    // Save updated time data
     await chrome.storage.local.set({ timeData });
-    console.log('Time data updated successfully for', today);
+
+    // Check notifications and goals with the updated total time
+    await checkAndSendNotifications(category, timeData[today].categories[category]);
+    await checkGoalCompletion(category, timeData[today].categories[category]);
 
   } catch (error) {
-    console.error('Error updating time:', error);
+    console.error('Error in updateTimeForCurrentTab:', error);
   }
 }
 
@@ -749,4 +897,116 @@ async function showDailySummaryNotification(stats) {
   } catch (error) {
     console.error('Error showing daily summary notification:', error);
   }
-} 
+}
+
+// Handle alarm events
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'resetNotifications') {
+    resetNotifications();
+  }
+});
+
+// Modify the existing resetNotifications function to include persistence
+async function resetNotifications() {
+  try {
+    notificationsSent = {
+      socialMedia: false,
+      productive: false,
+      goals: new Set()
+    };
+    
+    // Save as array
+    await chrome.storage.local.set({
+      notificationsSent: {
+        ...notificationsSent,
+        goals: Array.from(notificationsSent.goals)
+      }
+    });
+    console.log('Notifications reset and saved:', {
+      ...notificationsSent,
+      goals: Array.from(notificationsSent.goals)
+    });
+  } catch (error) {
+    console.error('Error resetting notifications:', error);
+  }
+}
+
+// Initialize notification state on startup
+chrome.runtime.onStartup.addListener(async () => {
+  try {
+    const { notificationsSent: savedState = null } = await chrome.storage.local.get('notificationsSent');
+    if (savedState) {
+      // Convert stored array back to Set
+      notificationsSent = {
+        ...savedState,
+        goals: new Set(savedState.goals || [])
+      };
+    }
+    console.log('Initialized notification state:', {
+      ...notificationsSent,
+      goals: Array.from(notificationsSent.goals)
+    });
+    
+    await initializeTracking();
+  } catch (error) {
+    console.error('Error initializing notification state:', error);
+  }
+});
+
+// Function to get date string in YYYY-MM-DD format
+function getDateString(date) {
+  return date.toISOString().split('T')[0];
+}
+
+// Function to clean up old data (keep only last 7 days)
+async function cleanupOldData() {
+  try {
+    const { timeData = {} } = await chrome.storage.local.get('timeData');
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    const cleanedData = {};
+    Object.entries(timeData).forEach(([date, data]) => {
+      if (new Date(date) >= sevenDaysAgo) {
+        cleanedData[date] = data;
+      }
+    });
+
+    await chrome.storage.local.set({ timeData: cleanedData });
+    console.log('Cleaned up old data, keeping last 7 days');
+  } catch (error) {
+    console.error('Error cleaning up old data:', error);
+  }
+}
+
+// Function to check if we need to reset for a new day
+async function checkDayReset() {
+  try {
+    const { lastResetDate } = await chrome.storage.local.get('lastResetDate');
+    const today = getDateString(new Date());
+
+    if (lastResetDate !== today) {
+      console.log('New day detected, performing reset');
+      await chrome.storage.local.set({ lastResetDate: today });
+      await cleanupOldData();
+      
+      // Reset notification flags for the new day
+      await chrome.storage.local.set({
+        notificationsSent: {
+          goals: [],
+          socialMedia: false,
+          productive: false
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error checking day reset:', error);
+  }
+}
+
+// Check for day reset every minute
+setInterval(checkDayReset, 60000);
+
+// Also check when the extension starts
+checkDayReset(); 

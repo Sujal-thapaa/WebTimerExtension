@@ -57,21 +57,51 @@
         <h2>More Insights</h2>
         <button class="close-btn" id="closeMoreBtn">&times;</button>
       </div>
+      <div class="modal-body">
+        <div class="insights-container">
+          <div class="insights-section">
+            <h3>📊 Weekly Usage</h3>
+            <div class="weekly-chart-container">
+              <canvas id="weeklyChart"></canvas>
+            </div>
+            
+            <div class="weekly-details">
+              <div class="weekly-summary-section collapsible">
+                <div class="section-header" data-target="weeklyCategories">
+                  <h4>📁 Categories Overview</h4>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div id="weeklyCategories" class="weekly-list collapse">
+                  <!-- Categories will be added here -->
+                </div>
+              </div>
 
-      <div class="insights-container">
-        <div class="insights-section">
-          <h3>🕹️ Session Insights</h3>
-          <div id="sessionInsights" class="session-insights">
-            <!-- Session insights will be added here -->
+              <div class="weekly-summary-section collapsible">
+                <div class="section-header" data-target="weeklyWebsites">
+                  <h4>🌐 Top Websites</h4>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div id="weeklyWebsites" class="weekly-list collapse">
+                  <!-- Websites will be added here -->
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="insights-section">
-          <h3>📊 Data Management</h3>
-          <button id="exportDataBtn" class="secondary-button">
-            <span class="button-icon">📥</span>
-            Export Data
-          </button>
+          <div class="insights-section">
+            <h3>🕹️ Session Insights</h3>
+            <div id="sessionInsights" class="session-insights">
+              <!-- Session insights will be added here -->
+            </div>
+          </div>
+
+          <div class="insights-section">
+            <h3>📊 Data Management</h3>
+            <button id="exportDataBtn" class="secondary-button">
+              <span class="button-icon">📥</span>
+              Export Data
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -82,19 +112,15 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Goals & Time Limits</h2>
-        <button class="close-btn" id="closeGoalsBtn">&times;</button>
+        <button id="closeGoalsBtn" class="close-btn">&times;</button>
       </div>
-
-      <div class="goals-container">
-        <!-- Goals will be dynamically added here -->
-      </div>
-
-      <div class="streak-info">
-        <!-- Streak information will be added here -->
-      </div>
-
-      <div class="modal-actions">
-        <button id="editGoalsBtn">Edit Goals</button>
+      <div class="modal-body">
+        <div class="streak-info"></div>
+        <div class="goals-container"></div>
+        <button id="editGoalsBtn" class="action-button">
+          <span class="button-icon">⚙️</span>
+          Edit Goals
+        </button>
       </div>
     </div>
   </div>
@@ -107,6 +133,48 @@
         <button class="close-btn" id="closeSettingsBtn">&times;</button>
       </div>
       
+      <div class="theme-settings">
+        <h3>Theme Settings</h3>
+        <div class="theme-option">
+          <label>Color Mode</label>
+          <div class="theme-toggle">
+            <button id="lightModeBtn" class="theme-btn">
+              <span class="button-icon">☀️</span>
+              Light
+            </button>
+            <button id="darkModeBtn" class="theme-btn">
+              <span class="button-icon">🌙</span>
+              Dark
+            </button>
+            <button id="systemModeBtn" class="theme-btn">
+              <span class="button-icon">💻</span>
+              System
+            </button>
+          </div>
+        </div>
+        
+        <div class="theme-option">
+          <label>Color Accent</label>
+          <div class="color-palette">
+            <button class="color-btn" data-color="blue" style="--accent-color: #4a90e2;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="green" style="--accent-color: #27ae60;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="purple" style="--accent-color: #9b59b6;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="orange" style="--accent-color: #e67e22;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="red" style="--accent-color: #e74c3c;">
+              <span class="color-circle"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="categories-editor">
         <h3>Website Categories</h3>
         <div id="categoriesList"></div>
@@ -118,20 +186,18 @@
     </div>
   </div>
 
-  <!-- Goals Edit Modal -->
+  <!-- Edit Goals Modal -->
   <div id="editGoalsModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Edit Time Limits</h2>
-        <button class="close-btn" id="closeEditGoalsBtn">&times;</button>
+        <h2>Edit Goals</h2>
+        <button id="closeEditGoalsBtn" class="close-btn">&times;</button>
       </div>
-
-      <div id="categoryGoals">
-        <!-- Category goals inputs will be added here -->
+      <div class="modal-body">
+        <div id="categoryGoals"></div>
       </div>
-
       <div class="modal-actions">
-        <button id="saveGoalsBtn">Save Goals</button>
+        <button id="saveGoalsBtn" class="action-button">Save Goals</button>
       </div>
     </div>
   </div>
