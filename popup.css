@@ -1288,4 +1288,56 @@ h1, h2, h3, h4, h5, h6 {
 .weekly-summary-section h4 {
   margin: 0;
   font-size: 1.1em;
+}
+
+/* Add to existing styles */
+.content-classification {
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.site-info {
+    margin-top: 10px;
+}
+
+.site-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.keyword-stats {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.label {
+    color: var(--text-secondary);
+}
+
+#contentType {
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+#contentType.productive {
+    background-color: var(--success-bg);
+    color: var(--success-color);
+}
+
+#contentType.entertainment {
+    background-color: var(--warning-bg);
+    color: var(--warning-color);
 } 

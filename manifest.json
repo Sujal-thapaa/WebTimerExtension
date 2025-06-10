@@ -2,27 +2,30 @@
   "manifest_version": 3,
   "name": "WebTimeTracker",
   "version": "1.0",
-  "description": "Track and categorize your web browsing time using AI",
+  "description": "Track and categorize your web browsing time using smart content analysis",
   "permissions": [
     "storage",
     "tabs",
     "alarms",
     "notifications",
-    "activeTab",
     "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
       "128": "icons/icon128.png"
     }
   },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"]
+  }],
   "icons": {
     "128": "icons/icon128.png"
   },
