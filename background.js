@@ -152,6 +152,20 @@ function getNextMidnight() {
   return midnight.getTime();
 }
 
+// Function to format time for notifications
+function formatTimeForNotification(milliseconds) {
+  const hours = Math.floor(milliseconds / 3600000);
+  const minutes = Math.floor((milliseconds % 3600000) / 60000);
+  
+  if (hours > 0 && minutes > 0) {
+    return `${hours}hr : ${minutes}min`;
+  } else if (hours > 0) {
+    return `${hours}hr`;
+  } else {
+    return `${minutes}min`;
+  }
+}
+
 // Initialize storage with default categories if not exists
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Extension installed/updated');
@@ -552,22 +566,24 @@ async function checkAndSendNotifications(category, timeSpent) {
   try {
     // Social Media threshold notification (30 minutes)
     if (category === 'Social Media' && timeSpent >= 1800000 && !notificationsSent.socialMedia) {
+      const formattedTime = formatTimeForNotification(timeSpent);
       await chrome.notifications.create('social_media_alert', {
         type: 'basic',
         iconUrl: 'icons/icon128.png',
-        title: 'Social Media Usage Alert',
-        message: 'You\'ve spent over 30 minutes on social media today. Consider taking a break!'
+        title: '⚠️ Social Media Usage Alert',
+        message: `Today ${formattedTime}, you've spent over 30 minutes on social media. Consider taking a break!`
       });
       notificationsSent.socialMedia = true;
     }
 
     // Productive/Educational threshold notification (1 hour)
     if (category === 'Productive / Educational' && timeSpent >= 3600000 && !notificationsSent.productive) {
+      const formattedTime = formatTimeForNotification(timeSpent);
       await chrome.notifications.create('productive_milestone', {
         type: 'basic',
         iconUrl: 'icons/icon128.png',
-        title: 'Productivity Milestone!',
-        message: 'Great job! You\'ve spent an hour on productive activities today!'
+        title: '🎉 Productivity Milestone!',
+        message: `Great job! Today ${formattedTime}, you've spent an hour on productive activities!`
       });
       notificationsSent.productive = true;
     }
@@ -576,7 +592,7 @@ async function checkAndSendNotifications(category, timeSpent) {
   }
 }
 
-// Add this function to check goal completion
+// Enhanced function to check goal completion with detailed notifications
 async function checkGoalCompletion(category, timeSpent) {
   try {
     // Get both goals and notification data
@@ -609,23 +625,23 @@ async function checkGoalCompletion(category, timeSpent) {
       if (timeSpent >= goalMilliseconds && !notificationsSent.goals.has(category)) {
         console.log(`Goal reached for ${category}! Creating notification...`);
         
-        // Format time for display
-        const timeSpentMinutes = Math.round(timeSpent / 60000);
-        const goalMinutes = Math.round(goalMilliseconds / 60000);
+        // Format time for display in the requested format
+        const formattedTime = formatTimeForNotification(timeSpent);
+        const categoryLower = category.toLowerCase();
         
-        // Create a more noticeable notification
+        // Create enhanced notification with detailed message
         const notificationId = `goal_complete_${category}_${Date.now()}`;
         await chrome.notifications.create(notificationId, {
           type: 'basic',
           iconUrl: 'icons/icon128.png',
           title: '🎉 Goal Achieved! 🎉',
-          message: `You've reached your ${category} goal!\nTime spent: ${timeSpentMinutes} minutes\nGoal: ${goalMinutes} minutes`,
+          message: `Today ${formattedTime}, ${categoryLower} goal is completed! Keep up the great work!`,
           priority: 2,
           requireInteraction: true,
           silent: false
         });
         
-        console.log('Created notification with ID:', notificationId);
+        console.log('Created enhanced notification with ID:', notificationId);
         
         // Add to notified set
         notificationsSent.goals.add(category);
@@ -638,11 +654,27 @@ async function checkGoalCompletion(category, timeSpent) {
           }
         });
         
-        console.log("✅ Notification triggered for goal:", category);
+        console.log("✅ Enhanced notification triggered for goal:", category);
         console.log('Updated notification state:', {
           ...notificationsSent,
           goals: Array.from(notificationsSent.goals)
         });
+
+        // Optional: Play a sound or create additional visual feedback
+        try {
+          // Create a celebratory follow-up notification after 2 seconds
+          setTimeout(async () => {
+            await chrome.notifications.create(`celebration_${category}_${Date.now()}`, {
+              type: 'basic',
+              iconUrl: 'icons/icon128.png',
+              title: '🔥 Streak Building!',
+              message: `${category} goal completed! You're building great habits!`,
+              priority: 1
+            });
+          }, 2000);
+        } catch (celebrationError) {
+          console.log('Could not create celebration notification:', celebrationError);
+        }
       }
     }
   } catch (error) {
@@ -655,6 +687,11 @@ chrome.notifications.onClicked.addListener((notificationId) => {
   console.log('Notification clicked:', notificationId);
   // Clear the notification when clicked
   chrome.notifications.clear(notificationId);
+  
+  // If it's a goal completion notification, maybe open the extension popup
+  if (notificationId.includes('goal_complete')) {
+    chrome.action.openPopup();
+  }
 });
 
 // Modify updateTimeForCurrentTab to ensure accurate goal checking
@@ -876,8 +913,7 @@ async function updateDailyStreak(stats) {
 async function showDailySummaryNotification(stats) {
   try {
     const totalTime = Object.values(stats.categories).reduce((a, b) => a + b, 0);
-    const hours = Math.floor(totalTime / 3600000);
-    const minutes = Math.floor((totalTime % 3600000) / 60000);
+    const formattedTotalTime = formatTimeForNotification(totalTime);
 
     const productiveTime = (stats.categories['Productive / Educational'] || 0) / 3600000;
     const { goals = {} } = await chrome.storage.local.get('goals');
@@ -885,8 +921,8 @@ async function showDailySummaryNotification(stats) {
     const goalAchieved = productiveTime >= goalHours;
 
     const message = goalAchieved
-      ? `Great job! You spent ${hours}h ${minutes}m online, including ${Math.round(productiveTime)}h on productive tasks. Keep up the ${goals.streak}-day streak! 🎯`
-      : `Today you spent ${hours}h ${minutes}m online, with ${Math.round(productiveTime)}h on productive tasks. Goal: ${goalHours}h`;
+      ? `Great job! Today ${formattedTotalTime} online, including ${Math.round(productiveTime)}h on productive tasks. Keep up the ${goals.streak}-day streak! 🎯`
+      : `Today ${formattedTotalTime} online, with ${Math.round(productiveTime)}h on productive tasks. Goal: ${goalHours}h`;
 
     await chrome.notifications.create({
       type: 'basic',
@@ -1009,4 +1045,4 @@ async function checkDayReset() {
 setInterval(checkDayReset, 60000);
 
 // Also check when the extension starts
-checkDayReset(); 
+checkDayReset();
