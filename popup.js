@@ -1387,4 +1387,4 @@ async function updateWeeklyChart() {
   } catch (error) {
     console.error('Error updating weekly insights:', error);
   }
-} 
+}
