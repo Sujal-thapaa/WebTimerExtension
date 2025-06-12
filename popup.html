@@ -1,62 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Transcript Extractor</title>
-    <link rel="stylesheet" href="popup.css">
+  <title>WebTimeTracker</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="lib/chart.min.js"></script>
+  <meta charset="UTF-8">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>YouTube Transcript Extractor</h1>
-            <p class="subtitle">Extract and download transcripts from YouTube videos</p>
-        </div>
-        
-        <div class="content">
-            <div class="status" id="status">
-                <div class="status-icon">ℹ️</div>
-                <div class="status-text">Navigate to a YouTube video to extract its transcript</div>
+  <div class="container">
+    <header>
+      <h1>WebTimeTracker</h1>
+      <div class="time-period">
+        <button id="todayBtn" class="active">Today</button>
+        <button id="weekBtn">This Week</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="total-time">
+        <h2>Total Time</h2>
+        <div id="totalTime" class="time-value">0h 0m</div>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="goalsBtn" class="action-button">
+        <span class="button-icon">🎯</span>
+        Goals & Limits
+      </button>
+      <button id="settingsBtn" class="action-button">
+        <span class="button-icon">⚙️</span>
+        Settings
+      </button>
+      <button id="moreBtn" class="action-button">
+        <span class="button-icon">📊</span>
+        More
+      </button>
+    </section>
+
+    <section class="charts">
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </section>
+
+    <section class="top-sites">
+      <h2>Top Sites</h2>
+      <div id="topSitesList" class="sites-list"></div>
+    </section>
+
+    <section class="block-site">
+      <h2>Block Website</h2>
+      <div class="block-input">
+        <input type="text" id="siteToBlock" placeholder="e.g., facebook.com">
+        <input type="number" id="blockDuration" placeholder="Minutes">
+        <button id="addBlockBtn">Block Site</button>
+      </div>
+      <h3>Currently Blocked Sites</h3>
+      <div id="blockedSitesList" class="blocked-sites-list"></div>
+    </section>
+
+    <!-- Built with Bolt.new Badge -->
+    <section class="bolt-badge">
+      <a href="https://bolt.new" target="_blank" rel="noopener noreferrer" class="bolt-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="bolt-icon">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>
+        </svg>
+        <span class="bolt-text">Built with Bolt.new</span>
+      </a>
+    </section>
+  </div>
+
+  <!-- More Options Modal -->
+  <div id="moreModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>More Insights</h2>
+        <button class="close-btn" id="closeMoreBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="insights-container">
+          <div class="insights-section">
+            <h3>📊 Weekly Usage</h3>
+            <div class="weekly-chart-container">
+              <canvas id="weeklyChart"></canvas>
             </div>
             
-            <div class="controls" id="controls" style="display: none;">
-                <button id="extractBtn" class="btn btn-primary">
-                    <span class="btn-icon">📄</span>
-                    Extract Transcript
-                </button>
-                
-                <div class="format-options" id="formatOptions" style="display: none;">
-                    <h3>Download Format:</h3>
-                    <div class="format-buttons">
-                        <button id="downloadTxt" class="btn btn-secondary">
-                            <span class="btn-icon">📝</span>
-                            Download as TXT
-                        </button>
-                        <button id="downloadJson" class="btn btn-secondary">
-                            <span class="btn-icon">🔧</span>
-                            Download as JSON
-                        </button>
-                    </div>
+            <div class="weekly-details">
+              <div class="weekly-summary-section collapsible">
+                <div class="section-header" data-target="weeklyCategories">
+                  <h4>📁 Categories Overview</h4>
+                  <span class="toggle-icon">▼</span>
                 </div>
+                <div id="weeklyCategories" class="weekly-list collapse">
+                  <!-- Categories will be added here -->
+                </div>
+              </div>
+
+              <div class="weekly-summary-section collapsible">
+                <div class="section-header" data-target="weeklyWebsites">
+                  <h4>🌐 Top Websites</h4>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div id="weeklyWebsites" class="weekly-list collapse">
+                  <!-- Websites will be added here -->
+                </div>
+              </div>
             </div>
-            
-            <div class="transcript-preview" id="transcriptPreview" style="display: none;">
-                <h3>Transcript Preview:</h3>
-                <div class="transcript-content" id="transcriptContent"></div>
+          </div>
+
+          <div class="insights-section">
+            <h3>🕹️ Session Insights</h3>
+            <div id="sessionInsights" class="session-insights">
+              <!-- Session insights will be added here -->
             </div>
+          </div>
+
+          <div class="insights-section">
+            <h3>📊 Data Management</h3>
+            <button id="exportDataBtn" class="secondary-button">
+              <span class="button-icon">📥</span>
+              Export Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goals Modal -->
+  <div id="goalsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Goals & Time Limits</h2>
+        <button id="closeGoalsBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="streak-info"></div>
+        <div class="goals-container"></div>
+        <button id="editGoalsBtn" class="action-button">
+          <span class="button-icon">⚙️</span>
+          Edit Goals
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-btn" id="closeSettingsBtn">&times;</button>
+      </div>
+      
+      <div class="theme-settings">
+        <h3>Theme Settings</h3>
+        <div class="theme-option">
+          <label>Color Mode</label>
+          <div class="theme-toggle">
+            <button id="lightModeBtn" class="theme-btn">
+              <span class="button-icon">☀️</span>
+              Light
+            </button>
+            <button id="darkModeBtn" class="theme-btn">
+              <span class="button-icon">🌙</span>
+              Dark
+            </button>
+            <button id="systemModeBtn" class="theme-btn">
+              <span class="button-icon">💻</span>
+              System
+            </button>
+          </div>
         </div>
         
-        <!-- Built with Bolt.new Badge -->
-        <div class="bolt-badge">
-            <a href="https://bolt.new" target="_blank" rel="noopener noreferrer" class="bolt-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="bolt-icon">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>
-                </svg>
-                <span class="bolt-text">Built with Bolt.new</span>
-            </a>
+        <div class="theme-option">
+          <label>Color Accent</label>
+          <div class="color-palette">
+            <button class="color-btn" data-color="blue" style="--accent-color: #4a90e2;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="green" style="--accent-color: #27ae60;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="purple" style="--accent-color: #9b59b6;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="orange" style="--accent-color: #e67e22;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="red" style="--accent-color: #e74c3c;">
+              <span class="color-circle"></span>
+            </button>
+          </div>
         </div>
+      </div>
+
+      <div class="categories-editor">
+        <h3>Website Categories</h3>
+        <div id="categoriesList"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="saveSettingsBtn">Save Settings</button>
+      </div>
     </div>
-    
-    <script src="popup.js"></script>
+  </div>
+
+  <!-- Edit Goals Modal -->
+  <div id="editGoalsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Goals</h2>
+        <button id="closeEditGoalsBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="categoryGoals"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="saveGoalsBtn" class="action-button">Save Goals</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
 </body>
 </html>
