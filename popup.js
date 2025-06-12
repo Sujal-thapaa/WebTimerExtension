@@ -16,6 +16,90 @@ const CATEGORY_COLORS = {
   'Other': '#FF69B4'                     // Pink
 };
 
+// --- ADD THIS HELPER FUNCTION NEAR THE TOP ---
+function getGoalKey(category) {
+  return category.toLowerCase().replace(/[^a-z0-9]/gi, '') + 'Hours';
+}
+// ---
+
+// Helper function to get clean domain name without subdomain and TLD
+function getCleanDomain(url) {
+  return url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0].split('.')[0];
+}
+
+// Update every instance like:
+//   const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
+// To:
+//   const goalKey = getGoalKey(category);
+
+// For example, in updateAllGoals, updateGoalsDisplay, loadGoalsEditor, saveGoals, saveSettings, etc.
+
+// Example: In updateAllGoals
+async function updateAllGoals(data, goals) {
+  try {
+    console.log('Updating goals display with data:', data);
+    console.log('Current goals state from storage:', goals);
+
+    const goalsContainer = document.querySelector('.goals-container');
+    if (!goalsContainer) {
+      console.error('Goals container not found in popup DOM');
+      return;
+    }
+    goalsContainer.innerHTML = '';
+
+    // Get all categories from the storage
+    const { categories = {} } = await chrome.storage.local.get('categories');
+    
+    // Process each category that has a goal set
+    Object.keys(categories).forEach(category => {
+      const goalKey = getGoalKey(category);
+      const goalHours = goals[goalKey];
+      
+      if (typeof goalHours === 'number' && goalHours > 0) {
+        const timeSpent = data.categories[category] || 0;
+        const goalMilliseconds = goalHours * 3600000;
+        const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
+        
+        console.log(`Displaying progress for ${category}:`, {
+          timeSpent: timeSpent / 3600000, // hours
+          goalHours,
+          progress
+        });
+
+        const goalDiv = document.createElement('div');
+        goalDiv.className = 'goal-item';
+        goalDiv.innerHTML = `
+          <div class="goal-header">
+            <span class="goal-name">${category} ${progress >= 100 ? '🎉' : ''}</span>
+            <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar ${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}">
+              <div style="width: ${progress}%"></div>
+            </div>
+            <span class="goal-percentage">${Math.round(progress)}%</span>
+          </div>`;
+        goalsContainer.appendChild(goalDiv);
+      }
+    });
+
+    // Add streak if any goals are met
+    if (goals?.streak > 0) {
+      const streakDiv = document.createElement('div');
+      streakDiv.className = 'streak';
+      streakDiv.innerHTML = `
+        <span>🔥 Current Streak: ${goals.streak} day${goals.streak !== 1 ? 's' : ''}</span>
+      `;
+      streakDiv.style.color = 'var(--success-color)';
+      goalsContainer.appendChild(streakDiv);
+    }
+
+  } catch (error) {
+    console.error('Error updating goals display in popup:', error);
+  }
+}
+
+// ...rest of popup.js remains unchanged...
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await initializeElements();
@@ -63,6 +147,12 @@ function initializeElements() {
     saveGoalsBtn: document.getElementById('saveGoalsBtn'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
     
+    // Blocking elements
+    siteToBlock: document.getElementById('siteToBlock'),
+    blockDuration: document.getElementById('blockDuration'),
+    addBlockBtn: document.getElementById('addBlockBtn'),
+    blockedSitesList: document.getElementById('blockedSitesList'),
+    
     // Containers
     goalsContainer: document.querySelector('.goals-container'),
     sessionInsights: document.getElementById('sessionInsights'),
@@ -85,6 +175,7 @@ function setupAutoRefresh() {
   }
   refreshInterval = setInterval(async () => {
     await loadData(currentTimeframe);
+    await updateBlockedSitesList(); // Refresh blocked sites list
   }, 1000);
 }
 
@@ -221,70 +312,6 @@ async function testNotification() {
     console.log('✅ Test notification sent successfully');
   } catch (error) {
     console.error('Error sending test notification:', error);
-  }
-}
-
-async function updateAllGoals(data, goals) {
-  try {
-    console.log('Updating goals display with data:', data);
-    console.log('Current goals state from storage:', goals);
-
-    const goalsContainer = document.querySelector('.goals-container');
-    if (!goalsContainer) {
-      console.error('Goals container not found in popup DOM');
-      return;
-    }
-    goalsContainer.innerHTML = '';
-
-    // Get all categories from the storage
-    const { categories = {} } = await chrome.storage.local.get('categories');
-    
-    // Process each category that has a goal set
-    Object.keys(categories).forEach(category => {
-      const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
-      const goalHours = goals[goalKey];
-      
-      if (typeof goalHours === 'number' && goalHours > 0) {
-        const timeSpent = data.categories[category] || 0;
-        const goalMilliseconds = goalHours * 3600000;
-        const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
-        
-        console.log(`Displaying progress for ${category}:`, {
-          timeSpent: timeSpent / 3600000, // hours
-          goalHours,
-          progress
-        });
-
-        const goalDiv = document.createElement('div');
-        goalDiv.className = 'goal-item';
-        goalDiv.innerHTML = `
-          <div class="goal-header">
-            <span class="goal-name">${category} ${progress >= 100 ? '🎉' : ''}</span>
-            <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
-          </div>
-          <div class="goal-progress">
-            <div class="progress-bar ${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}">
-              <div style="width: ${progress}%"></div>
-            </div>
-            <span class="goal-percentage">${Math.round(progress)}%</span>
-          </div>`;
-        goalsContainer.appendChild(goalDiv);
-      }
-    });
-
-    // Add streak if any goals are met
-    if (goals?.streak > 0) {
-      const streakDiv = document.createElement('div');
-      streakDiv.className = 'streak';
-      streakDiv.innerHTML = `
-        <span>🔥 Current Streak: ${goals.streak} day${goals.streak !== 1 ? 's' : ''}</span>
-      `;
-      streakDiv.style.color = 'var(--success-color)';
-      goalsContainer.appendChild(streakDiv);
-    }
-
-  } catch (error) {
-    console.error('Error updating goals display in popup:', error);
   }
 }
 
@@ -426,6 +453,110 @@ function updateTopSites(data) {
   });
 }
 
+// Website blocking functions
+async function addBlockedSite() {
+  const siteInput = document.getElementById('siteToBlock');
+  const durationInput = document.getElementById('blockDuration');
+  
+  const site = siteInput.value.trim();
+  const duration = parseInt(durationInput.value);
+  
+  if (!site) {
+    showToast('Please enter a website URL', 'error');
+    return;
+  }
+  
+  if (!duration || duration <= 0) {
+    showToast('Please enter a valid duration in minutes', 'error');
+    return;
+  }
+  
+  // Clean up the URL (remove protocol, www, etc.)
+  const cleanSite = site.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'addBlock',
+      url: cleanSite,
+      duration: duration
+    });
+    
+    if (response.success) {
+      showToast(`Blocked ${cleanSite} for ${duration} minutes`, 'success');
+      siteInput.value = '';
+      durationInput.value = '';
+      await updateBlockedSitesList();
+    } else {
+      showToast('Failed to block site', 'error');
+    }
+  } catch (error) {
+    console.error('Error blocking site:', error);
+    showToast('Error blocking site', 'error');
+  }
+}
+
+async function removeBlockedSite(url) {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'removeBlock',
+      url: url
+    });
+    
+    if (response.success) {
+      showToast(`Unblocked ${url}`, 'success');
+      await updateBlockedSitesList();
+    } else {
+      showToast('Failed to unblock site', 'error');
+    }
+  } catch (error) {
+    console.error('Error unblocking site:', error);
+    showToast('Error unblocking site', 'error');
+  }
+}
+
+async function updateBlockedSitesList() {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'getBlockedSites'
+    });
+    
+    const blockedSitesList = document.getElementById('blockedSitesList');
+    if (!blockedSitesList) return;
+    
+    blockedSitesList.innerHTML = '';
+    
+    if (response.blockedSites && response.blockedSites.length > 0) {
+      response.blockedSites.forEach(site => {
+        const now = Date.now();
+        const remaining = site.expiresAt - now;
+        const minutes = Math.floor(remaining / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+        
+        const siteItem = document.createElement('div');
+        siteItem.className = 'blocked-site-item';
+        siteItem.innerHTML = `
+          <div class="blocked-site-info">
+            <img src="${getWebsiteLogo(site.url)}" alt="${site.url} logo" class="site-logo">
+            <div class="blocked-site-details">
+              <span class="blocked-site-name">${getCleanWebsiteName(site.url)}</span>
+              <span class="blocked-site-time">${minutes}m ${seconds}s remaining</span>
+            </div>
+          </div>
+          <button class="unblock-btn" onclick="removeBlockedSite('${site.url}')">Unblock</button>
+        `;
+        blockedSitesList.appendChild(siteItem);
+      });
+    } else {
+      blockedSitesList.innerHTML = '<p class="no-blocked-sites">No sites currently blocked</p>';
+    }
+  } catch (error) {
+    console.error('Error updating blocked sites list:', error);
+  }
+}
+
+// Make removeBlockedSite available globally
+window.removeBlockedSite = removeBlockedSite;
+
 function setupEventListeners() {
   console.log('Setting up event listeners');
   try {
@@ -443,6 +574,28 @@ function setupEventListeners() {
         e.target.classList.add('active');
         currentTimeframe = 'week';
         await loadData('week');
+      });
+    }
+
+    // Website blocking
+    if (elements.addBlockBtn) {
+      elements.addBlockBtn.addEventListener('click', addBlockedSite);
+    }
+
+    // Allow Enter key to add block
+    if (elements.siteToBlock) {
+      elements.siteToBlock.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addBlockedSite();
+        }
+      });
+    }
+
+    if (elements.blockDuration) {
+      elements.blockDuration.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addBlockedSite();
+        }
       });
     }
 
@@ -601,6 +754,10 @@ function setupEventListeners() {
       });
     });
 
+    // Initialize blocked sites list
+    updateBlockedSitesList();
+    setupAutoRefresh();
+
     console.log('Event listeners set up successfully');
   } catch (error) {
     console.error('Error setting up event listeners:', error);
@@ -614,7 +771,7 @@ async function updateGoalsDisplay() {
       return;
     }
 
-    const { timeData, goals = {}, categories = {} } = await chrome.storage.local.get(['timeData', 'goals', 'categories']);
+    const { timeData, goals = {}, categories = {}, blockedSites = [] } = await chrome.storage.local.get(['timeData', 'goals', 'categories', 'blockedSites']);
     const today = getTodayString();
     const todayData = timeData[today] || { categories: {} };
 
@@ -626,7 +783,7 @@ async function updateGoalsDisplay() {
 
     // Create a goal card for each category that has a goal set
     Object.keys(categories).forEach(category => {
-      const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
+      const goalKey = getGoalKey(category);
       const goalHours = goals[goalKey] || 0;
       
       if (goalHours > 0) {
@@ -669,6 +826,9 @@ async function updateGoalsDisplay() {
       `;
     }
 
+    // Display blocked sites list
+    displayBlockedSites(blockedSites);
+
     // Restore scroll position after content update
     if (modalBody) {
       requestAnimationFrame(() => {
@@ -677,6 +837,44 @@ async function updateGoalsDisplay() {
     }
   } catch (error) {
     console.error('Error updating goals display:', error);
+  }
+}
+
+function displayBlockedSites(blockedSites) {
+  const blockedSitesList = document.getElementById('blockedSitesList');
+  if (!blockedSitesList) return;
+  
+  blockedSitesList.innerHTML = '';
+  
+  if (blockedSites && blockedSites.length > 0) {
+    const now = Date.now();
+    const activeSites = blockedSites.filter(site => site.expiresAt > now);
+    
+    if (activeSites.length > 0) {
+      activeSites.forEach(site => {
+        const remaining = site.expiresAt - now;
+        const minutes = Math.floor(remaining / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+        
+        const siteItem = document.createElement('div');
+        siteItem.className = 'blocked-site-item';
+        siteItem.innerHTML = `
+          <div class="blocked-site-info">
+            <img src="${getWebsiteLogo(site.url)}" alt="${site.url} logo" class="site-logo">
+            <div class="blocked-site-details">
+              <span class="blocked-site-name">${getCleanWebsiteName(site.url)}</span>
+              <span class="blocked-site-time">${minutes}m ${seconds}s remaining</span>
+            </div>
+          </div>
+          <button class="unblock-btn" onclick="removeBlockedSite('${site.url}')">Unblock</button>
+        `;
+        blockedSitesList.appendChild(siteItem);
+      });
+    } else {
+      blockedSitesList.innerHTML = '<p class="no-blocked-sites">No sites currently blocked</p>';
+    }
+  } else {
+    blockedSitesList.innerHTML = '<p class="no-blocked-sites">No sites currently blocked</p>';
   }
 }
 
@@ -700,7 +898,7 @@ async function loadGoalsEditor() {
       const goalItem = document.createElement('div');
       goalItem.className = 'category-goal-item';
       
-      const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
+      const goalKey = getGoalKey(category);
       const currentValue = goals[goalKey] || 0;
 
       goalItem.innerHTML = `
@@ -740,7 +938,7 @@ async function saveGoals() {
 
       const newValue = parseFloat(input.value) || 0;
       const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
-      
+
       // Only update if the value has changed
       if (currentGoals[goalKey] !== newValue) {
         hasChanges = true;
@@ -868,6 +1066,88 @@ toastStyle.textContent = `
     font-weight: 500;
     color: var(--text-color);
   }
+
+  .blocked-site-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .blocked-site-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .blocked-site-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .blocked-site-name {
+    font-weight: 500;
+    color: var(--text-color);
+  }
+
+  .blocked-site-time {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+  }
+
+  .unblock-btn {
+    background-color: var(--error-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+
+  .unblock-btn:hover {
+    opacity: 0.9;
+  }
+
+  .no-blocked-sites {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 20px;
+  }
+
+  .block-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    align-items: center;
+  }
+
+  .block-input input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  .block-input button {
+    background-color: var(--error-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .block-input button:hover {
+    opacity: 0.9;
+  }
 `;
 document.head.appendChild(toastStyle);
 
@@ -974,7 +1254,7 @@ async function saveSettings() {
       const hours = parseFloat(input.value);
       
       if (!isNaN(hours) && hours >= 0 && hours <= 24) {
-        goals[`${category.toLowerCase()}Hours`] = hours;
+        goals[getGoalKey(category)] = hours;
       }
     });
 

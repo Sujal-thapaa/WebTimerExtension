@@ -5,8 +5,10 @@
   "description": "Track and categorize your web browsing time using smart content analysis",
   "permissions": [
     "storage",
+    "declarativeNetRequest",
     "tabs",
     "alarms",
+    "activeTab",
     "notifications",
     "scripting"
   ],
@@ -30,7 +32,7 @@
     "128": "icons/icon128.png"
   },
   "web_accessible_resources": [{
-    "resources": ["audio/goal-sound.mp3"],
+    "resources": ["blocked.html", "audio/goal-sound.mp3"],
     "matches": ["<all_urls>"]
   }]
-} 
+}

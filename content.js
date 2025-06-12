@@ -143,6 +143,8 @@ function classifyContent(text) {
 function analyzePage() {
     let content = '';
     const domain = window.location.hostname;
+    
+    console.log('Analyzing page:', window.location.href);
 
     // Extract content based on domain
     if (domain.includes('youtube.com')) {
@@ -157,19 +159,31 @@ function analyzePage() {
     const classification = classifyContent(content);
 
     // Send results to background script
-    chrome.runtime.sendMessage({
-        type: 'contentClassification',
-        data: {
-            url: window.location.href,
-            domain: domain,
-            timestamp: new Date().toISOString(),
-            classification: classification.type,
-            stats: {
-                productiveCount: classification.productiveCount,
-                entertainmentCount: classification.entertainmentCount
+    // Add error handling for sendMessage
+    try {
+        chrome.runtime.sendMessage({
+            type: 'contentClassification',
+            data: {
+                url: window.location.href,
+                domain: domain,
+                timestamp: new Date().toISOString(),
+                classification: classification.type,
+                stats: {
+                    productiveCount: classification.productiveCount,
+                    entertainmentCount: classification.entertainmentCount
+                }
             }
-        }
-    });
+        }, (response) => {
+            // Optional: Handle response if background script sends one
+            if (chrome.runtime.lastError) {
+                console.error('Error sending message to background script:', chrome.runtime.lastError.message);
+                // Context likely invalidated, stop further messaging
+                stopAnalysis();
+            }
+        });
+    } catch (error) {
+        console.error('Unexpected error during sendMessage:', error);
+    }
 }
 
 // Initialize when the page is ready
@@ -194,9 +208,23 @@ function initialize() {
     });
 }
 
+// Function to stop periodic analysis and mutation observer
+let analysisInterval;
+let mutationObserver;
+
+function stopAnalysis() {
+    console.log('Stopping content script analysis');
+    if (analysisInterval) {
+        clearInterval(analysisInterval);
+    }
+    if (mutationObserver) {
+        mutationObserver.disconnect();
+    }
+}
+
 // Run initialization when the page is ready
 if (document.readyState === 'complete') {
     initialize();
 } else {
     window.addEventListener('load', initialize); 
-} 
+}
