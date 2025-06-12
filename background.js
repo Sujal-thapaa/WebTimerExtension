@@ -1,5 +1,3 @@
-// Merged background.js with Notification + Website Blocking Features
-
 // --- CATEGORY DEFINITIONS ---
 const CATEGORY_KEYWORDS = {
     'Social Media': {
@@ -41,6 +39,31 @@ const CATEGORY_KEYWORDS = {
     goals: new Set()
   };
   
+  // --- MIDNIGHT RESET MANAGEMENT ---
+  let lastTrackedDate = getTodayString();
+  
+  function scheduleMidnightReset() {
+    const now = new Date();
+    const msUntilMidnight =
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0) - now;
+  
+    setTimeout(() => {
+      handleMidnightReset();
+      scheduleMidnightReset();
+    }, msUntilMidnight + 1000); // +1s to be safe
+  }
+  
+  function handleMidnightReset() {
+    lastTrackedDate = getTodayString();
+    notificationsSent = {
+      socialMedia: false,
+      productive: false,
+      goals: new Set()
+    };
+    // Optionally stop tracking at midnight for clean stats:
+    stopTracking();
+  }
+  
   // --- UTILITY FUNCTIONS ---
   function getTodayString() {
     return new Date().toISOString().split('T')[0];
@@ -58,6 +81,32 @@ const CATEGORY_KEYWORDS = {
   function formatTime(ms) {
     const min = Math.floor(ms / 60000);
     return min + ' min';
+  }
+  
+  // --- GOAL KEY HELPER ---
+  function getGoalKey(category) {
+    return category.toLowerCase().replace(/[^a-z0-9]/gi, '') + 'Hours';
+  }
+  
+  // --- GOAL COMPLETION NOTIFICATION ---
+  async function checkGoalCompletion(category, timeSpent) {
+    const { goals = {} } = await chrome.storage.local.get('goals');
+    const goalKey = getGoalKey(category);
+    const goalHours = goals[goalKey];
+    if (!goalHours || goalHours <= 0) return;
+    const goalMs = goalHours * 3600000;
+    const today = getTodayString();
+    const notifiedKey = `goalNotified_${today}_${goalKey}`;
+    const { [notifiedKey]: alreadyNotified } = await chrome.storage.local.get(notifiedKey);
+    if (timeSpent >= goalMs && !alreadyNotified) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: '🎯 Goal Completed!',
+        message: `You've achieved your daily goal for ${category}!`
+      });
+      await chrome.storage.local.set({ [notifiedKey]: true });
+    }
   }
   
   // --- INITIALIZATION ---
@@ -78,11 +127,21 @@ const CATEGORY_KEYWORDS = {
     }
   
     await setupBlockingRules();
+    scheduleMidnightReset();
   });
   
   chrome.runtime.onStartup.addListener(async () => {
     await cleanupExpiredBlocks();
     await setupBlockingRules();
+    // --- Clean up previous day's notifications ---
+    const all = await chrome.storage.local.get(null);
+    const today = getTodayString();
+    for (const key of Object.keys(all)) {
+      if (key.startsWith('goalNotified_') && !key.includes(today)) {
+        await chrome.storage.local.remove(key);
+      }
+    }
+    scheduleMidnightReset();
   });
   
   // --- WEBSITE BLOCKING ---
@@ -117,9 +176,18 @@ const CATEGORY_KEYWORDS = {
     await chrome.storage.local.set({ blockedSites: updated });
   }
   
+  // --- BLOCK SITE MESSAGE HANDLER ---
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'addBlock') {
       addBlockedSite(request.url, request.duration).then(res => sendResponse({ success: res }));
+      return true;
+    }
+    if (request.action === 'removeBlock') {
+      removeBlockedSite(request.url).then(res => sendResponse({ success: res }));
+      return true;
+    }
+    if (request.action === 'getBlockedSites') {
+      getBlockedSites().then(res => sendResponse(res));
       return true;
     }
   });
@@ -134,12 +202,30 @@ const CATEGORY_KEYWORDS = {
     return true;
   }
   
+  async function removeBlockedSite(url) {
+    const { blockedSites = [] } = await chrome.storage.local.get('blockedSites');
+    const updated = blockedSites.filter(site => site.url !== url);
+    await chrome.storage.local.set({ blockedSites: updated });
+    await setupBlockingRules();
+    return true;
+  }
+  
+  async function getBlockedSites() {
+    const { blockedSites = [] } = await chrome.storage.local.get('blockedSites');
+    return { blockedSites };
+  }
+  
   // --- TRACKING + NOTIFICATIONS ---
   async function updateTime(url, timeSpent) {
+    const today = getTodayString();
+    if (today !== lastTrackedDate) {
+      handleMidnightReset();
+      lastTrackedDate = today;
+    }
+  
     const domain = getDomainFromUrl(url);
     if (!domain) return;
   
-    const today = getTodayString();
     const { timeData = {} } = await chrome.storage.local.get('timeData');
     if (!timeData[today]) timeData[today] = { sites: {}, categories: {} };
   
@@ -150,6 +236,7 @@ const CATEGORY_KEYWORDS = {
     await chrome.storage.local.set({ timeData });
   
     await checkNotifications(category, timeData[today].categories[category]);
+    await checkGoalCompletion(category, timeData[today].categories[category]);
   }
   
   async function categorizeWebsite(domain) {
@@ -226,4 +313,3 @@ const CATEGORY_KEYWORDS = {
   
   // Periodic cleanup
   setInterval(cleanupExpiredBlocks, 60000);
-  
