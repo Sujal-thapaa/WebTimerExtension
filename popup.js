@@ -19,69 +19,104 @@ class WebTimeTracker {
   }
 
   setupEventListeners() {
-    // Period buttons
-    document.getElementById('todayBtn')?.addEventListener('click', () => this.switchPeriod('today'));
-    document.getElementById('weekBtn')?.addEventListener('click', () => this.switchPeriod('week'));
+    try {
+      // Period buttons
+      const todayBtn = document.getElementById('todayBtn');
+      const weekBtn = document.getElementById('weekBtn');
+      
+      if (todayBtn) todayBtn.addEventListener('click', () => this.switchPeriod('today'));
+      if (weekBtn) weekBtn.addEventListener('click', () => this.switchPeriod('week'));
 
-    // Modal buttons
-    document.getElementById('goalsBtn')?.addEventListener('click', () => this.openModal('goalsModal'));
-    document.getElementById('settingsBtn')?.addEventListener('click', () => this.openModal('settingsModal'));
-    document.getElementById('moreBtn')?.addEventListener('click', () => this.openModal('moreModal'));
+      // Modal buttons
+      const goalsBtn = document.getElementById('goalsBtn');
+      const settingsBtn = document.getElementById('settingsBtn');
+      const moreBtn = document.getElementById('moreBtn');
+      
+      if (goalsBtn) goalsBtn.addEventListener('click', () => this.openModal('goalsModal'));
+      if (settingsBtn) settingsBtn.addEventListener('click', () => this.openModal('settingsModal'));
+      if (moreBtn) moreBtn.addEventListener('click', () => this.openModal('moreModal'));
 
-    // Close buttons
-    document.getElementById('closeGoalsBtn')?.addEventListener('click', () => this.closeModal('goalsModal'));
-    document.getElementById('closeSettingsBtn')?.addEventListener('click', () => this.closeModal('settingsModal'));
-    document.getElementById('closeMoreBtn')?.addEventListener('click', () => this.closeModal('moreModal'));
-    document.getElementById('closeEditGoalsBtn')?.addEventListener('click', () => this.closeModal('editGoalsModal'));
+      // Close buttons
+      const closeGoalsBtn = document.getElementById('closeGoalsBtn');
+      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+      const closeMoreBtn = document.getElementById('closeMoreBtn');
+      const closeEditGoalsBtn = document.getElementById('closeEditGoalsBtn');
+      
+      if (closeGoalsBtn) closeGoalsBtn.addEventListener('click', () => this.closeModal('goalsModal'));
+      if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => this.closeModal('settingsModal'));
+      if (closeMoreBtn) closeMoreBtn.addEventListener('click', () => this.closeModal('moreModal'));
+      if (closeEditGoalsBtn) closeEditGoalsBtn.addEventListener('click', () => this.closeModal('editGoalsModal'));
 
-    // Settings buttons
-    document.getElementById('editGoalsBtn')?.addEventListener('click', () => this.openEditGoals());
-    document.getElementById('saveGoalsBtn')?.addEventListener('click', () => this.saveGoals());
-    document.getElementById('saveSettingsBtn')?.addEventListener('click', () => this.saveSettings());
+      // Settings buttons
+      const editGoalsBtn = document.getElementById('editGoalsBtn');
+      const saveGoalsBtn = document.getElementById('saveGoalsBtn');
+      const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+      
+      if (editGoalsBtn) editGoalsBtn.addEventListener('click', () => this.openEditGoals());
+      if (saveGoalsBtn) saveGoalsBtn.addEventListener('click', () => this.saveGoals());
+      if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => this.saveSettings());
 
-    // Theme buttons
-    document.getElementById('lightModeBtn')?.addEventListener('click', () => this.setTheme('light'));
-    document.getElementById('darkModeBtn')?.addEventListener('click', () => this.setTheme('dark'));
-    document.getElementById('systemModeBtn')?.addEventListener('click', () => this.setTheme('system'));
+      // Theme buttons
+      const lightModeBtn = document.getElementById('lightModeBtn');
+      const darkModeBtn = document.getElementById('darkModeBtn');
+      const systemModeBtn = document.getElementById('systemModeBtn');
+      
+      if (lightModeBtn) lightModeBtn.addEventListener('click', () => this.setTheme('light'));
+      if (darkModeBtn) darkModeBtn.addEventListener('click', () => this.setTheme('dark'));
+      if (systemModeBtn) systemModeBtn.addEventListener('click', () => this.setTheme('system'));
 
-    // Color palette
-    document.querySelectorAll('.color-btn').forEach(btn => {
-      btn.addEventListener('click', () => this.setAccentColor(btn.dataset.color));
-    });
-
-    // Blocking functionality
-    document.getElementById('addBlockBtn')?.addEventListener('click', () => this.addBlock());
-    document.getElementById('siteToBlock')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') this.addBlock();
-    });
-
-    // Export data
-    document.getElementById('exportDataBtn')?.addEventListener('click', () => this.exportData());
-
-    // Collapsible sections
-    document.querySelectorAll('.section-header[data-target]').forEach(header => {
-      header.addEventListener('click', () => this.toggleCollapse(header));
-    });
-
-    // Modal backdrop clicks
-    document.querySelectorAll('.modal').forEach(modal => {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          this.closeModal(modal.id);
-        }
+      // Color palette
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => this.setAccentColor(btn.dataset.color));
       });
-    });
+
+      // Blocking functionality
+      const addBlockBtn = document.getElementById('addBlockBtn');
+      const siteToBlock = document.getElementById('siteToBlock');
+      
+      if (addBlockBtn) addBlockBtn.addEventListener('click', () => this.addBlock());
+      if (siteToBlock) {
+        siteToBlock.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.addBlock();
+        });
+      }
+
+      // Export data
+      const exportDataBtn = document.getElementById('exportDataBtn');
+      if (exportDataBtn) exportDataBtn.addEventListener('click', () => this.exportData());
+
+      // Collapsible sections
+      document.querySelectorAll('.section-header[data-target]').forEach(header => {
+        header.addEventListener('click', () => this.toggleCollapse(header));
+      });
+
+      // Modal backdrop clicks
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            this.closeModal(modal.id);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error setting up event listeners:', error);
+    }
   }
 
   async switchPeriod(period) {
-    this.currentPeriod = period;
-    
-    // Update button states
-    document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(period === 'today' ? 'todayBtn' : 'weekBtn')?.classList.add('active');
-    
-    await this.loadData();
-    this.updateCharts();
+    try {
+      this.currentPeriod = period;
+      
+      // Update button states
+      document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(period === 'today' ? 'todayBtn' : 'weekBtn');
+      if (activeBtn) activeBtn.classList.add('active');
+      
+      await this.loadData();
+      this.updateCharts();
+    } catch (error) {
+      console.error('Error switching period:', error);
+    }
   }
 
   async loadData() {
@@ -131,20 +166,28 @@ class WebTimeTracker {
   }
 
   updateUI() {
-    this.updateStats();
-    this.updateTopSites();
-    this.updateBlockedSites();
+    try {
+      this.updateStats();
+      this.updateTopSites();
+      this.updateBlockedSites();
+    } catch (error) {
+      console.error('Error updating UI:', error);
+    }
   }
 
   updateStats() {
-    const totalTime = Object.values(this.currentData.categories || {}).reduce((sum, time) => sum + time, 0);
-    const totalTimeElement = document.getElementById('totalTime');
-    if (totalTimeElement) {
-      totalTimeElement.textContent = this.formatTime(totalTime);
+    try {
+      const totalTime = Object.values(this.currentData.categories || {}).reduce((sum, time) => sum + time, 0);
+      const totalTimeElement = document.getElementById('totalTime');
+      if (totalTimeElement) {
+        totalTimeElement.textContent = this.formatTime(totalTime);
+      }
+      
+      // Update goal progress
+      this.updateGoalProgress();
+    } catch (error) {
+      console.error('Error updating stats:', error);
     }
-    
-    // Update goal progress
-    this.updateGoalProgress();
   }
 
   async updateGoalProgress() {
@@ -184,29 +227,33 @@ class WebTimeTracker {
   }
 
   updateTopSites() {
-    const topSitesList = document.getElementById('topSitesList');
-    if (!topSitesList) return;
-    
-    const sites = Object.entries(this.currentData.sites || {})
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
-    
-    if (sites.length === 0) {
-      topSitesList.innerHTML = '<div class="no-data">No browsing data available</div>';
-      return;
-    }
-    
-    topSitesList.innerHTML = sites.map(([site, time]) => `
-      <div class="site-item">
-        <div class="site-info">
-          <img src="https://www.google.com/s2/favicons?domain=${site}" 
-               alt="${site}" class="site-logo" 
-               onerror="this.style.display='none'">
-          <span class="site-name">${site}</span>
+    try {
+      const topSitesList = document.getElementById('topSitesList');
+      if (!topSitesList) return;
+      
+      const sites = Object.entries(this.currentData.sites || {})
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5);
+      
+      if (sites.length === 0) {
+        topSitesList.innerHTML = '<div class="no-data">No browsing data available</div>';
+        return;
+      }
+      
+      topSitesList.innerHTML = sites.map(([site, time]) => `
+        <div class="site-item">
+          <div class="site-info">
+            <img src="https://www.google.com/s2/favicons?domain=${site}" 
+                 alt="${site}" class="site-logo" 
+                 onerror="this.style.display='none'">
+            <span class="site-name">${site}</span>
+          </div>
+          <span class="site-time">${this.formatTime(time)}</span>
         </div>
-        <span class="site-time">${this.formatTime(time)}</span>
-      </div>
-    `).join('');
+      `).join('');
+    } catch (error) {
+      console.error('Error updating top sites:', error);
+    }
   }
 
   async updateBlockedSites() {
@@ -251,112 +298,132 @@ class WebTimeTracker {
   }
 
   setupCharts() {
-    this.setupCategoryChart();
-    this.setupWeeklyChart();
+    try {
+      this.setupCategoryChart();
+      this.setupWeeklyChart();
+    } catch (error) {
+      console.error('Error setting up charts:', error);
+    }
   }
 
   setupCategoryChart() {
-    const canvas = document.getElementById('categoryChart');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    
-    if (this.charts.category) {
-      this.charts.category.destroy();
-    }
-    
-    this.charts.category = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: [],
-        datasets: [{
-          data: [],
-          backgroundColor: [
-            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
-          ],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              padding: 20,
-              usePointStyle: true,
-              font: {
-                size: 12
+    try {
+      const canvas = document.getElementById('categoryChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      
+      const ctx = canvas.getContext('2d');
+      
+      if (this.charts.category) {
+        this.charts.category.destroy();
+      }
+      
+      this.charts.category = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: [
+              '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true,
+                font: {
+                  size: 12
+                }
               }
             }
           }
         }
-      }
-    });
-    
-    this.updateCharts();
+      });
+      
+      this.updateCharts();
+    } catch (error) {
+      console.error('Error setting up category chart:', error);
+    }
   }
 
   setupWeeklyChart() {
-    const canvas = document.getElementById('weeklyChart');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    
-    if (this.charts.weekly) {
-      this.charts.weekly.destroy();
-    }
-    
-    this.charts.weekly = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: []
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value) {
-                return Math.floor(value / 60) + 'h';
+    try {
+      const canvas = document.getElementById('weeklyChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      
+      const ctx = canvas.getContext('2d');
+      
+      if (this.charts.weekly) {
+        this.charts.weekly.destroy();
+      }
+      
+      this.charts.weekly = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: []
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return Math.floor(value / 60) + 'h';
+                }
               }
             }
-          }
-        },
-        plugins: {
-          legend: {
-            position: 'top'
+          },
+          plugins: {
+            legend: {
+              position: 'top'
+            }
           }
         }
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Error setting up weekly chart:', error);
+    }
   }
 
   updateCharts() {
-    this.updateCategoryChart();
-    this.updateWeeklyChart();
+    try {
+      this.updateCategoryChart();
+      this.updateWeeklyChart();
+    } catch (error) {
+      console.error('Error updating charts:', error);
+    }
   }
 
   updateCategoryChart() {
-    if (!this.charts.category) return;
-    
-    const categories = Object.entries(this.currentData.categories || {})
-      .filter(([,time]) => time > 0)
-      .sort(([,a], [,b]) => b - a);
-    
-    this.charts.category.data.labels = categories.map(([category]) => category);
-    this.charts.category.data.datasets[0].data = categories.map(([,time]) => Math.floor(time / 60000));
-    this.charts.category.update();
+    try {
+      if (!this.charts.category) return;
+      
+      const categories = Object.entries(this.currentData.categories || {})
+        .filter(([,time]) => time > 0)
+        .sort(([,a], [,b]) => b - a);
+      
+      this.charts.category.data.labels = categories.map(([category]) => category);
+      this.charts.category.data.datasets[0].data = categories.map(([,time]) => Math.floor(time / 60000));
+      this.charts.category.update();
+    } catch (error) {
+      console.error('Error updating category chart:', error);
+    }
   }
 
   async updateWeeklyChart() {
-    if (!this.charts.weekly) return;
-    
     try {
+      if (!this.charts.weekly) return;
+      
       const { timeData = {} } = await chrome.storage.local.get('timeData');
       const weekData = [];
       const labels = [];
@@ -391,20 +458,20 @@ class WebTimeTracker {
   }
 
   async addBlock() {
-    const siteInput = document.getElementById('siteToBlock');
-    const durationInput = document.getElementById('blockDuration');
-    
-    if (!siteInput || !durationInput) return;
-    
-    const site = siteInput.value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
-    const duration = parseInt(durationInput.value);
-    
-    if (!site || !duration || duration < 1) {
-      this.showError('Please enter a valid website and duration');
-      return;
-    }
-    
     try {
+      const siteInput = document.getElementById('siteToBlock');
+      const durationInput = document.getElementById('blockDuration');
+      
+      if (!siteInput || !durationInput) return;
+      
+      const site = siteInput.value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+      const duration = parseInt(durationInput.value);
+      
+      if (!site || !duration || duration < 1) {
+        this.showError('Please enter a valid website and duration');
+        return;
+      }
+      
       const response = await chrome.runtime.sendMessage({
         action: 'addBlock',
         url: site,
@@ -445,24 +512,32 @@ class WebTimeTracker {
   }
 
   openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.classList.add('show');
-      document.body.style.overflow = 'hidden';
-      
-      if (modalId === 'goalsModal') {
-        this.loadGoals();
-      } else if (modalId === 'moreModal') {
-        this.loadInsights();
+    try {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        
+        if (modalId === 'goalsModal') {
+          this.loadGoals();
+        } else if (modalId === 'moreModal') {
+          this.loadInsights();
+        }
       }
+    } catch (error) {
+      console.error('Error opening modal:', error);
     }
   }
 
   closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.classList.remove('show');
-      document.body.style.overflow = '';
+    try {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+    } catch (error) {
+      console.error('Error closing modal:', error);
     }
   }
 
@@ -511,9 +586,9 @@ class WebTimeTracker {
   }
 
   async openEditGoals() {
-    this.closeModal('goalsModal');
-    
     try {
+      this.closeModal('goalsModal');
+      
       const { goals = {} } = await chrome.storage.local.get('goals');
       const { categories = {} } = await chrome.storage.local.get('categories');
       
@@ -595,107 +670,123 @@ class WebTimeTracker {
   }
 
   loadWeeklyCategories(timeData) {
-    const weeklyCategories = document.getElementById('weeklyCategories');
-    if (!weeklyCategories) return;
-    
-    const weekData = this.calculateWeekData(timeData);
-    const totalTime = Object.values(weekData.categories).reduce((sum, time) => sum + time, 0);
-    
-    const categories = Object.entries(weekData.categories)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10);
-    
-    if (categories.length === 0) {
-      weeklyCategories.innerHTML = '<div class="no-data">No category data available</div>';
-      return;
+    try {
+      const weeklyCategories = document.getElementById('weeklyCategories');
+      if (!weeklyCategories) return;
+      
+      const weekData = this.calculateWeekData(timeData);
+      const totalTime = Object.values(weekData.categories).reduce((sum, time) => sum + time, 0);
+      
+      const categories = Object.entries(weekData.categories)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10);
+      
+      if (categories.length === 0) {
+        weeklyCategories.innerHTML = '<div class="no-data">No category data available</div>';
+        return;
+      }
+      
+      weeklyCategories.innerHTML = categories.map(([category, time]) => {
+        const percentage = totalTime > 0 ? Math.round((time / totalTime) * 100) : 0;
+        return `
+          <div class="weekly-item">
+            <div class="weekly-item-info">
+              <div class="weekly-item-icon">📁</div>
+              <span class="weekly-item-name">${category}</span>
+            </div>
+            <div>
+              <span class="weekly-item-time">${this.formatTime(time)}</span>
+              <span class="weekly-item-percentage">${percentage}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (error) {
+      console.error('Error loading weekly categories:', error);
     }
-    
-    weeklyCategories.innerHTML = categories.map(([category, time]) => {
-      const percentage = totalTime > 0 ? Math.round((time / totalTime) * 100) : 0;
-      return `
-        <div class="weekly-item">
-          <div class="weekly-item-info">
-            <div class="weekly-item-icon">📁</div>
-            <span class="weekly-item-name">${category}</span>
-          </div>
-          <div>
-            <span class="weekly-item-time">${this.formatTime(time)}</span>
-            <span class="weekly-item-percentage">${percentage}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
   }
 
   loadWeeklyWebsites(timeData) {
-    const weeklyWebsites = document.getElementById('weeklyWebsites');
-    if (!weeklyWebsites) return;
-    
-    const weekData = this.calculateWeekData(timeData);
-    const websites = Object.entries(weekData.sites)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10);
-    
-    if (websites.length === 0) {
-      weeklyWebsites.innerHTML = '<div class="no-data">No website data available</div>';
-      return;
-    }
-    
-    weeklyWebsites.innerHTML = websites.map(([site, time]) => `
-      <div class="weekly-item">
-        <div class="weekly-item-info">
-          <img src="https://www.google.com/s2/favicons?domain=${site}" 
-               alt="${site}" class="weekly-item-icon" 
-               onerror="this.style.display='none'">
-          <span class="weekly-item-name">${site}</span>
+    try {
+      const weeklyWebsites = document.getElementById('weeklyWebsites');
+      if (!weeklyWebsites) return;
+      
+      const weekData = this.calculateWeekData(timeData);
+      const websites = Object.entries(weekData.sites)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10);
+      
+      if (websites.length === 0) {
+        weeklyWebsites.innerHTML = '<div class="no-data">No website data available</div>';
+        return;
+      }
+      
+      weeklyWebsites.innerHTML = websites.map(([site, time]) => `
+        <div class="weekly-item">
+          <div class="weekly-item-info">
+            <img src="https://www.google.com/s2/favicons?domain=${site}" 
+                 alt="${site}" class="weekly-item-icon" 
+                 onerror="this.style.display='none'">
+            <span class="weekly-item-name">${site}</span>
+          </div>
+          <span class="weekly-item-time">${this.formatTime(time)}</span>
         </div>
-        <span class="weekly-item-time">${this.formatTime(time)}</span>
-      </div>
-    `).join('');
+      `).join('');
+    } catch (error) {
+      console.error('Error loading weekly websites:', error);
+    }
   }
 
   loadSessionInsights(timeData) {
-    const sessionInsights = document.getElementById('sessionInsights');
-    if (!sessionInsights) return;
-    
-    const today = new Date().toISOString().split('T')[0];
-    const todayData = timeData[today];
-    
-    if (!todayData || Object.keys(todayData.sites || {}).length === 0) {
-      sessionInsights.innerHTML = '<div class="no-sessions">No session data for today</div>';
-      return;
+    try {
+      const sessionInsights = document.getElementById('sessionInsights');
+      if (!sessionInsights) return;
+      
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = timeData[today];
+      
+      if (!todayData || Object.keys(todayData.sites || {}).length === 0) {
+        sessionInsights.innerHTML = '<div class="no-sessions">No session data for today</div>';
+        return;
+      }
+      
+      const sessions = Object.entries(todayData.sites)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5);
+      
+      sessionInsights.innerHTML = sessions.map(([site, time]) => `
+        <div class="session-card">
+          <div class="session-site">${site}</div>
+          <div class="session-stat">
+            <span>Time Spent:</span>
+            <span class="session-stat-value">${this.formatTime(time)}</span>
+          </div>
+          <div class="session-stat">
+            <span>Sessions:</span>
+            <span class="session-stat-value">1</span>
+          </div>
+        </div>
+      `).join('');
+    } catch (error) {
+      console.error('Error loading session insights:', error);
     }
-    
-    const sessions = Object.entries(todayData.sites)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
-    
-    sessionInsights.innerHTML = sessions.map(([site, time]) => `
-      <div class="session-card">
-        <div class="session-site">${site}</div>
-        <div class="session-stat">
-          <span>Time Spent:</span>
-          <span class="session-stat-value">${this.formatTime(time)}</span>
-        </div>
-        <div class="session-stat">
-          <span>Sessions:</span>
-          <span class="session-stat-value">1</span>
-        </div>
-      </div>
-    `).join('');
   }
 
   toggleCollapse(header) {
-    const target = header.dataset.target;
-    const collapse = document.getElementById(target);
-    const icon = header.querySelector('.toggle-icon');
-    
-    if (collapse && icon) {
-      const isExpanded = header.getAttribute('aria-expanded') === 'true';
+    try {
+      const target = header.dataset.target;
+      const collapse = document.getElementById(target);
+      const icon = header.querySelector('.toggle-icon');
       
-      header.setAttribute('aria-expanded', !isExpanded);
-      collapse.classList.toggle('show');
-      icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+      if (collapse && icon) {
+        const isExpanded = header.getAttribute('aria-expanded') === 'true';
+        
+        header.setAttribute('aria-expanded', !isExpanded);
+        collapse.classList.toggle('show');
+        icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+      }
+    } catch (error) {
+      console.error('Error toggling collapse:', error);
     }
   }
 
@@ -731,40 +822,55 @@ class WebTimeTracker {
   }
 
   setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    
-    // Update button states
-    document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`${theme}ModeBtn`)?.classList.add('active');
-    
-    // Save theme
-    chrome.storage.local.set({ theme });
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+      
+      // Update button states
+      document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+      const themeBtn = document.getElementById(`${theme}ModeBtn`);
+      if (themeBtn) themeBtn.classList.add('active');
+      
+      // Save theme
+      chrome.storage.local.set({ theme });
+    } catch (error) {
+      console.error('Error setting theme:', error);
+    }
   }
 
   setAccentColor(color) {
-    const colorMap = {
-      blue: '#3b82f6',
-      green: '#10b981',
-      purple: '#8b5cf6',
-      orange: '#f59e0b',
-      red: '#ef4444'
-    };
-    
-    if (colorMap[color]) {
-      document.documentElement.style.setProperty('--accent-color', colorMap[color]);
+    try {
+      const colorMap = {
+        blue: '#3b82f6',
+        green: '#10b981',
+        purple: '#8b5cf6',
+        orange: '#f59e0b',
+        red: '#ef4444'
+      };
       
-      // Update button states
-      document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelector(`[data-color="${color}"]`)?.classList.add('active');
-      
-      // Save color
-      chrome.storage.local.set({ accentColor: color });
+      if (colorMap[color]) {
+        document.documentElement.style.setProperty('--accent-color', colorMap[color]);
+        
+        // Update button states
+        document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+        const colorBtn = document.querySelector(`[data-color="${color}"]`);
+        if (colorBtn) colorBtn.classList.add('active');
+        
+        // Save color
+        chrome.storage.local.set({ accentColor: color });
+      }
+    } catch (error) {
+      console.error('Error setting accent color:', error);
     }
   }
 
   async saveSettings() {
-    this.closeModal('settingsModal');
-    this.showSuccess('Settings saved successfully');
+    try {
+      this.closeModal('settingsModal');
+      this.showSuccess('Settings saved successfully');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      this.showError('Failed to save settings');
+    }
   }
 
   formatTime(ms) {
@@ -788,34 +894,38 @@ class WebTimeTracker {
   }
 
   showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 500;
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-      background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
+    try {
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Remove after 3 seconds
       setTimeout(() => {
-        if (notification.parentNode) {
-          notification.parentNode.removeChild(notification);
-        }
-      }, 300);
-    }, 3000);
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    } catch (error) {
+      console.error('Error showing notification:', error);
+    }
   }
 }
 
@@ -823,7 +933,11 @@ class WebTimeTracker {
 let webTimeTracker;
 
 document.addEventListener('DOMContentLoaded', () => {
-  webTimeTracker = new WebTimeTracker();
+  try {
+    webTimeTracker = new WebTimeTracker();
+  } catch (error) {
+    console.error('Failed to initialize WebTimeTracker:', error);
+  }
 });
 
 // Add CSS animations

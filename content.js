@@ -27,10 +27,14 @@ class ContentAnalyzer {
   }
 
   init() {
-    if (document.readyState === 'complete') {
-      this.startAnalysis();
-    } else {
-      window.addEventListener('load', () => this.startAnalysis());
+    try {
+      if (document.readyState === 'complete') {
+        this.startAnalysis();
+      } else {
+        window.addEventListener('load', () => this.startAnalysis());
+      }
+    } catch (error) {
+      console.error('Error initializing content analyzer:', error);
     }
   }
 
@@ -315,6 +319,12 @@ class ContentAnalyzer {
 
   sendClassificationData(data) {
     try {
+      if (!chrome.runtime || !chrome.runtime.sendMessage) {
+        console.warn('Chrome runtime not available');
+        this.stopAnalysis();
+        return;
+      }
+
       chrome.runtime.sendMessage({
         type: 'contentClassification',
         data: data

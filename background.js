@@ -149,6 +149,16 @@ const CATEGORY_KEYWORDS = {
           } 
         });
       }
+
+      const { theme } = await chrome.storage.local.get('theme');
+      if (!theme) {
+        await chrome.storage.local.set({ theme: 'light' });
+      }
+
+      const { accentColor } = await chrome.storage.local.get('accentColor');
+      if (!accentColor) {
+        await chrome.storage.local.set({ accentColor: 'blue' });
+      }
   
       await setupBlockingRules();
       scheduleMidnightReset();
