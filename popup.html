@@ -8,114 +8,55 @@
 </head>
 <body>
   <div class="container">
-    <!-- Header with improved branding -->
-    <header class="header">
-      <div class="header-content">
-        <div class="brand">
-          <div class="brand-icon">⏱️</div>
-          <h1 class="brand-title">WebTimeTracker</h1>
-        </div>
-        <div class="time-period">
-          <button id="todayBtn" class="period-btn active">Today</button>
-          <button id="weekBtn" class="period-btn">Week</button>
-        </div>
+    <header>
+      <h1>WebTimeTracker</h1>
+      <div class="time-period">
+        <button id="todayBtn" class="active">Today</button>
+        <button id="weekBtn">This Week</button>
       </div>
     </header>
 
-    <!-- Enhanced stats section -->
-    <section class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card primary">
-          <div class="stat-icon">🕐</div>
-          <div class="stat-content">
-            <h3 class="stat-label">Total Time</h3>
-            <div id="totalTime" class="stat-value">0h 0m</div>
-          </div>
-        </div>
-        
-        <div class="stat-card secondary">
-          <div class="stat-icon">🎯</div>
-          <div class="stat-content">
-            <h3 class="stat-label">Goals</h3>
-            <div id="goalProgress" class="stat-value">0/3</div>
-          </div>
-        </div>
+    <section class="stats">
+      <div class="total-time">
+        <h2>Total Time</h2>
+        <div id="totalTime" class="time-value">0h 0m</div>
       </div>
     </section>
 
-    <!-- Quick actions with improved design -->
-    <section class="quick-actions">
-      <div class="actions-grid">
-        <button id="goalsBtn" class="action-card">
-          <div class="action-icon">🎯</div>
-          <div class="action-content">
-            <h3>Goals</h3>
-            <p>Track progress</p>
-          </div>
-        </button>
-        
-        <button id="settingsBtn" class="action-card">
-          <div class="action-icon">⚙️</div>
-          <div class="action-content">
-            <h3>Settings</h3>
-            <p>Customize app</p>
-          </div>
-        </button>
-        
-        <button id="moreBtn" class="action-card">
-          <div class="action-icon">📊</div>
-          <div class="action-content">
-            <h3>Analytics</h3>
-            <p>View insights</p>
-          </div>
-        </button>
-      </div>
+    <section class="actions">
+      <button id="goalsBtn" class="action-button">
+        <span class="button-icon">🎯</span>
+        Goals & Limits
+      </button>
+      <button id="settingsBtn" class="action-button">
+        <span class="button-icon">⚙️</span>
+        Settings
+      </button>
+      <button id="moreBtn" class="action-button">
+        <span class="button-icon">📊</span>
+        More
+      </button>
     </section>
 
-    <!-- Enhanced chart section -->
-    <section class="chart-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="section-icon">📊</span>
-          Activity Breakdown
-        </h2>
-      </div>
+    <section class="charts">
       <div class="chart-container">
         <canvas id="categoryChart"></canvas>
       </div>
     </section>
 
-    <!-- Improved top sites section -->
-    <section class="sites-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="section-icon">🌐</span>
-          Top Websites
-        </h2>
-      </div>
+    <section class="top-sites">
+      <h2>Top Sites</h2>
       <div id="topSitesList" class="sites-list"></div>
     </section>
 
-    <!-- Enhanced blocking section -->
-    <section class="blocking-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="section-icon">🚫</span>
-          Website Blocking
-        </h2>
+    <section class="block-site">
+      <h2>Block Website</h2>
+      <div class="block-input">
+        <input type="text" id="siteToBlock" placeholder="e.g., facebook.com">
+        <input type="number" id="blockDuration" placeholder="Minutes">
+        <button id="addBlockBtn">Block Site</button>
       </div>
-      
-      <div class="block-form">
-        <div class="input-group">
-          <input type="text" id="siteToBlock" class="form-input" placeholder="Enter website (e.g., facebook.com)">
-          <input type="number" id="blockDuration" class="form-input duration-input" placeholder="Minutes" min="1" max="1440">
-          <button id="addBlockBtn" class="block-btn">
-            <span class="btn-icon">🚫</span>
-            Block
-          </button>
-        </div>
-      </div>
-      
+      <h3>Currently Blocked Sites</h3>
       <div id="blockedSitesList" class="blocked-sites-list"></div>
     </section>
 
@@ -130,27 +71,17 @@
     </section>
   </div>
 
-  <!-- Enhanced More Options Modal -->
+  <!-- More Options Modal -->
   <div id="moreModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">
-          <span class="modal-icon">📊</span>
-          <h2>Analytics & Insights</h2>
-        </div>
-        <button class="close-btn" id="closeMoreBtn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <h2>More Insights</h2>
+        <button class="close-btn" id="closeMoreBtn">&times;</button>
       </div>
       <div class="modal-body">
         <div class="insights-container">
           <div class="insights-section">
-            <div class="insights-header">
-              <h3>📈 Weekly Trends</h3>
-            </div>
+            <h3>📊 Weekly Usage</h3>
             <div class="weekly-chart-container">
               <canvas id="weeklyChart"></canvas>
             </div>
@@ -179,18 +110,14 @@
           </div>
 
           <div class="insights-section">
-            <div class="insights-header">
-              <h3>🎮 Session Insights</h3>
-            </div>
+            <h3>🕹️ Session Insights</h3>
             <div id="sessionInsights" class="session-insights">
               <!-- Session insights will be added here -->
             </div>
           </div>
 
           <div class="insights-section">
-            <div class="insights-header">
-              <h3>💾 Data Management</h3>
-            </div>
+            <h3>📊 Data Management</h3>
             <button id="exportDataBtn" class="secondary-button">
               <span class="button-icon">📥</span>
               Export Data
@@ -201,25 +128,17 @@
     </div>
   </div>
 
-  <!-- Enhanced Goals Modal -->
+  <!-- Goals Modal -->
   <div id="goalsModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">
-          <span class="modal-icon">🎯</span>
-          <h2>Goals & Progress</h2>
-        </div>
-        <button id="closeGoalsBtn" class="close-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <h2>Goals & Time Limits</h2>
+        <button id="closeGoalsBtn" class="close-btn">&times;</button>
       </div>
       <div class="modal-body">
         <div class="streak-info"></div>
         <div class="goals-container"></div>
-        <button id="editGoalsBtn" class="primary-button">
+        <button id="editGoalsBtn" class="action-button">
           <span class="button-icon">⚙️</span>
           Edit Goals
         </button>
@@ -227,79 +146,63 @@
     </div>
   </div>
 
-  <!-- Enhanced Settings Modal -->
+  <!-- Settings Modal -->
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">
-          <span class="modal-icon">⚙️</span>
-          <h2>Settings</h2>
-        </div>
-        <button class="close-btn" id="closeSettingsBtn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <h2>Settings</h2>
+        <button class="close-btn" id="closeSettingsBtn">&times;</button>
       </div>
-      <div class="modal-body">
-        <div class="settings-section">
-          <div class="settings-header">
-            <h3>🎨 Appearance</h3>
-          </div>
-          <div class="theme-settings">
-            <div class="theme-option">
-              <label>Color Mode</label>
-              <div class="theme-toggle">
-                <button id="lightModeBtn" class="theme-btn">
-                  <span class="button-icon">☀️</span>
-                  Light
-                </button>
-                <button id="darkModeBtn" class="theme-btn">
-                  <span class="button-icon">🌙</span>
-                  Dark
-                </button>
-                <button id="systemModeBtn" class="theme-btn">
-                  <span class="button-icon">💻</span>
-                  System
-                </button>
-              </div>
-            </div>
-            
-            <div class="theme-option">
-              <label>Accent Color</label>
-              <div class="color-palette">
-                <button class="color-btn" data-color="blue" style="--accent-color: #4a90e2;">
-                  <span class="color-circle"></span>
-                </button>
-                <button class="color-btn" data-color="green" style="--accent-color: #27ae60;">
-                  <span class="color-circle"></span>
-                </button>
-                <button class="color-btn" data-color="purple" style="--accent-color: #9b59b6;">
-                  <span class="color-circle"></span>
-                </button>
-                <button class="color-btn" data-color="orange" style="--accent-color: #e67e22;">
-                  <span class="color-circle"></span>
-                </button>
-                <button class="color-btn" data-color="red" style="--accent-color: #e74c3c;">
-                  <span class="color-circle"></span>
-                </button>
-              </div>
-            </div>
+      
+      <div class="theme-settings">
+        <h3>Theme Settings</h3>
+        <div class="theme-option">
+          <label>Color Mode</label>
+          <div class="theme-toggle">
+            <button id="lightModeBtn" class="theme-btn">
+              <span class="button-icon">☀️</span>
+              Light
+            </button>
+            <button id="darkModeBtn" class="theme-btn">
+              <span class="button-icon">🌙</span>
+              Dark
+            </button>
+            <button id="systemModeBtn" class="theme-btn">
+              <span class="button-icon">💻</span>
+              System
+            </button>
           </div>
         </div>
+        
+        <div class="theme-option">
+          <label>Color Accent</label>
+          <div class="color-palette">
+            <button class="color-btn" data-color="blue" style="--accent-color: #4a90e2;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="green" style="--accent-color: #27ae60;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="purple" style="--accent-color: #9b59b6;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="orange" style="--accent-color: #e67e22;">
+              <span class="color-circle"></span>
+            </button>
+            <button class="color-btn" data-color="red" style="--accent-color: #e74c3c;">
+              <span class="color-circle"></span>
+            </button>
+          </div>
+        </div>
+      </div>
 
-        <div class="settings-section">
-          <div class="settings-header">
-            <h3>📂 Categories</h3>
-          </div>
-          <div class="categories-editor">
-            <div id="categoriesList"></div>
-          </div>
-        </div>
+      <div class="categories-editor">
+        <h3>Website Categories</h3>
+        <div id="categoriesList"></div>
       </div>
-      <div class="modal-footer">
-        <button id="saveSettingsBtn" class="primary-button">Save Settings</button>
+
+      <div class="modal-actions">
+        <button id="saveSettingsBtn">Save Settings</button>
       </div>
     </div>
   </div>
@@ -308,22 +211,14 @@
   <div id="editGoalsModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">
-          <span class="modal-icon">🎯</span>
-          <h2>Edit Goals</h2>
-        </div>
-        <button id="closeEditGoalsBtn" class="close-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <h2>Edit Goals</h2>
+        <button id="closeEditGoalsBtn" class="close-btn">&times;</button>
       </div>
       <div class="modal-body">
         <div id="categoryGoals"></div>
       </div>
-      <div class="modal-footer">
-        <button id="saveGoalsBtn" class="primary-button">Save Goals</button>
+      <div class="modal-actions">
+        <button id="saveGoalsBtn" class="action-button">Save Goals</button>
       </div>
     </div>
   </div>
