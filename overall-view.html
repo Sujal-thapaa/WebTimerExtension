@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WebTimeWise - Overall View</title>
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+  <script src="lib/chart.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --card-bg: #2d2d2d;
+      --text-color: #ffffff;
+      --text-secondary: #a0a0a0;
+      --accent-color: #4a90e2;
+      --border-color: #404040;
+    }
+    body, html {
+      height: 100%;
+      margin: 0;
+      background: var(--bg-primary);
+      color: var(--text-color);
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .overall-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .overall-header h1 {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+    .overall-header p {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .total-time {
+      background: var(--card-bg);
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .total-time h2 {
+      font-size: 1.1rem;
+      margin: 0 0 4px 0;
+    }
+    .time-value {
+      font-size: 1.4rem;
+    }
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .chart-container {
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Each container has the same background */
+    }
+    /* Add a background to both canvases, so even if the first has two, the second matches visually */
+    .chart-container canvas {
+      background: #222 !important; /* Add a matching background for both charts */
+      border-radius: 10px;
+      display: block;
+      box-shadow: none !important;
+    }
+    .sites-section {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 12px;
+      margin-bottom: 18px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .top-sites {
+      flex: 1 1 0;
+      min-width: 0;
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: 100%;
+    }
+    .top-sites h2 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+    .device-time {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-left: 6px;
+    }
+    .sites-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .site-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 9px;
+      background: #1e1e1e;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+    }
+    .site-info {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+    .site-logo {
+      width: 19px;
+      height: 19px;
+      flex-shrink: 0;
+    }
+    .site-name {
+      color: var(--text-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.98rem;
+    }
+    .goals-container {
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .goals-container h2 {
+      font-size: 1.1rem;
+    }
+    .goals-list {
+      font-size: 0.98rem;
+    }
+    .goal-item {
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 0;
+    }
+    .goal-item:last-child {
+      border-bottom: none;
+    }
+    .progress-bar {
+      background: var(--accent-color);
+      height: 5px;
+      border-radius: 3px;
+      margin-top: 2px;
+    }
+    @media (max-width: 1024px) {
+      .sites-section {
+        flex-direction: column;
+        align-items: center;
+        max-width: 98%;
+      }
+      .top-sites {
+        max-width: 98%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="overall-header">
+      <h1>Overall Screen Time</h1>
+      
+    </div>
+    <div class="total-time">
+      <h2>Total Time</h2>
+      <div class="time-value" id="totalTime">4h 59m</div>
+    </div>
+    <div class="charts">
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="deviceChart"></canvas>
+      </div>
+    </div>
+    <div class="sites-section">
+      <div class="top-sites">
+        <h2>Browser Sites <span id="browserTime" class="device-time"></span></h2>
+        <div class="sites-list" id="browserSitesList"></div>
+      </div>
+      <div class="top-sites">
+        <h2>Mobile Apps <span id="mobileTime" class="device-time"></span></h2>
+        <div class="sites-list" id="mobileSitesList"></div>
+      </div>
+      <div class="top-sites">
+        <h2>Laptop Apps <span id="laptopTime" class="device-time"></span></h2>
+        <div class="sites-list" id="laptopSitesList"></div>
+      </div>
+    </div>
+    <div class="goals-container">
+      <h2>Daily Goals</h2>
+      <div class="goals-list">
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Social Media</span>
+            <span class="goal-limit">2h / 1h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 200%"></div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Entertainment</span>
+            <span class="goal-limit">45m / 1h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 75%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="overall-view.js"></script>
+</body>
+</html>

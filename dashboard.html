@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebTimeTracker – Dashboard</title>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="lib/chart.min.js"></script>
+  <style>
+    /* Override container width for full page */
+    body, html {
+      height: 100%;
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-left">
+      <img src="icons/icon128.png" class="logo" alt="Logo" />
+      <span class="title">WebTimeTracker</span>
+    </div>
+    <div class="nav-right">
+      <button class="nav-btn active" id="navDashboard">Dashboard</button>
+      <button class="nav-btn" id="navSettings">Settings ⚙️</button>
+      <button class="nav-btn" id="navMore">More ��</button>
+    </div>
+  </nav>
+  <div class="container">
+    <!-- Include the full popup markup by embedding -->
+    <!-- We'll fetch popup.html content via JS to avoid duplication -->
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html> 

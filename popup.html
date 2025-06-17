@@ -13,12 +13,50 @@
       <div class="time-period">
         <button id="todayBtn" class="active">Today</button>
         <button id="weekBtn">This Week</button>
+        <button id="dashboardBtn" class="secondary-button">Dashboard</button>
       </div>
     </header>
 
     <section class="stats">
       <div class="total-time">
-        <h2>Total Time</h2>
+        <div class="total-time-header">
+          <h2>Total Time</h2>
+          <div class="flag-container">
+            <div class="selected-flag" id="selectedFlag">
+              <img src="flags/us.png" alt="USA" id="currentFlag">
+            </div>
+            <div class="flag-dropdown" id="flagDropdown">
+              <div class="flag-option" data-flag="us">
+                <img src="flags/us.png" alt="USA">
+                <span>English</span>
+              </div>
+              <div class="flag-option" data-flag="in">
+                <img src="flags/in.png" alt="India">
+                <span>हिंदी</span>
+              </div>
+              <div class="flag-option" data-flag="cn">
+                <img src="flags/cn.png" alt="China">
+                <span>中文</span>
+              </div>
+              <div class="flag-option" data-flag="jp">
+                <img src="flags/jp.png" alt="Japan">
+                <span>日本語</span>
+              </div>
+              <div class="flag-option" data-flag="de">
+                <img src="flags/de.png" alt="Germany">
+                <span>Deutsch</span>
+              </div>
+              <div class="flag-option" data-flag="fr">
+                <img src="flags/fr.png" alt="France">
+                <span>Français</span>
+              </div>
+              <div class="flag-option" data-flag="es">
+                <img src="flags/es.png" alt="Spain">
+                <span>Español</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div id="totalTime" class="time-value">0h 0m</div>
       </div>
     </section>
@@ -47,6 +85,27 @@
     <section class="top-sites">
       <h2>Top Sites</h2>
       <div id="topSitesList" class="sites-list"></div>
+    </section>
+
+    <section class="block-site">
+      <h2>Block Website</h2>
+      <div class="block-input">
+        <input type="text" id="siteToBlock" placeholder="e.g., facebook.com">
+        <input type="number" id="blockDuration" placeholder="Minutes">
+        <button id="addBlockBtn">Block Site</button>
+      </div>
+      <h3>Currently Blocked Sites</h3>
+      <div id="blockedSitesList" class="blocked-sites-list"></div>
+    </section>
+
+    <!-- Built with Bolt.new Badge -->
+    <section class="bolt-badge">
+      <a href="https://bolt.new" target="_blank" rel="noopener noreferrer" class="bolt-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="bolt-icon">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>
+        </svg>
+        <span class="bolt-text">Built with Bolt.new</span>
+      </a>
     </section>
   </div>
 

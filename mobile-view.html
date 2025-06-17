@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebTimeTracker – Mobile View</title>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="lib/chart.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --card-bg: #2d2d2d;
+      --text-color: #ffffff;
+      --text-secondary: #a0a0a0;
+      --accent-color: #4a90e2;
+      --border-color: #404040;
+    }
+
+    body, html {
+      height: 100%;
+      margin: 0;
+      background: var(--bg-primary);
+      color: var(--text-color);
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .mobile-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .mobile-header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    .mobile-header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .total-time {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .charts {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .chart-container {
+      height: 300px;
+      width: 100%;
+    }
+    .top-sites {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .site-item {
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 0;
+    }
+    .site-item:last-child {
+      border-bottom: none;
+    }
+    .goals-container {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .goal-item {
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 0;
+    }
+    .goal-item:last-child {
+      border-bottom: none;
+    }
+    .progress-bar {
+      background: var(--accent-color);
+    }
+    .sites-list {
+      width: 100%;
+    }
+    .site-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .actions {
+      display: flex;
+      justify-content: space-around;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .action-button {
+      background: var(--card-bg);
+      color: var(--text-color);
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .button-icon { font-size: 1.2rem; }
+
+    /* Modal styles */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 380px;
+      width: 90%;
+      color: var(--text-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      font-size: 1.2rem;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="mobile-header">
+      <h1>Mobile Screen Time</h1>
+      <p>Preview Mode - Dummy Data</p>
+    </div>
+
+    <div class="total-time">
+      <h2>Total Time</h2>
+      <div class="time-value" id="totalTime">4h 59m</div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+
+    <div class="top-sites">
+      <h2>Top Apps</h2>
+      <div class="sites-list" id="mobileSitesList">
+        <!-- Sites will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <div class="goals-container">
+      <h2>Daily Goals</h2>
+      <div class="goals-list">
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Social Media</span>
+            <span class="goal-limit">2h / 1h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 200%"></div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Entertainment</span>
+            <span class="goal-limit">45m / 1h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 75%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions section -->
+    <div class="actions">
+      <button id="goalsBtn" class="action-button">
+        <span class="button-icon">🎯</span>
+        Goals & Limits
+      </button>
+      <button id="settingsBtn" class="action-button">
+        <span class="button-icon">⚙️</span>
+        Settings
+      </button>
+      <button id="moreBtn" class="action-button">
+        <span class="button-icon">📊</span>
+        More
+      </button>
+    </div>
+  </div>
+
+  <!-- Dummy Modals -->
+  <div id="goalsModal" class="modal">
+    <div class="modal-content" style="position:relative;">
+      <button id="closeGoalsBtn" class="close-btn">&times;</button>
+      <h2>Goals & Limits</h2>
+      <p>Daily Social Media Limit: <strong>1h</strong></p>
+      <p>Daily Entertainment Limit: <strong>1h 30m</strong></p>
+    </div>
+  </div>
+  <div id="settingsModal" class="modal">
+    <div class="modal-content" style="position:relative;">
+      <button id="closeSettingsBtn" class="close-btn">&times;</button>
+      <h2>Settings (Preview)</h2>
+      <p>Theme: Dark</p>
+      <p>Notifications: Enabled</p>
+    </div>
+  </div>
+  <div id="moreModal" class="modal">
+    <div class="modal-content" style="position:relative;">
+      <button id="closeMoreBtn" class="close-btn">&times;</button>
+      <h2>More Insights</h2>
+      <p>Weekly Screen Time: <strong>34h 20m</strong></p>
+      <p>Most Used App: <strong>Instagram</strong></p>
+    </div>
+  </div>
+
+  <script type="module" src="mobile-view.js"></script>
+</body>
+</html> 

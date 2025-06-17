@@ -139,64 +139,150 @@ function classifyContent(text) {
     };
 }
 
-// Function to analyze page content
-function analyzePage() {
-    let content = '';
-    const domain = window.location.hostname;
+// Content script for WebTimeTracker
+let isAnalyzing = false;
+let isConnected = false;
+let retryCount = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
-    // Extract content based on domain
-    if (domain.includes('youtube.com')) {
-        const youtubeContent = extractYouTubeContent();
-        content = Object.values(youtubeContent).join(' ');
-    } else {
-        const pageContent = extractPageContent();
-        content = Object.values(pageContent).join(' ');
+// Function to check connection to background script
+async function checkConnection() {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'PING' }, response => {
+      if (chrome.runtime.lastError) {
+        console.log('Connection check failed:', chrome.runtime.lastError);
+        isConnected = false;
+        resolve(false);
+      } else {
+        console.log('Connection check successful');
+        isConnected = true;
+        resolve(true);
+      }
+    });
+  });
+}
+
+// Function to send message with retry
+async function sendMessageWithRetry(message) {
+  if (!isConnected) {
+    const connected = await checkConnection();
+    if (!connected) {
+      console.log('Not connected to background script, skipping message');
+      return;
     }
+  }
 
-    // Classify the content
-    const classification = classifyContent(content);
-
-    // Send results to background script
-    chrome.runtime.sendMessage({
-        type: 'contentClassification',
-        data: {
-            url: window.location.href,
-            domain: domain,
-            timestamp: new Date().toISOString(),
-            classification: classification.type,
-            stats: {
-                productiveCount: classification.productiveCount,
-                entertainmentCount: classification.entertainmentCount
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    
+    function trySend() {
+      attempts++;
+      console.log(`Attempt ${attempts} to send message:`, message);
+      
+      try {
+        chrome.runtime.sendMessage(message, response => {
+          if (chrome.runtime.lastError) {
+            console.log('Error sending message:', chrome.runtime.lastError);
+            isConnected = false;
+            if (attempts < MAX_RETRIES) {
+              console.log(`Retrying in ${RETRY_DELAY}ms...`);
+              setTimeout(trySend, RETRY_DELAY);
+            } else {
+              reject(new Error(`Failed to send message after ${MAX_RETRIES} attempts`));
             }
+          } else {
+            console.log('Message sent successfully:', response);
+            isConnected = true;
+            resolve(response);
+          }
+        });
+      } catch (error) {
+        console.error('Error in sendMessage:', error);
+        isConnected = false;
+        if (attempts < MAX_RETRIES) {
+          console.log(`Retrying in ${RETRY_DELAY}ms...`);
+          setTimeout(trySend, RETRY_DELAY);
+        } else {
+          reject(error);
         }
-    });
+      }
+    }
+    
+    trySend();
+  });
 }
 
-// Initialize when the page is ready
-function initialize() {
-    console.log('Initializing content script');
-    // Run initial analysis
+// Function to analyze page
+async function analyzePage() {
+  if (isAnalyzing) {
+    console.log('Already analyzing page, skipping...');
+    return;
+  }
+
+  isAnalyzing = true;
+  console.log('Starting page analysis...');
+
+  try {
+    const pageData = {
+      url: window.location.href,
+      title: document.title,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Sending page data:', pageData);
+    await sendMessageWithRetry({
+      type: 'PAGE_VISIT',
+      data: pageData
+    });
+
+    console.log('Page analysis completed successfully');
+  } catch (error) {
+    console.error('Error analyzing page:', error);
+  } finally {
+    isAnalyzing = false;
+  }
+}
+
+// Initialize content script
+console.log('Initializing content script');
+
+// Check connection on startup
+checkConnection().then(connected => {
+  if (connected) {
+    console.log('Successfully connected to background script');
+  } else {
+    console.log('Failed to connect to background script');
+  }
+});
+
+// Listen for page load
+window.addEventListener('load', () => {
+  console.log('Page loaded, starting analysis');
+  analyzePage();
+});
+
+// Listen for visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    console.log('Page became visible, starting analysis');
     analyzePage();
-    
-    // Set up interval for periodic analysis
-    setInterval(analyzePage, 15000);
-    
-    // Also analyze when the page content changes
-    const observer = new MutationObserver(() => {
-        analyzePage();
-    });
-    
-    // Observe changes to the body and its descendants
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
-    });
-}
+  }
+});
 
-// Run initialization when the page is ready
-if (document.readyState === 'complete') {
-    initialize();
-} else {
-    window.addEventListener('load', initialize); 
-} 
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('Received message:', message);
+  
+  if (message.type === 'PONG') {
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  if (message.type === 'ANALYZE_PAGE') {
+    analyzePage()
+      .then(() => sendResponse({ success: true }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true; // Keep the message channel open for async response
+  }
+});

@@ -1340,4 +1340,190 @@ h1, h2, h3, h4, h5, h6 {
 #contentType.entertainment {
     background-color: var(--warning-bg);
     color: var(--warning-color);
-} 
+}
+
+/* Built with Bolt.new Badge Styles */
+.bolt-badge {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.bolt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--accent-color), #667eea);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: white;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bolt-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #357abd, #5a67d8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.bolt-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.bolt-text {
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme adjustments for badge */
+[data-theme="dark"] .bolt-badge {
+  border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .bolt-link {
+  background: linear-gradient(135deg, var(--accent-color), #667eea);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .bolt-link:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 420px) {
+  .bolt-link {
+    font-size: 11px;
+    padding: 6px 10px;
+    gap: 5px;
+  }
+  
+  .bolt-icon {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Flag Selector Styles */
+.flag-selector {
+    margin-top: 20px;
+}
+
+.flag-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Compact flag button (no white background) */
+.selected-flag {
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    background: transparent;
+    transition: transform 0.2s ease;
+}
+
+.selected-flag:hover {
+    transform: scale(1.05);
+}
+
+.selected-flag img {
+    width: 30px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+.flag-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-top: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.flag-dropdown.show {
+    display: block;
+}
+
+.flag-option {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.flag-option:hover {
+    background-color: #f5f5f5;
+}
+
+.flag-option img {
+    width: 30px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 2px;
+    margin-right: 10px;
+}
+
+.flag-option span {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Total Time header with flag */
+.total-time-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.total-time-header h2 {
+    margin: 0;
+}
+
+.total-time-header .flag-container {
+    width: auto;
+    margin-left: auto;
+}
+
+.total-time-header .flag-dropdown {
+    right: 0;
+    left: auto;
+}
+
+#dashboardBtn {
+    margin-top: 8px;
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+#dashboardBtn:hover {
+    filter: brightness(1.05);
+}
