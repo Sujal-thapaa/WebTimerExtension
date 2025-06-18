@@ -1,376 +1,200 @@
+// popup.js - Main popup functionality
+
+// Global variables
+let currentPeriod = 'today';
 let categoryChart = null;
-let currentTimeframe = 'today';
-let refreshInterval;
-let elements = {};
 let weeklyChart = null;
 
-// Define fixed colors for categories
-const CATEGORY_COLORS = {
-  'Productive / Educational': '#9C27B0', // Purple
-  'Entertainment': '#FFD700',            // Yellow
-  'News': '#4CAF50',                     // Green
-  'Social Media': '#FF5722',             // Deep Orange
-  'Games': '#2196F3',                    // Blue
-  'Shopping': '#FF9800',                 // Orange
-  'Other / Uncategorized': '#8E44AD',    // Violet
-  'Other': '#FF69B4'                     // Pink (fallback)
+// Theme management
+const THEMES = {
+  light: {
+    '--bg-primary': '#ffffff',
+    '--bg-secondary': '#f8f9fa',
+    '--text-color': '#2c3e50',
+    '--text-secondary': '#6c757d',
+    '--border-color': '#dee2e6',
+    '--shadow-color': 'rgba(0, 0, 0, 0.1)',
+    '--modal-bg': '#ffffff',
+    '--input-bg': '#ffffff',
+    '--input-text': '#2c3e50',
+    '--card-bg': '#ffffff'
+  },
+  dark: {
+    '--bg-primary': '#1a1a1a',
+    '--bg-secondary': '#2d2d2d',
+    '--text-color': '#ffffff',
+    '--text-secondary': '#b3b3b3',
+    '--border-color': '#404040',
+    '--shadow-color': 'rgba(0, 0, 0, 0.3)',
+    '--modal-bg': '#2d2d2d',
+    '--input-bg': '#3d3d3d',
+    '--input-text': '#ffffff',
+    '--card-bg': '#2d2d2d'
+  }
 };
 
-// --- ADD THIS HELPER FUNCTION NEAR THE TOP ---
-function getGoalKey(category) {
-  return category.toLowerCase().replace(/[^a-z0-9]/gi, '') + 'Hours';
-}
-// ---
+const ACCENT_COLORS = {
+  blue: '#4a90e2',
+  green: '#27ae60',
+  purple: '#9b59b6',
+  orange: '#e67e22',
+  red: '#e74c3c'
+};
 
-// Helper function to get clean domain name without subdomain and TLD
-function getCleanDomain(url) {
-  return url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0].split('.')[0];
-}
+// Category colors for charts
+const CATEGORY_COLORS = {
+  'Productive / Educational': '#96CEB4',
+  'Entertainment': '#4ECDC4',
+  'Social Media': '#FF6B6B',
+  'News': '#45B7D1',
+  'Games': '#FFD93D',
+  'Shopping': '#DDA0DD',
+  'Other': '#FFEEAD'
+};
 
-// Update every instance like:
-//   const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
-// To:
-//   const goalKey = getGoalKey(category);
-
-// For example, in updateAllGoals, updateGoalsDisplay, loadGoalsEditor, saveGoals, saveSettings, etc.
-
-// Example: In updateAllGoals
-async function updateAllGoals(data, goals) {
-  try {
-    console.log('Updating goals display with data:', data);
-    console.log('Current goals state from storage:', goals);
-
-    const goalsContainer = document.querySelector('.goals-container');
-    if (!goalsContainer) {
-      console.error('Goals container not found in popup DOM');
-      return;
-    }
-    goalsContainer.innerHTML = '';
-
-    // Get all categories from the storage
-    const { categories = {} } = await chrome.storage.local.get('categories');
-    
-    // Process each category that has a goal set
-    Object.keys(categories).forEach(category => {
-      const goalKey = getGoalKey(category);
-      const goalHours = goals[goalKey];
-      
-      if (typeof goalHours === 'number' && goalHours > 0) {
-        const timeSpent = data.categories[category] || 0;
-        const goalMilliseconds = goalHours * 3600000;
-        const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
-        
-        console.log(`Displaying progress for ${category}:`, {
-          timeSpent: timeSpent / 3600000, // hours
-          goalHours,
-          progress
-        });
-
-        const goalDiv = document.createElement('div');
-        goalDiv.className = 'goal-item';
-        goalDiv.innerHTML = `
-          <div class="goal-header">
-            <span class="goal-name">${category} ${progress >= 100 ? '🎉' : ''}</span>
-            <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
-          </div>
-          <div class="goal-progress">
-            <div class="progress-bar ${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}">
-              <div style="width: ${progress}%"></div>
-            </div>
-            <span class="goal-percentage">${Math.round(progress)}%</span>
-          </div>`;
-        goalsContainer.appendChild(goalDiv);
-      }
-    });
-
-    // Add streak if any goals are met
-    if (goals?.streak > 0) {
-      const streakDiv = document.createElement('div');
-      streakDiv.className = 'streak';
-      streakDiv.innerHTML = `
-        <span>🔥 Current Streak: ${goals.streak} day${goals.streak !== 1 ? 's' : ''}</span>
-      `;
-      streakDiv.style.color = 'var(--success-color)';
-      goalsContainer.appendChild(streakDiv);
-    }
-
-  } catch (error) {
-    console.error('Error updating goals display in popup:', error);
-  }
+// Utility functions
+function formatTime(ms) {
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-// ...rest of popup.js remains unchanged...
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await initializeElements();
-    await setupEventListeners();
-    await loadData('today');
-    await initializeTheme();
-    await initializeCategories();
-    
-    // Initialize chart if More modal is open
-    const moreModal = document.getElementById('moreModal');
-    if (moreModal && moreModal.style.display === 'block') {
-      await updateWeeklyChart();
-    }
-
-    // notify full-page dashboard that popup DOM is ready
-    document.dispatchEvent(new CustomEvent('popupReady'));
-  } catch (error) {
-    console.error('Error initializing popup:', error);
-  }
-});
-
-function initializeElements() {
-  elements = {
-    // Time period
-    todayBtn: document.getElementById('todayBtn'),
-    weekBtn: document.getElementById('weekBtn'),
-    
-    // Main buttons
-    goalsBtn: document.getElementById('goalsBtn'),
-    settingsBtn: document.getElementById('settingsBtn'),
-    moreBtn: document.getElementById('moreBtn'),
-    dashboardBtn: document.getElementById('dashboardBtn'),
-    
-    // Modals
-    moreModal: document.getElementById('moreModal'),
-    goalsModal: document.getElementById('goalsModal'),
-    settingsModal: document.getElementById('settingsModal'),
-    editGoalsModal: document.getElementById('editGoalsModal'),
-    
-    // Close buttons
-    closeMoreBtn: document.getElementById('closeMoreBtn'),
-    closeGoalsBtn: document.getElementById('closeGoalsBtn'),
-    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-    closeEditGoalsBtn: document.getElementById('closeEditGoalsBtn'),
-    
-    // Action buttons
-    exportDataBtn: document.getElementById('exportDataBtn'),
-    editGoalsBtn: document.getElementById('editGoalsBtn'),
-    saveGoalsBtn: document.getElementById('saveGoalsBtn'),
-    saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-    
-    // Blocking elements
-    siteToBlock: document.getElementById('siteToBlock'),
-    blockDuration: document.getElementById('blockDuration'),
-    addBlockBtn: document.getElementById('addBlockBtn'),
-    blockedSitesList: document.getElementById('blockedSitesList'),
-    
-    // Containers
-    goalsContainer: document.querySelector('.goals-container'),
-    sessionInsights: document.getElementById('sessionInsights'),
-    streakInfo: document.querySelector('.streak-info'),
-    categoryGoals: document.getElementById('categoryGoals'),
-    categoriesList: document.getElementById('categoriesList')
-  };
-
-  // Log any missing elements
-  Object.entries(elements).forEach(([name, element]) => {
-    if (!element) {
-      console.error(`Missing element: ${name}`);
-    }
-  });
-}
-
-function setupAutoRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
-  refreshInterval = setInterval(async () => {
-    await loadData(currentTimeframe);
-    await updateBlockedSitesList(); // Refresh blocked sites list
-  }, 1000);
-}
-
-// Cleanup when popup closes
-window.addEventListener('unload', () => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
-});
-
-// Function to get date in YYYY-MM-DD format
-function getDateString(date) {
-  return date.toISOString().split('T')[0];
-}
-
-// Function to get today's date string
 function getTodayString() {
-  return getDateString(new Date());
+  return new Date().toISOString().split('T')[0];
 }
 
-async function loadData(timeframe) {
-  console.log('Loading data for timeframe:', timeframe);
-  currentTimeframe = timeframe;
-  try {
-    const { timeData = {}, goals = {} } = await chrome.storage.local.get(['timeData', 'goals']);
-    console.log('Retrieved data:', { timeData, goals });
-    
-    if (timeframe === 'today') {
-      const today = getTodayString();
-      console.log('Loading data for date:', today);
-      const todayData = timeData[today] || { sites: {}, categories: {} };
-      console.log('Today\'s data:', todayData);
-      updateUI(todayData, goals);
-    } else {
-      const weekData = getWeekData(timeData);
-      console.log('Week data:', weekData);
-      updateUI(weekData, goals);
-    }
-  } catch (error) {
-    console.error('Error loading data:', error);
+function getWeekStart() {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = now.getDate() - dayOfWeek;
+  return new Date(now.setDate(diff)).toISOString().split('T')[0];
+}
+
+// Theme functions
+function applyTheme(theme, accentColor) {
+  const root = document.documentElement;
+  
+  if (theme === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    theme = prefersDark ? 'dark' : 'light';
   }
-}
-
-function getWeekData(timeData) {
-  const weekData = { sites: {}, categories: {} };
-  const today = new Date();
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const todayString = getTodayString();
-  const weekAgoString = getDateString(weekAgo);
-
-  console.log('Getting week data from', weekAgoString, 'to', todayString);
-
-  Object.entries(timeData).forEach(([date, data]) => {
-    if (date >= weekAgoString && date <= todayString) {
-      console.log('Including data for date:', date);
-      
-      // Aggregate site data
-      Object.entries(data.sites).forEach(([site, time]) => {
-        weekData.sites[site] = (weekData.sites[site] || 0) + time;
-      });
-
-      // Aggregate category data
-      Object.entries(data.categories).forEach(([category, time]) => {
-        weekData.categories[category] = (weekData.categories[category] || 0) + time;
-      });
-    }
+  
+  const themeVars = THEMES[theme];
+  Object.entries(themeVars).forEach(([property, value]) => {
+    root.style.setProperty(property, value);
   });
-
-  return weekData;
+  
+  root.style.setProperty('--accent-color', ACCENT_COLORS[accentColor]);
+  root.setAttribute('data-theme', theme);
 }
 
-function updateUI(data, goals) {
-  console.log('Updating UI with data:', data);
-  updateTotalTime(data);
-  updateAllGoals(data, goals);
-  updateCategoryChart(data);
-  updateTopSites(data);
+function loadThemeSettings() {
+  chrome.storage.local.get(['theme', 'accentColor'], (result) => {
+    const theme = result.theme || 'light';
+    const accentColor = result.accentColor || 'blue';
+    applyTheme(theme, accentColor);
+    updateThemeButtons(theme, accentColor);
+  });
 }
 
-function updateTotalTime(data) {
-  const totalTime = Object.values(data.categories).reduce((a, b) => a + b, 0);
-  const hours = Math.floor(totalTime / 3600000);
-  const minutes = Math.floor((totalTime % 3600000) / 60000);
-  const seconds = Math.floor((totalTime % 60000) / 1000);
-  document.getElementById('totalTime').textContent = `${hours}h ${minutes}m ${seconds}s`;
+function updateThemeButtons(theme, accentColor) {
+  // Update theme mode buttons
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  const themeBtn = document.getElementById(`${theme}ModeBtn`);
+  if (themeBtn) themeBtn.classList.add('active');
+  
+  // Update color buttons
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  const colorBtn = document.querySelector(`[data-color="${accentColor}"]`);
+  if (colorBtn) colorBtn.classList.add('active');
 }
 
-// Helper function to format time
-function formatTime(milliseconds) {
-  const hours = Math.floor(milliseconds / 3600000);
-  const minutes = Math.floor((milliseconds % 3600000) / 60000);
-  const seconds = Math.floor((milliseconds % 60000) / 1000);
-  return `${hours}h ${minutes}m ${seconds}s`;
-}
-
-// Add notification permission check
-async function checkNotificationPermission() {
-  try {
-    if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      console.log('Requested notification permission:', permission);
-      if (permission === 'granted') {
-        showToast('Notifications enabled! 🔔', 'success');
-      } else {
-        showToast('Please enable notifications to receive goal alerts', 'warning');
+// Data fetching functions
+async function getTimeData(period = 'today') {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('timeData', (result) => {
+      const timeData = result.timeData || {};
+      
+      if (period === 'today') {
+        const today = getTodayString();
+        resolve(timeData[today] || { sites: {}, categories: {} });
+      } else if (period === 'week') {
+        const weekStart = getWeekStart();
+        const weekData = { sites: {}, categories: {} };
+        
+        // Aggregate last 7 days
+        for (let i = 0; i < 7; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          const dayData = timeData[dateStr] || { sites: {}, categories: {} };
+          
+          // Aggregate sites
+          Object.entries(dayData.sites || {}).forEach(([site, time]) => {
+            weekData.sites[site] = (weekData.sites[site] || 0) + time;
+          });
+          
+          // Aggregate categories
+          Object.entries(dayData.categories || {}).forEach(([category, time]) => {
+            weekData.categories[category] = (weekData.categories[category] || 0) + time;
+          });
+        }
+        
+        resolve(weekData);
       }
-    } else {
-      console.log('Notification permission status:', Notification.permission);
-      if (Notification.permission !== 'granted') {
-        showToast('Please enable notifications in browser settings', 'warning');
-      }
-    }
-
-    // Test notification to verify everything works
-    if (Notification.permission === 'granted') {
-      await testNotification();
-    }
-  } catch (error) {
-    console.error('Error checking notification permission:', error);
-    showToast('Error setting up notifications', 'error');
-  }
-}
-
-// Function to test notifications
-async function testNotification() {
-  try {
-    await chrome.notifications.create('test_notification', {
-      type: 'basic',
-      iconUrl: 'icons/icon128.png',
-      title: 'WebTimeTracker',
-      message: 'Notifications are working! 🎉',
-      priority: 2
     });
-    console.log('✅ Test notification sent successfully');
-  } catch (error) {
-    console.error('Error sending test notification:', error);
-  }
+  });
 }
 
-function updateCategoryChart(data) {
-  console.log('Updating category chart with data:', data);
-  try {
-    const ctx = document.getElementById('categoryChart');
-    if (!ctx) {
-      console.error('Category chart canvas not found');
-      return;
-    }
-
-    if (categoryChart) {
-      categoryChart.destroy();
-    }
-
-    const categories = Object.keys(data.categories);
-    const times = Object.values(data.categories).map(time => time / 3600000); // Convert to hours
-
-    if (categories.length === 0) {
-      console.log('No categories data available');
-      return;
-    }
-
-    // Debug: Log all available categories and their exact names
-    console.log('Available categories:', categories);
-    console.log('CATEGORY_COLORS keys:', Object.keys(CATEGORY_COLORS));
-
-    // Map categories to their fixed colors, with detailed logging
-    const colors = categories.map(category => {
-      const color = CATEGORY_COLORS[category.trim()];
-      if (!color) {
-        console.warn(`No color defined for category: "${category}" (length: ${category.length})`);
-        // Log character codes to check for hidden characters
-        console.log('Category character codes:', [...category].map(c => c.charCodeAt(0)));
-        return CATEGORY_COLORS['Other'];
-      }
-      console.log(`Assigned color for ${category}: ${color}`);
-      return color;
+async function getGoals() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('goals', (result) => {
+      resolve(result.goals || {
+        productiveHours: 4,
+        entertainmentHours: 2,
+        socialMediaHours: 1,
+        streak: 0
+      });
     });
+  });
+}
 
-    console.log('Final color assignments:', categories.map((cat, i) => ({
-      category: cat,
-      color: colors[i]
-    })));
+// UI update functions
+async function updateTotalTime() {
+  const data = await getTimeData(currentPeriod);
+  const totalMs = Object.values(data.sites).reduce((sum, time) => sum + time, 0);
+  document.getElementById('totalTime').textContent = formatTime(totalMs);
+}
 
+async function updateCategoryChart() {
+  const data = await getTimeData(currentPeriod);
+  const categories = data.categories || {};
+  
+  const ctx = document.getElementById('categoryChart').getContext('2d');
+  
+  if (categoryChart) {
+    categoryChart.destroy();
+  }
+  
+  const labels = Object.keys(categories);
+  const values = Object.values(categories).map(ms => ms / (1000 * 60 * 60)); // Convert to hours
+  const colors = labels.map(label => CATEGORY_COLORS[label] || CATEGORY_COLORS['Other']);
+  
+  if (labels.length === 0) {
+    // Show empty state
     categoryChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: categories,
+        labels: ['No data'],
         datasets: [{
-          data: times,
-          backgroundColor: colors,
-          borderWidth: 1,
-          borderColor: 'rgba(255, 255, 255, 0.5)'
+          data: [1],
+          backgroundColor: ['#e0e0e0']
         }]
       },
       options: {
@@ -378,1493 +202,722 @@ function updateCategoryChart(data) {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'right',
-            labels: {
-              padding: 15,
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const hours = Math.floor(context.raw);
-                const minutes = Math.round((context.raw - hours) * 60);
-                return `${context.label}: ${hours}h ${minutes}m`;
-              }
-            }
+            display: false
           }
         }
       }
     });
-  } catch (error) {
-    console.error('Error creating chart:', error);
+    return;
   }
-}
-
-function getWebsiteLogo(domain) {
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-}
-
-function getCleanWebsiteName(domain) {
-  // Remove www. and .com/.org etc
-  let name = domain.replace(/^www\./, '').replace(/\.(com|org|net|io|edu|gov)$/, '');
   
-  // Split by dots and get the main domain name
-  name = name.split('.')[0];
-  
-  // Capitalize first letter of each word
-  name = name.split(/[-_]/).map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join(' ');
-
-  // Special cases for common websites
-  const specialCases = {
-    'Youtube': 'YouTube',
-    'Github': 'GitHub',
-    'Linkedin': 'LinkedIn',
-    'Facebook': 'Facebook',
-    'Twitter': 'Twitter',
-    'Instagram': 'Instagram'
-  };
-
-  return specialCases[name] || name;
+  categoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            font: {
+              size: 12
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
-function updateTopSites(data) {
-  const topSitesList = document.getElementById('topSitesList');
-  topSitesList.innerHTML = '';
-
-  const sortedSites = Object.entries(data.sites)
-    .sort(([, a], [, b]) => b - a)
+async function updateTopSites() {
+  const data = await getTimeData(currentPeriod);
+  const sites = data.sites || {};
+  
+  const topSites = Object.entries(sites)
+    .sort(([,a], [,b]) => b - a)
     .slice(0, 5);
-
-  sortedSites.forEach(([site, time]) => {
-    const hours = Math.floor(time / 3600000);
-    const minutes = Math.floor((time % 3600000) / 60000);
-    const seconds = Math.floor((time % 60000) / 1000);
-    
-    const siteItem = document.createElement('div');
-    siteItem.className = 'site-item';
-    siteItem.innerHTML = `
+  
+  const listElement = document.getElementById('topSitesList');
+  listElement.innerHTML = '';
+  
+  if (topSites.length === 0) {
+    listElement.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No data available</div>';
+    return;
+  }
+  
+  topSites.forEach(([site, time]) => {
+    const item = document.createElement('div');
+    item.className = 'site-item';
+    item.innerHTML = `
       <div class="site-info">
-        <img src="${getWebsiteLogo(site)}" alt="${site} logo" class="site-logo">
-        <span class="site-name">${getCleanWebsiteName(site)}</span>
+        <img src="https://www.google.com/s2/favicons?sz=32&domain=${site}" 
+             class="site-logo" 
+             alt="${site}"
+             onerror="this.src='data:image/svg+xml,<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 24 24\\"><circle cx=\\"12\\" cy=\\"12\\" r=\\"10\\" fill=\\"%23ccc\\"/></svg>'">
+        <span class="site-name">${site}</span>
       </div>
-      <span>${hours}h ${minutes}m ${seconds}s</span>
+      <span>${formatTime(time)}</span>
     `;
-    topSitesList.appendChild(siteItem);
+    listElement.appendChild(item);
+  });
+}
+
+async function updateGoalsDisplay() {
+  const data = await getTimeData('today');
+  const goals = await getGoals();
+  const categories = data.categories || {};
+  
+  const goalsContainer = document.querySelector('.goals-container');
+  if (!goalsContainer) return;
+  
+  goalsContainer.innerHTML = '';
+  
+  // Calculate goal progress
+  const goalCategories = [
+    { key: 'productiveHours', name: 'Productive / Educational', category: 'Productive / Educational' },
+    { key: 'entertainmentHours', name: 'Entertainment', category: 'Entertainment' },
+    { key: 'socialMediaHours', name: 'Social Media', category: 'Social Media' }
+  ];
+  
+  goalCategories.forEach(({ key, name, category }) => {
+    const goalHours = goals[key] || 0;
+    const actualMs = categories[category] || 0;
+    const actualHours = actualMs / (1000 * 60 * 60);
+    const percentage = goalHours > 0 ? Math.min((actualHours / goalHours) * 100, 100) : 0;
+    
+    const goalItem = document.createElement('div');
+    goalItem.className = 'goal-item';
+    goalItem.innerHTML = `
+      <div class="goal-header">
+        <span class="goal-name">${name}</span>
+        <span class="goal-time">${formatTime(actualMs)} / ${goalHours}h</span>
+      </div>
+      <div class="goal-progress">
+        <div class="progress-bar ${percentage >= 100 ? 'progress-complete' : percentage >= 75 ? 'progress-good' : ''}">
+          <div style="width: ${percentage}%"></div>
+        </div>
+        <span class="goal-percentage">${Math.round(percentage)}%</span>
+      </div>
+    `;
+    goalsContainer.appendChild(goalItem);
+  });
+  
+  // Add streak info
+  const streakInfo = document.createElement('div');
+  streakInfo.className = 'streak';
+  streakInfo.innerHTML = `🔥 Current Streak: ${goals.streak || 0} days`;
+  goalsContainer.appendChild(streakInfo);
+}
+
+// Modal functions
+function openModal(modalId) {
+  document.getElementById(modalId).style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+// Settings functions
+async function loadCategories() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('categories', (result) => {
+      resolve(result.categories || {});
+    });
+  });
+}
+
+async function saveCategories(categories) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ categories }, resolve);
+  });
+}
+
+async function populateCategoriesList() {
+  const categories = await loadCategories();
+  const listElement = document.getElementById('categoriesList');
+  listElement.innerHTML = '';
+  
+  Object.entries(categories).forEach(([name, info]) => {
+    const item = document.createElement('div');
+    item.className = 'category-item';
+    item.innerHTML = `
+      <div class="category-header">
+        <h4>${name}</h4>
+        <button class="edit-category" onclick="editCategory('${name}')">Edit</button>
+      </div>
+      <div class="category-description">${info.description || ''}</div>
+      <div class="category-examples">Examples: ${(info.examples || []).join(', ')}</div>
+    `;
+    listElement.appendChild(item);
+  });
+}
+
+// Weekly chart function
+async function updateWeeklyChart() {
+  const weeklyData = await getTimeData('week');
+  const categories = weeklyData.categories || {};
+  
+  const ctx = document.getElementById('weeklyChart');
+  if (!ctx) return;
+  
+  if (weeklyChart) {
+    weeklyChart.destroy();
+  }
+  
+  // Prepare data for last 7 days
+  const labels = [];
+  const datasets = {};
+  
+  // Initialize datasets for each category
+  Object.keys(CATEGORY_COLORS).forEach(category => {
+    datasets[category] = {
+      label: category,
+      data: [],
+      backgroundColor: CATEGORY_COLORS[category],
+      borderColor: CATEGORY_COLORS[category],
+      borderWidth: 2,
+      fill: false
+    };
+  });
+  
+  // Get data for each day
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+    
+    // Get day data
+    chrome.storage.local.get('timeData', (result) => {
+      const timeData = result.timeData || {};
+      const dayData = timeData[dateStr] || { categories: {} };
+      
+      Object.keys(datasets).forEach(category => {
+        const timeMs = dayData.categories[category] || 0;
+        const timeHours = timeMs / (1000 * 60 * 60);
+        datasets[category].data.push(timeHours);
+      });
+    });
+  }
+  
+  // Filter out empty datasets
+  const activeDatasets = Object.values(datasets).filter(dataset => 
+    dataset.data.some(value => value > 0)
+  );
+  
+  weeklyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: activeDatasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            usePointStyle: true,
+            padding: 15
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Hours'
+          }
+        }
+      }
+    }
   });
 }
 
 // Website blocking functions
-async function addBlockedSite() {
+async function loadBlockedSites() {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action: 'getBlockedSites' }, (response) => {
+      resolve(response?.blockedSites || []);
+    });
+  });
+}
+
+async function updateBlockedSitesList() {
+  const blockedSites = await loadBlockedSites();
+  const listElement = document.getElementById('blockedSitesList');
+  
+  if (!listElement) return;
+  
+  listElement.innerHTML = '';
+  
+  if (blockedSites.length === 0) {
+    listElement.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 10px;">No blocked sites</div>';
+    return;
+  }
+  
+  blockedSites.forEach(site => {
+    const item = document.createElement('div');
+    item.className = 'blocked-site-item';
+    const timeLeft = Math.max(0, site.expiresAt - Date.now());
+    const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
+    
+    item.innerHTML = `
+      <div class="blocked-site-info">
+        <span class="blocked-site-name">${site.url}</span>
+        <span class="blocked-site-time">${minutesLeft > 0 ? `${minutesLeft} min left` : 'Expired'}</span>
+      </div>
+      <button onclick="unblockSite('${site.url}')" class="unblock-btn">Unblock</button>
+    `;
+    listElement.appendChild(item);
+  });
+}
+
+function blockSite() {
   const siteInput = document.getElementById('siteToBlock');
   const durationInput = document.getElementById('blockDuration');
   
   const site = siteInput.value.trim();
   const duration = parseInt(durationInput.value);
   
-  if (!site) {
-    showToast('Please enter a website URL', 'error');
+  if (!site || !duration || duration <= 0) {
+    alert('Please enter a valid site and duration');
     return;
   }
   
-  if (!duration || duration <= 0) {
-    showToast('Please enter a valid duration in minutes', 'error');
-    return;
-  }
-  
-  // Clean up the URL (remove protocol, www, etc.)
-  const cleanSite = site.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-  
-  try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'addBlock',
-      url: cleanSite,
-      duration: duration
-    });
-    
-    if (response.success) {
-      showToast(`Blocked ${cleanSite} for ${duration} minutes`, 'success');
+  chrome.runtime.sendMessage({
+    action: 'addBlock',
+    url: site,
+    duration: duration
+  }, (response) => {
+    if (response?.success) {
       siteInput.value = '';
       durationInput.value = '';
-      await updateBlockedSitesList();
+      updateBlockedSitesList();
     } else {
-      showToast('Failed to block site', 'error');
+      alert('Failed to block site');
     }
-  } catch (error) {
-    console.error('Error blocking site:', error);
-    showToast('Error blocking site', 'error');
-  }
-}
-
-async function removeBlockedSite(url) {
-  try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'removeBlock',
-      url: url
-    });
-    
-    if (response && response.success) {
-      showToast('Site unblocked successfully');
-      await updateBlockedSitesList();
-    } else {
-      showToast('Failed to unblock site', 'error');
-    }
-  } catch (error) {
-    console.error('Error removing blocked site:', error);
-    showToast('Error unblocking site', 'error');
-  }
-}
-
-async function updateBlockedSitesList() {
-  const blockedSitesList = document.getElementById('blockedSitesList');
-  if (!blockedSitesList) return;
-
-  const { blockedSites = [] } = await chrome.storage.local.get('blockedSites');
-  const now = Math.floor(Date.now());
-
-  // Filter out expired sites
-  const activeSites = blockedSites.filter(site => site.expiresAt > now);
-  
-  // Update storage if there are expired sites
-  if (activeSites.length !== blockedSites.length) {
-    await chrome.storage.local.set({ blockedSites: activeSites });
-    await chrome.runtime.sendMessage({ action: 'setupBlockingRules' });
-  }
-
-  if (activeSites.length === 0) {
-    blockedSitesList.innerHTML = '<div class="no-sites">no current site block</div>';
-    return;
-  }
-
-  blockedSitesList.innerHTML = '';
-  activeSites.forEach(site => {
-    const timeLeft = Math.max(0, Math.floor((site.expiresAt - now) / 1000));
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    
-    const siteDiv = document.createElement('div');
-    siteDiv.className = 'blocked-site-item';
-    siteDiv.innerHTML = `
-      <div class="site-info">
-        <span class="site-url">${site.url}</span>
-        <span class="time-left">${minutes}m ${seconds}s</span>
-      </div>
-      <button class="remove-block" data-url="${site.url}">×</button>
-    `;
-    blockedSitesList.appendChild(siteDiv);
   });
 }
 
-// Make removeBlockedSite available globally
-window.removeBlockedSite = removeBlockedSite;
-
-function setupEventListeners() {
-  console.log('Setting up event listeners');
-  try {
-    // Time period buttons
-    if (elements.todayBtn && elements.weekBtn) {
-      elements.todayBtn.addEventListener('click', async (e) => {
-        document.querySelector('.time-period .active')?.classList.remove('active');
-        e.target.classList.add('active');
-        currentTimeframe = 'today';
-        await loadData('today');
-      });
-
-      elements.weekBtn.addEventListener('click', async (e) => {
-        document.querySelector('.time-period .active')?.classList.remove('active');
-        e.target.classList.add('active');
-        currentTimeframe = 'week';
-        await loadData('week');
-      });
-    }
-
-    // Website blocking
-    if (elements.addBlockBtn) {
-      elements.addBlockBtn.addEventListener('click', addBlockedSite);
-    }
-
-    // Allow Enter key to add block
-    if (elements.siteToBlock) {
-      elements.siteToBlock.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          addBlockedSite();
-        }
-      });
-    }
-
-    if (elements.blockDuration) {
-      elements.blockDuration.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          addBlockedSite();
-        }
-      });
-    }
-
-    // More button and modal
-    const moreBtn = document.getElementById('moreBtn');
-    const moreModal = document.getElementById('moreModal');
-    const closeMoreBtn = document.getElementById('closeMoreBtn');
-
-    moreBtn?.addEventListener('click', async () => {
-      moreModal.style.display = 'block';
-      await updateWeeklyChart(); // Make sure chart is updated when modal opens
-      await updateSessionInsights();
-    });
-
-    closeMoreBtn?.addEventListener('click', () => {
-      moreModal.style.display = 'none';
-    });
-
-    // Close modal when clicking outside
-    moreModal.addEventListener('click', (e) => {
-      if (e.target === moreModal) {
-        moreModal.style.display = 'none';
-      }
-    });
-
-    // Export button
-    if (elements.exportDataBtn) {
-      elements.exportDataBtn.addEventListener('click', exportData);
-    }
-
-    // Goals button and modal
-    if (elements.goalsBtn && elements.goalsModal && elements.closeGoalsBtn) {
-      elements.goalsBtn.addEventListener('click', async () => {
-        elements.goalsModal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        await updateGoalsDisplay();
-      });
-
-      elements.closeGoalsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        elements.goalsModal.style.display = 'none';
-        document.body.style.overflow = '';
-      });
-
-      // Close modal when clicking outside
-      elements.goalsModal.addEventListener('click', (e) => {
-        if (e.target === elements.goalsModal) {
-          elements.goalsModal.style.display = 'none';
-          document.body.style.overflow = '';
-        }
-      });
-    }
-
-    // Edit goals
-    if (elements.editGoalsBtn && elements.editGoalsModal && elements.closeEditGoalsBtn && elements.saveGoalsBtn) {
-      elements.editGoalsBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        elements.editGoalsModal.style.display = 'block';
-        await loadGoalsEditor();
-      });
-
-      elements.closeEditGoalsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        elements.editGoalsModal.style.display = 'none';
-      });
-
-      // Close modal when clicking outside
-      elements.editGoalsModal.addEventListener('click', (e) => {
-        if (e.target === elements.editGoalsModal) {
-          elements.editGoalsModal.style.display = 'none';
-        }
-      });
-
-      elements.saveGoalsBtn.addEventListener('click', saveGoals);
-    }
-
-    // Settings
-    if (elements.settingsBtn && elements.settingsModal && elements.closeSettingsBtn && elements.saveSettingsBtn) {
-      elements.settingsBtn.addEventListener('click', () => {
-        elements.settingsModal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        loadSettings();
-      });
-
-      elements.closeSettingsBtn.addEventListener('click', () => {
-        elements.settingsModal.style.display = 'none';
-        document.body.style.overflow = '';
-      });
-
-      // Close modal when clicking outside
-      elements.settingsModal.addEventListener('click', (e) => {
-        if (e.target === elements.settingsModal) {
-          elements.settingsModal.style.display = 'none';
-          document.body.style.overflow = '';
-        }
-      });
-
-      elements.saveSettingsBtn.addEventListener('click', saveSettings);
-    }
-
-    // Theme mode buttons
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const mode = btn.id.replace('ModeBtn', '').toLowerCase();
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        // Update active state
-        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        // Apply theme
-        applyTheme(mode, prefersDark);
-        
-        // Save preference
-        const { theme = {} } = await chrome.storage.local.get('theme');
-        await chrome.storage.local.set({
-          theme: { ...theme, mode }
-        });
-      });
-    });
-
-    // Color accent buttons
-    document.querySelectorAll('.color-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const color = btn.dataset.color;
-        
-        // Update active state
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        // Apply color
-        applyAccentColor(color);
-        
-        // Save preference
-        const { theme = {} } = await chrome.storage.local.get('theme');
-        await chrome.storage.local.set({
-          theme: { ...theme, accent: color }
-        });
-      });
-    });
-
-    // Setup collapsible sections
-    document.querySelectorAll('.section-header').forEach(header => {
-      header.addEventListener('click', () => {
-        const targetId = header.getAttribute('data-target');
-        const content = document.getElementById(targetId);
-        const isExpanded = header.getAttribute('aria-expanded') === 'true';
-        
-        // Toggle aria-expanded
-        header.setAttribute('aria-expanded', !isExpanded);
-        
-        // Toggle content visibility
-        if (content) {
-          content.classList.toggle('show');
-        }
-      });
-    });
-
-    // Initialize blocked sites list
-    updateBlockedSitesList();
-    setupAutoRefresh();
-
-    // Dashboard button
-    elements.dashboardBtn?.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'device-select.html' });
-    });
-
-    console.log('Event listeners set up successfully');
-  } catch (error) {
-    console.error('Error setting up event listeners:', error);
-  }
-}
-
-async function updateGoalsDisplay() {
-  try {
-    if (!elements.goalsContainer || !elements.streakInfo) {
-      console.error('Required elements for goals display not found');
-      return;
-    }
-
-    const { timeData, goals = {}, categories = {}, blockedSites = [] } = await chrome.storage.local.get(['timeData', 'goals', 'categories', 'blockedSites']);
-    const today = getTodayString();
-    const todayData = timeData[today] || { categories: {} };
-
-    // Store scroll position before updating content
-    const modalBody = elements.goalsModal.querySelector('.modal-body');
-    const scrollPosition = modalBody ? modalBody.scrollTop : 0;
-
-    elements.goalsContainer.innerHTML = '';
-
-    // Create a goal card for each category that has a goal set
-    Object.keys(categories).forEach(category => {
-      const goalKey = getGoalKey(category);
-      const goalHours = goals[goalKey] || 0;
-      
-      if (goalHours > 0) {
-        const timeSpent = todayData.categories[category] || 0;
-        const goalMilliseconds = goalHours * 3600000;
-        const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
-        
-        console.log(`Displaying progress for ${category}:`, {
-          timeSpent: timeSpent / 3600000, // hours
-          goalHours,
-          progress
-        });
-
-        const goalDiv = document.createElement('div');
-        goalDiv.className = 'goal-item';
-        goalDiv.innerHTML = `
-          <div class="goal-header">
-            <span class="goal-name">${category} ${progress >= 100 ? '🎉' : ''}</span>
-            <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
-          </div>
-          <div class="goal-progress">
-            <div class="progress-bar ${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}">
-              <div style="width: ${progress}%"></div>
-            </div>
-            <span class="goal-percentage">${Math.round(progress)}%</span>
-          </div>`;
-        elements.goalsContainer.appendChild(goalDiv);
-      }
-    });
-
-    // Update streak information
-    if (goals.streak > 0) {
-      elements.streakInfo.innerHTML = `
-        <div class="streak-count">🔥 ${goals.streak}</div>
-        <div>Day Streak</div>
-      `;
+function unblockSite(url) {
+  chrome.runtime.sendMessage({
+    action: 'removeBlock',
+    url: url
+  }, (response) => {
+    if (response?.success) {
+      updateBlockedSitesList();
     } else {
-      elements.streakInfo.innerHTML = `
-        <div>Start achieving your goals to build a streak!</div>
-      `;
+      alert('Failed to unblock site');
     }
-
-    // Display blocked sites list
-    displayBlockedSites(blockedSites);
-
-    // Restore scroll position after content update
-    if (modalBody) {
-      requestAnimationFrame(() => {
-        modalBody.scrollTop = scrollPosition;
-      });
-    }
-  } catch (error) {
-    console.error('Error updating goals display:', error);
-  }
+  });
 }
 
-function displayBlockedSites(blockedSites) {
-  const blockedSitesList = document.getElementById('blockedSitesList');
-  if (!blockedSitesList) return;
-  
-  blockedSitesList.innerHTML = '';
-  
-  if (blockedSites && blockedSites.length > 0) {
-    const now = Date.now();
-    const activeSites = blockedSites.filter(site => site.expiresAt > now);
-    
-    if (activeSites.length > 0) {
-      activeSites.forEach(site => {
-        const remaining = site.expiresAt - now;
-        const minutes = Math.floor(remaining / (1000 * 60));
-        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-        
-        const siteItem = document.createElement('div');
-        siteItem.className = 'blocked-site-item';
-        siteItem.innerHTML = `
-          <div class="blocked-site-info">
-            <img src="${getWebsiteLogo(site.url)}" alt="${site.url} logo" class="site-logo">
-            <div class="blocked-site-details">
-              <span class="blocked-site-name">${getCleanWebsiteName(site.url)}</span>
-              <span class="blocked-site-time">${minutes}m ${seconds}s remaining</span>
-            </div>
-          </div>
-          <button class="unblock-btn" onclick="removeBlockedSite('${site.url}')">Unblock</button>
-        `;
-        blockedSitesList.appendChild(siteItem);
-      });
-    } else {
-      blockedSitesList.innerHTML = '<p class="no-blocked-sites">No sites currently blocked</p>';
-    }
-  } else {
-    blockedSitesList.innerHTML = '<p class="no-blocked-sites">No sites currently blocked</p>';
-  }
-}
-
-async function loadGoalsEditor() {
-  try {
-    const categoryGoalsContainer = document.getElementById('categoryGoals');
-    if (!categoryGoalsContainer) {
-      console.error('Category goals container not found');
-      return;
-    }
-
-    const { categories = {}, goals = {} } = await chrome.storage.local.get(['categories', 'goals']);
-    categoryGoalsContainer.innerHTML = '';
-
-    if (Object.keys(categories).length === 0) {
-      categoryGoalsContainer.innerHTML = '<p class="no-categories">No categories defined yet.</p>';
-      return;
-    }
-
-    Object.keys(categories).forEach(category => {
-      const goalItem = document.createElement('div');
-      goalItem.className = 'category-goal-item';
-      
-      const goalKey = getGoalKey(category);
-      const currentValue = goals[goalKey] || 0;
-
-      goalItem.innerHTML = `
-        <span class="category-goal-name">${category}</span>
-        <div class="goal-input-wrapper">
-          <input type="number" 
-                 class="category-goal-input" 
-                 data-category="${category}"
-                 value="${currentValue}"
-                 min="0" 
-                 max="24" 
-                 step="0.5">
-          <span class="goal-unit">hours</span>
-        </div>
-      `;
-      categoryGoalsContainer.appendChild(goalItem);
-    });
-
-  } catch (error) {
-    console.error('Error loading goals editor:', error);
-    showToast('Error loading goals editor', 'error');
-  }
-}
-
-async function saveGoals() {
-  try {
-    const newGoals = { streak: 0 }; // Reset streak when saving new goals
-    let hasChanges = false;
-
-    // Get current goals to check for changes
-    const { goals: currentGoals = {} } = await chrome.storage.local.get('goals');
-    
-    // Get all category goal inputs
-    document.querySelectorAll('.category-goal-input').forEach(input => {
-      const category = input.getAttribute('data-category');
-      if (!category) return;
-
-      const newValue = parseFloat(input.value) || 0;
-      const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
-
-      // Only update if the value has changed
-      if (currentGoals[goalKey] !== newValue) {
-        hasChanges = true;
-      }
-      newGoals[goalKey] = newValue;
-    });
-
-    // Preserve existing streak
-    newGoals.streak = currentGoals.streak || 0;
-
-    if (hasChanges) {
-      await chrome.storage.local.set({ goals: newGoals });
-      console.log('Updated goals:', newGoals);
-      
-      // Close the edit modal
-      const editGoalsModal = document.getElementById('editGoalsModal');
-      if (editGoalsModal) {
-        editGoalsModal.style.display = 'none';
-      }
-
-      // Refresh the goals display
-      const { timeData = {} } = await chrome.storage.local.get('timeData');
-      const today = getTodayString();
-      const todayData = timeData[today] || { sites: {}, categories: {} };
-      await updateAllGoals(todayData, newGoals);
-      
-      showToast('Goals updated successfully! 🎯', 'success');
-    } else {
-      // Just close the modal if no changes
-      const editGoalsModal = document.getElementById('editGoalsModal');
-      if (editGoalsModal) {
-        editGoalsModal.style.display = 'none';
-      }
-    }
-  } catch (error) {
-    console.error('Error saving goals:', error);
-    showToast('Error saving goals', 'error');
-  }
-}
-
-// Update the toast function to handle different types
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  // Remove toast after 3 seconds
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
-}
-
-// Update toast styles to include warning type
-const toastStyle = document.createElement('style');
-toastStyle.textContent = `
-  .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 10px 20px;
-    border-radius: 4px;
-    color: white;
-    font-size: 14px;
-    z-index: 1000;
-    animation: fadeInOut 3s ease-in-out;
-  }
-
-  .toast.success {
-    background-color: #27ae60;
-  }
-
-  .toast.error {
-    background-color: #e74c3c;
-  }
-
-  .toast.info {
-    background-color: #3498db;
-  }
-
-  .toast.warning {
-    background-color: #f1c40f;
-    color: #2c3e50;
-  }
-
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translate(-50%, 20px); }
-    10% { opacity: 1; transform: translate(-50%, 0); }
-    90% { opacity: 1; transform: translate(-50%, 0); }
-    100% { opacity: 0; transform: translate(-50%, -20px); }
-  }
-
-  .goal-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .category-goal-input {
-    width: 80px;
-    padding: 6px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    text-align: center;
-    font-size: 0.9em;
-  }
-
-  .goal-unit {
-    color: var(--text-secondary);
-    font-size: 0.9em;
-  }
-
-  .category-goal-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-
-  .category-goal-name {
-    font-weight: 500;
-    color: var(--text-color);
-  }
-
-  .blocked-site-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-
-  .blocked-site-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .blocked-site-details {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .blocked-site-name {
-    font-weight: 500;
-    color: var(--text-color);
-  }
-
-  .blocked-site-time {
-    font-size: 0.9em;
-    color: var(--text-secondary);
-  }
-
-  .unblock-btn {
-    background-color: var(--error-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-    cursor: pointer;
-    font-size: 0.9em;
-  }
-
-  .unblock-btn:hover {
-    opacity: 0.9;
-  }
-
-  .no-blocked-sites {
-    text-align: center;
-    color: var(--text-secondary);
-    font-style: italic;
-    padding: 20px;
-  }
-
-  .block-input {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 15px;
-    align-items: center;
-  }
-
-  .block-input input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 0.9em;
-  }
-
-  .block-input button {
-    background-color: var(--error-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .block-input button:hover {
-    opacity: 0.9;
-  }
-`;
-document.head.appendChild(toastStyle);
-
-async function loadSettings() {
-  try {
-    const { categories, goals = {} } = await chrome.storage.local.get(['categories', 'goals']);
-    
-    // Update category goals
-    const categoryGoals = document.getElementById('categoryGoals');
-    categoryGoals.innerHTML = '';
-
-    Object.entries(categories || {}).forEach(([category, data]) => {
-      const goalDiv = document.createElement('div');
-      goalDiv.className = 'goal-setting';
-      goalDiv.innerHTML = `
-        <div class="goal-header">
-          <label>${category} Goal (hours):</label>
-          <input type="number" 
-                 class="category-goal-input" 
-                 data-category="${category}"
-                 value="${goals[`${category.toLowerCase()}Hours`] || 0}"
-                 min="0" 
-                 max="24" 
-                 step="0.5">
-        </div>
-      `;
-      categoryGoals.appendChild(goalDiv);
-    });
-
-    // Update categories list
-    const categoriesList = document.getElementById('categoriesList');
-    categoriesList.innerHTML = '';
-
-    Object.entries(categories || {}).forEach(([category, data]) => {
-      const categoryDiv = document.createElement('div');
-      categoryDiv.className = 'category-item';
-      categoryDiv.innerHTML = `
-        <div class="category-header">
-          <h4>${category}</h4>
-          <button class="edit-category" data-category="${category}">Edit</button>
-        </div>
-        <div class="category-description">${data.description}</div>
-        <div class="category-examples">Example sites: ${data.examples.join(', ')}</div>
-      `;
-      categoriesList.appendChild(categoryDiv);
-
-      // Add click handler for edit button
-      const editButton = categoryDiv.querySelector('.edit-category');
-      editButton.addEventListener('click', () => openCategoryEditor(category, data));
-    });
-
-  } catch (error) {
-    console.error('Error loading settings:', error);
-  }
-}
-
-function openCategoryEditor(category, data) {
-  const modal = document.getElementById('editCategoryModal');
-  const nameInput = document.getElementById('categoryName');
-  const descInput = document.getElementById('categoryDescription');
-  const examplesInput = document.getElementById('categoryExamples');
-
-  // Fill in current values
-  nameInput.value = category;
-  descInput.value = data.description;
-  examplesInput.value = data.examples.join(', ');
-
-  // Show the modal
-  modal.style.display = 'block';
-
-  // Handle save
-  document.getElementById('saveCategoryBtn').onclick = async () => {
-    try {
-      const { categories } = await chrome.storage.local.get('categories');
-      
-      // Update category data
-      categories[category] = {
-        description: descInput.value,
-        examples: examplesInput.value.split(',').map(s => s.trim()).filter(s => s)
-      };
-
-      await chrome.storage.local.set({ categories });
-      modal.style.display = 'none';
-      await loadSettings(); // Refresh the list
-    } catch (error) {
-      console.error('Error saving category:', error);
-    }
-  };
-
-  // Handle cancel
-  document.getElementById('cancelCategoryBtn').onclick = () => {
-    modal.style.display = 'none';
-  };
-}
-
-async function saveSettings() {
-  try {
-    const goals = { streak: 0 }; // Reset streak when saving new goals
-    
-    // Get all category goal inputs
-    const goalInputs = document.querySelectorAll('.category-goal-input');
-    goalInputs.forEach(input => {
-      const category = input.dataset.category;
-      const hours = parseFloat(input.value);
-      
-      if (!isNaN(hours) && hours >= 0 && hours <= 24) {
-        goals[getGoalKey(category)] = hours;
-      }
-    });
-
-    // Preserve existing streak
-    const existingGoals = (await chrome.storage.local.get('goals')).goals || {};
-    goals.streak = existingGoals.streak || 0;
-
-    await chrome.storage.local.set({ goals });
-    document.getElementById('settingsModal').style.display = 'none';
-    await loadData(currentTimeframe);
-  } catch (error) {
-    console.error('Error saving settings:', error);
-  }
-}
-
-async function exportData() {
-  const { timeData } = await chrome.storage.local.get('timeData');
-  
-  const blob = new Blob([JSON.stringify(timeData, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'web-time-tracker-data.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
+// Session insights
 async function updateSessionInsights() {
-  try {
-    if (!elements.sessionInsights) {
-      console.error('Session insights container not found');
-      return;
-    }
-
-    const { sessionData = {} } = await chrome.storage.local.get('sessionData');
-    const today = getTodayString();
-    const todaySessions = sessionData[today] || { sites: {}, categories: {} };
-    
-    elements.sessionInsights.innerHTML = '';
-
-    // If no sessions today, show message
-    if (Object.keys(todaySessions.sites || {}).length === 0) {
-      elements.sessionInsights.innerHTML = `
-        <div class="no-sessions">
-          No browsing sessions recorded today
-        </div>
-      `;
-      return;
-    }
-
-    // Process site sessions
-    Object.entries(todaySessions.sites || {}).forEach(([site, sessions]) => {
-      if (sessions && sessions.length > 0) {
-        const longestSession = Math.max(...sessions.map(s => s.duration));
-        const averageSession = sessions.reduce((acc, s) => acc + s.duration, 0) / sessions.length;
-        
-        const siteCard = document.createElement('div');
-        siteCard.className = 'session-card';
-        siteCard.innerHTML = `
-          <div class="session-site">${site}</div>
-          <div class="session-stat">
-            <span>Longest Session</span>
-            <span class="session-stat-value">${formatTime(longestSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Average Session</span>
-            <span class="session-stat-value">${formatTime(averageSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Number of Sessions</span>
-            <span class="session-stat-value">${sessions.length}</span>
-          </div>
-        `;
-        elements.sessionInsights.appendChild(siteCard);
-      }
-    });
-
-    // Process category sessions
-    Object.entries(todaySessions.categories || {}).forEach(([category, sessions]) => {
-      if (sessions && sessions.length > 0) {
-        const categorySection = document.createElement('div');
-        categorySection.className = 'session-category';
-        
-        const longestSession = Math.max(...sessions.map(s => s.duration));
-        const averageSession = sessions.reduce((acc, s) => acc + s.duration, 0) / sessions.length;
-        
-        categorySection.innerHTML = `
-          <div class="session-category-title">${category}</div>
-          <div class="session-stat">
-            <span>Longest Session</span>
-            <span class="session-stat-value">${formatTime(longestSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Average Session</span>
-            <span class="session-stat-value">${formatTime(averageSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Total Sessions</span>
-            <span class="session-stat-value">${sessions.length}</span>
-          </div>
-        `;
-        elements.sessionInsights.appendChild(categorySection);
-      }
-    });
-
-  } catch (error) {
-    console.error('Error updating session insights:', error);
-  }
-}
-
-// Theme Management
-async function initializeTheme() {
-  try {
-    const { theme = {} } = await chrome.storage.local.get('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Set initial theme
-    const colorMode = theme.mode || 'system';
-    const accentColor = theme.accent || 'blue';
-    
-    // Apply theme
-    applyTheme(colorMode, prefersDark);
-    applyAccentColor(accentColor);
-    
-    // Update UI to show active settings
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.id === `${colorMode}ModeBtn`);
-    });
-    
-    document.querySelectorAll('.color-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.color === accentColor);
-    });
-    
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (colorMode === 'system') {
-        applyTheme('system', e.matches);
-      }
-    });
-  } catch (error) {
-    console.error('Error initializing theme:', error);
-  }
-}
-
-function applyTheme(mode, systemPrefersDark) {
-  let isDark = mode === 'dark' || (mode === 'system' && systemPrefersDark);
-  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-}
-
-function applyAccentColor(color) {
-  const colors = {
-    blue: '#4a90e2',
-    green: '#27ae60',
-    purple: '#9b59b6',
-    orange: '#e67e22',
-    red: '#e74c3c'
-  };
+  const sessionInsights = document.getElementById('sessionInsights');
+  if (!sessionInsights) return;
   
-  document.documentElement.style.setProperty('--accent-color', colors[color] || colors.blue);
-}
-
-async function initializeCategories() {
-  try {
-    const { categories } = await chrome.storage.local.get('categories');
-    
-    // If categories don't exist, set up default categories
-    if (!categories || Object.keys(categories).length === 0) {
-      const defaultCategories = {
-        'Gaming': {
-          description: 'Gaming and game-related websites',
-          examples: ['steam.com', 'epicgames.com', 'twitch.tv', 'roblox.com']
-        },
-        'Social Media': {
-          description: 'Social networking and communication',
-          examples: ['facebook.com', 'twitter.com', 'instagram.com']
-        },
-        'Entertainment': {
-          description: 'Entertainment and media sites',
-          examples: ['youtube.com', 'netflix.com', 'spotify.com']
-        },
-        'News & Blogs': {
-          description: 'News websites and blog platforms',
-          examples: ['medium.com', 'news.google.com', 'bbc.com']
-        },
-        'Productive / Educational': {
-          description: 'Learning and productivity tools',
-          examples: ['coursera.org', 'udemy.com', 'notion.so']
-        },
-        'Email': {
-          description: 'Email services and communication',
-          examples: ['gmail.com', 'outlook.com', 'yahoo.com', 'protonmail.com']
-        },
-        'Shopping': {
-          description: 'Online shopping and e-commerce',
-          examples: ['amazon.com', 'ebay.com', 'etsy.com']
-        }
-      };
-
-      await chrome.storage.local.set({ categories: defaultCategories });
-      console.log('Initialized default categories:', defaultCategories);
-    } else {
-      // Log existing categories to check their names
-      console.log('Existing categories:', Object.keys(categories));
-    }
-
-    // Verify that category names match exactly
-    const storedCategories = await chrome.storage.local.get('categories');
-    console.log('Current stored categories:', storedCategories);
-  } catch (error) {
-    console.error('Error initializing categories:', error);
-  }
-}
-
-// Function to get formatted day name
-function getDayName(date) {
-  return new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
-}
-
-// Function to update weekly usage details
-async function updateWeeklyDetails(weekData) {
-  const categoriesContainer = document.getElementById('weeklyCategories');
-  const websitesContainer = document.getElementById('weeklyWebsites');
+  // Get recent session data
+  const data = await getTimeData('today');
+  const sites = data.sites || {};
   
-  if (!categoriesContainer || !websitesContainer) return;
-
-  // Clear existing content
-  categoriesContainer.innerHTML = '';
-  websitesContainer.innerHTML = '';
-
-  // Calculate total time for percentages
-  const totalTime = Object.values(weekData.categories).reduce((sum, time) => sum + time, 0);
-
-  // Sort categories by time spent
-  const sortedCategories = Object.entries(weekData.categories)
-    .sort(([, a], [, b]) => b - a);
-
-  // Update categories list
-  for (const [category, time] of sortedCategories) {
-    const percentage = ((time / totalTime) * 100).toFixed(1);
-    const formattedTime = formatTime(time);
+  sessionInsights.innerHTML = '';
+  
+  if (Object.keys(sites).length === 0) {
+    sessionInsights.innerHTML = '<div class="no-sessions">No session data available for today</div>';
+    return;
+  }
+  
+  // Create session cards for top sites
+  const topSites = Object.entries(sites)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 3);
+  
+  topSites.forEach(([site, time]) => {
+    const sessionCard = document.createElement('div');
+    sessionCard.className = 'session-card';
     
-    const categoryItem = document.createElement('div');
-    categoryItem.className = 'weekly-item';
-    categoryItem.innerHTML = `
-      <div class="weekly-item-info">
-        <div class="weekly-item-icon">📁</div>
-        <div class="weekly-item-name">${category}</div>
+    const hours = time / (1000 * 60 * 60);
+    const sessions = Math.ceil(hours * 2); // Estimate sessions
+    const avgSession = time / sessions;
+    
+    sessionCard.innerHTML = `
+      <div class="session-site">${site}</div>
+      <div class="session-stat">
+        <span>Total Time:</span>
+        <span class="session-stat-value">${formatTime(time)}</span>
       </div>
-      <div class="weekly-item-stats">
-        <span class="weekly-item-time">${formattedTime}</span>
-        <span class="weekly-item-percentage">(${percentage}%)</span>
+      <div class="session-stat">
+        <span>Sessions:</span>
+        <span class="session-stat-value">${sessions}</span>
+      </div>
+      <div class="session-stat">
+        <span>Avg Session:</span>
+        <span class="session-stat-value">${formatTime(avgSession)}</span>
       </div>
     `;
-    categoriesContainer.appendChild(categoryItem);
-  }
-
-  // Sort websites by time spent
-  const sortedWebsites = Object.entries(weekData.sites)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 10); // Show top 10 websites
-
-  // Update websites list
-  for (const [domain, time] of sortedWebsites) {
-    const percentage = ((time / totalTime) * 100).toFixed(1);
-    const formattedTime = formatTime(time);
-    const cleanName = getCleanWebsiteName(domain);
     
-    const websiteItem = document.createElement('div');
-    websiteItem.className = 'weekly-item';
-    websiteItem.innerHTML = `
-      <div class="weekly-item-info">
-        <img class="weekly-item-icon" src="${getWebsiteLogo(domain)}" alt="${cleanName} logo" 
-             onerror="this.src='icons/globe.png'">
-        <div class="weekly-item-name">${cleanName}</div>
-      </div>
-      <div class="weekly-item-stats">
-        <span class="weekly-item-time">${formattedTime}</span>
-        <span class="weekly-item-percentage">(${percentage}%)</span>
-      </div>
-    `;
-    websitesContainer.appendChild(websiteItem);
-  }
+    sessionInsights.appendChild(sessionCard);
+  });
 }
 
-// Function to update weekly chart
-async function updateWeeklyChart() {
-  try {
-    console.log('Updating weekly chart...');
-    const { timeData = {} } = await chrome.storage.local.get('timeData');
-    const weekData = getWeekData(timeData);
-    const ctx = document.getElementById('weeklyChart');
+// Data export
+function exportData() {
+  chrome.storage.local.get(['timeData', 'goals', 'categories'], (result) => {
+    const data = {
+      timeData: result.timeData || {},
+      goals: result.goals || {},
+      categories: result.categories || {},
+      exportDate: new Date().toISOString()
+    };
     
-    if (!ctx) {
-      console.error('Weekly chart canvas not found');
-      return;
-    }
-    console.log('Found chart canvas:', ctx);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `webtimetracker-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
 
-    // Destroy existing chart if it exists
-    if (weeklyChart) {
-      console.log('Destroying existing chart');
-      weeklyChart.destroy();
-    }
-
-    // Get the last 7 days of data
-    const today = new Date();
-    const dates = [];
-    const dailyTotals = [];
-    const categoryData = {};
-
-    // Initialize the arrays with the last 7 days
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const dateStr = getDateString(date);
-      dates.push(getDayName(date));
+// Collapsible sections
+function initializeCollapsibleSections() {
+  document.querySelectorAll('.section-header').forEach(header => {
+    header.addEventListener('click', function() {
+      const target = this.getAttribute('data-target');
+      const content = document.getElementById(target);
+      const icon = this.querySelector('.toggle-icon');
       
-      const dayData = timeData[dateStr]?.categories || {};
-      const dayTotal = Object.values(dayData).reduce((sum, time) => sum + time, 0);
-      dailyTotals.push(dayTotal / 3600000); // Convert to hours
-
-      // Collect category data
-      Object.entries(dayData).forEach(([category, time]) => {
-        if (!categoryData[category]) {
-          categoryData[category] = new Array(7).fill(0);
-        }
-        categoryData[category][6 - i] = time / 3600000; // Convert to hours
-      });
-    }
-
-    console.log('Prepared chart data:', {
-      dates,
-      categoryData
-    });
-
-    // Create datasets for each category
-    const datasets = Object.entries(categoryData).map(([category, data], index) => ({
-      label: category,
-      data: data,
-      backgroundColor: [
-        '#4a90e2',
-        '#27ae60',
-        '#e67e22',
-        '#e74c3c',
-        '#95a5a6',
-        '#9b59b6',
-        '#f1c40f'
-      ][index % 7],
-      borderWidth: 1
-    }));
-
-    console.log('Creating new chart with datasets:', datasets);
-
-    // Create the chart
-    weeklyChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: dates,
-        datasets: datasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            stacked: true,
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
-            }
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Hours'
-            },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              boxWidth: 12
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const hours = Math.floor(context.raw);
-                const minutes = Math.round((context.raw - hours) * 60);
-                return `${context.dataset.label}: ${hours}h ${minutes}m`;
-              }
-            }
-          }
-        }
+      if (content.classList.contains('show')) {
+        content.classList.remove('show');
+        this.setAttribute('aria-expanded', 'false');
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.add('show');
+        this.setAttribute('aria-expanded', 'true');
+        icon.style.transform = 'rotate(180deg)';
       }
     });
+  });
+}
 
-    console.log('Chart created successfully');
-
-    // Update the weekly details
-    await updateWeeklyDetails(weekData);
-  } catch (error) {
-    console.error('Error updating weekly insights:', error);
+// Weekly details
+async function updateWeeklyDetails() {
+  const weeklyData = await getTimeData('week');
+  
+  // Update categories
+  const categoriesContainer = document.getElementById('weeklyCategories');
+  if (categoriesContainer) {
+    categoriesContainer.innerHTML = '';
+    
+    const categories = Object.entries(weeklyData.categories || {})
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+    
+    categories.forEach(([category, time]) => {
+      const percentage = Math.round((time / Object.values(weeklyData.categories).reduce((a, b) => a + b, 0)) * 100);
+      
+      const item = document.createElement('div');
+      item.className = 'weekly-item';
+      item.innerHTML = `
+        <div class="weekly-item-info">
+          <div class="weekly-item-icon" style="background: ${CATEGORY_COLORS[category] || '#ccc'}">📊</div>
+          <div>
+            <div class="weekly-item-name">${category}</div>
+            <div class="weekly-item-time">${formatTime(time)}</div>
+          </div>
+        </div>
+        <div class="weekly-item-percentage">${percentage}%</div>
+      `;
+      categoriesContainer.appendChild(item);
+    });
+  }
+  
+  // Update websites
+  const websitesContainer = document.getElementById('weeklyWebsites');
+  if (websitesContainer) {
+    websitesContainer.innerHTML = '';
+    
+    const websites = Object.entries(weeklyData.sites || {})
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+    
+    websites.forEach(([site, time]) => {
+      const percentage = Math.round((time / Object.values(weeklyData.sites).reduce((a, b) => a + b, 0)) * 100);
+      
+      const item = document.createElement('div');
+      item.className = 'weekly-item';
+      item.innerHTML = `
+        <div class="weekly-item-info">
+          <div class="weekly-item-icon">
+            <img src="https://www.google.com/s2/favicons?sz=24&domain=${site}" 
+                 alt="${site}" 
+                 style="width: 16px; height: 16px;"
+                 onerror="this.style.display='none'">
+          </div>
+          <div>
+            <div class="weekly-item-name">${site}</div>
+            <div class="weekly-item-time">${formatTime(time)}</div>
+          </div>
+        </div>
+        <div class="weekly-item-percentage">${percentage}%</div>
+      `;
+      websitesContainer.appendChild(item);
+    });
   }
 }
 
 // Flag selector functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const selectedFlag = document.getElementById('selectedFlag');
-    const flagDropdown = document.getElementById('flagDropdown');
-
-    // Toggle dropdown
-    selectedFlag.addEventListener('click', function() {
-        flagDropdown.classList.toggle('show');
+function initializeFlagSelector() {
+  const selectedFlag = document.getElementById('selectedFlag');
+  const flagDropdown = document.getElementById('flagDropdown');
+  const flagOptions = document.querySelectorAll('.flag-option');
+  
+  if (!selectedFlag || !flagDropdown) return;
+  
+  selectedFlag.addEventListener('click', (e) => {
+    e.stopPropagation();
+    flagDropdown.classList.toggle('show');
+  });
+  
+  flagOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const flagCode = option.getAttribute('data-flag');
+      const flagImg = option.querySelector('img').src;
+      const flagText = option.querySelector('span').textContent;
+      
+      document.getElementById('currentFlag').src = flagImg;
+      document.getElementById('currentFlag').alt = flagText;
+      
+      flagDropdown.classList.remove('show');
+      
+      // Save language preference
+      chrome.storage.local.set({ selectedLanguage: flagCode });
     });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.closest('.flag-container')) {
-            flagDropdown.classList.remove('show');
-        }
-    });
-});
-
-// Language translations
-const translations = {
-    en: {
-        title: "WebTimeTracker",
-        today: "Today",
-        thisWeek: "This Week",
-        totalTime: "Total Time",
-        goalsAndLimits: "Goals & Limits",
-        settings: "Settings",
-        more: "More",
-        topSites: "Top Sites",
-        blockWebsite: "Block Website",
-        example: "e.g., facebook.com",
-        minutes: "Minutes",
-        blockSite: "Block Site",
-        currentlyBlocked: "Currently Blocked Sites",
-        noBlockedSites: "no current site block",
-        totalTimeBtn: "Total Time",
-        productiveTimeBtn: "Productive",
-        distractingTimeBtn: "Distracting"
-    },
-    hi: {
-        title: "वेबटाइमट्रैकर",
-        today: "आज",
-        thisWeek: "इस सप्ताह",
-        totalTime: "कुल समय",
-        goalsAndLimits: "लक्ष्य और सीमाएँ",
-        settings: "सेटिंग्स",
-        more: "अधिक",
-        topSites: "शीर्ष साइटें",
-        blockWebsite: "वेबसाइट ब्लॉक करें",
-        example: "जैसे, facebook.com",
-        minutes: "मिनट",
-        blockSite: "साइट ब्लॉक करें",
-        currentlyBlocked: "वर्तमान में ब्लॉक की गई साइटें",
-        noBlockedSites: "कोई वर्तमान साइट ब्लॉक नहीं",
-        totalTimeBtn: "कुल समय",
-        productiveTimeBtn: "उत्पादक",
-        distractingTimeBtn: "व्याकुल"
-    },
-    zh: {
-        title: "网站时间跟踪器",
-        today: "今天",
-        thisWeek: "本周",
-        totalTime: "总时间",
-        goalsAndLimits: "目标与限制",
-        settings: "设置",
-        more: "更多",
-        topSites: "常用网站",
-        blockWebsite: "封锁网站",
-        example: "例如，facebook.com",
-        minutes: "分钟",
-        blockSite: "封锁网站",
-        currentlyBlocked: "当前封锁的网站",
-        noBlockedSites: "暂无封锁网站",
-        totalTimeBtn: "总时间",
-        productiveTimeBtn: "高效",
-        distractingTimeBtn: "分心"
-    },
-    es: {
-        title: "Rastreador de Tiempo Web",
-        today: "Hoy",
-        thisWeek: "Esta Semana",
-        totalTime: "Tiempo Total",
-        goalsAndLimits: "Metas y Límites",
-        settings: "Configuración",
-        more: "Más",
-        topSites: "Sitios Principales",
-        blockWebsite: "Bloquear Sitio Web",
-        example: "p.ej., facebook.com",
-        minutes: "Minutos",
-        blockSite: "Bloquear Sitio",
-        currentlyBlocked: "Sitios Bloqueados",
-        noBlockedSites: "no hay sitios bloqueados",
-        totalTimeBtn: "Tiempo Total",
-        productiveTimeBtn: "Productivo",
-        distractingTimeBtn: "Distracción"
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    flagDropdown.classList.remove('show');
+  });
+  
+  // Load saved language
+  chrome.storage.local.get('selectedLanguage', (result) => {
+    if (result.selectedLanguage) {
+      const option = document.querySelector(`[data-flag="${result.selectedLanguage}"]`);
+      if (option) {
+        option.click();
+      }
     }
-};
-
-// Function to update text content based on selected language
-function updateLanguage(langCode) {
-    const lang = translations[langCode] || translations.en;
-    
-    // Update all text content
-    document.querySelector('h1').textContent = lang.title;
-    document.getElementById('todayBtn').textContent = lang.today;
-    document.getElementById('weekBtn').textContent = lang.thisWeek;
-    
-    // Update total time section
-    const totalTimeSection = document.querySelector('.total-time h2');
-    if (totalTimeSection) {
-        totalTimeSection.textContent = lang.totalTime;
-    }
-    
-    // Update action buttons
-    const goalsBtn = document.getElementById('goalsBtn');
-    if (goalsBtn) {
-        goalsBtn.innerHTML = `<span class="button-icon">🎯</span>${lang.goalsAndLimits}`;
-    }
-    
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.innerHTML = `<span class="button-icon">⚙️</span>${lang.settings}`;
-    }
-    
-    const moreBtn = document.getElementById('moreBtn');
-    if (moreBtn) {
-        moreBtn.innerHTML = `<span class="button-icon">📊</span>${lang.more}`;
-    }
-    
-    // Update time period buttons
-    document.getElementById('totalTimeBtn').textContent = lang.totalTimeBtn;
-    document.getElementById('productiveTimeBtn').textContent = lang.productiveTimeBtn;
-    document.getElementById('distractingTimeBtn').textContent = lang.distractingTimeBtn;
-    
-    // Update block website section
-    const blockSection = document.querySelector('.block-site');
-    if (blockSection) {
-        blockSection.querySelector('h2').textContent = lang.blockWebsite;
-        blockSection.querySelector('input').placeholder = lang.example;
-        blockSection.querySelector('button').textContent = lang.blockSite;
-    }
-    
-    // Update blocked sites section
-    const blockedSites = document.querySelector('.blocked-sites-list');
-    if (blockedSites) {
-        const noSites = blockedSites.querySelector('.no-sites');
-        if (noSites) {
-            noSites.textContent = lang.noBlockedSites;
-        }
-    }
+  });
 }
 
-// Update flag selection handler
-document.querySelectorAll('.flag-option').forEach(option => {
-    option.addEventListener('click', function() {
-        const flagCode = this.getAttribute('data-flag');
-        const flagImg = this.querySelector('img');
-        const currentFlag = document.getElementById('currentFlag');
-        currentFlag.src = flagImg.src;
-        currentFlag.alt = this.querySelector('span').textContent;
-        
-        // Map flag codes to language codes
-        const langMap = {
-            'us': 'en',
-            'in': 'hi',
-            'cn': 'zh',
-            'jp': 'ja',
-            'de': 'de',
-            'fr': 'fr',
-            'es': 'es'
-        };
-        
-        // Update language
-        const langCode = langMap[flagCode] || 'en';
-        updateLanguage(langCode);
-        
-        // Save selected language to storage
-        chrome.storage.sync.set({ selectedLanguage: langCode });
-        
-        // Close dropdown
-        document.getElementById('flagDropdown').classList.remove('show');
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load theme settings first
+  loadThemeSettings();
+  
+  // Initialize flag selector
+  initializeFlagSelector();
+  
+  // Set up period buttons
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    currentPeriod = 'today';
+    document.querySelectorAll('.time-period button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('todayBtn').classList.add('active');
+    updateAllData();
+  });
+  
+  document.getElementById('weekBtn').addEventListener('click', () => {
+    currentPeriod = 'week';
+    document.querySelectorAll('.time-period button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('weekBtn').classList.add('active');
+    updateAllData();
+  });
+  
+  // Dashboard button
+  document.getElementById('dashboardBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('device-select.html') });
+  });
+  
+  // Action buttons
+  document.getElementById('goalsBtn').addEventListener('click', () => openModal('goalsModal'));
+  document.getElementById('settingsBtn').addEventListener('click', () => openModal('settingsModal'));
+  document.getElementById('moreBtn').addEventListener('click', () => openModal('moreModal'));
+  
+  // Close buttons
+  document.getElementById('closeGoalsBtn').addEventListener('click', () => closeModal('goalsModal'));
+  document.getElementById('closeSettingsBtn').addEventListener('click', () => closeModal('settingsModal'));
+  document.getElementById('closeMoreBtn').addEventListener('click', () => closeModal('moreModal'));
+  document.getElementById('closeEditGoalsBtn').addEventListener('click', () => closeModal('editGoalsModal'));
+  
+  // Edit goals button
+  document.getElementById('editGoalsBtn').addEventListener('click', () => {
+    closeModal('goalsModal');
+    openModal('editGoalsModal');
+    populateEditGoalsModal();
+  });
+  
+  // Theme buttons
+  document.getElementById('lightModeBtn').addEventListener('click', () => {
+    applyTheme('light', getCurrentAccentColor());
+    chrome.storage.local.set({ theme: 'light' });
+    updateThemeButtons('light', getCurrentAccentColor());
+  });
+  
+  document.getElementById('darkModeBtn').addEventListener('click', () => {
+    applyTheme('dark', getCurrentAccentColor());
+    chrome.storage.local.set({ theme: 'dark' });
+    updateThemeButtons('dark', getCurrentAccentColor());
+  });
+  
+  document.getElementById('systemModeBtn').addEventListener('click', () => {
+    applyTheme('system', getCurrentAccentColor());
+    chrome.storage.local.set({ theme: 'system' });
+    updateThemeButtons('system', getCurrentAccentColor());
+  });
+  
+  // Color buttons
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.getAttribute('data-color');
+      applyTheme(getCurrentTheme(), color);
+      chrome.storage.local.set({ accentColor: color });
+      updateThemeButtons(getCurrentTheme(), color);
     });
+  });
+  
+  // Save settings button
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    closeModal('settingsModal');
+  });
+  
+  // Save goals button
+  document.getElementById('saveGoalsBtn').addEventListener('click', () => {
+    saveGoalsFromModal();
+    closeModal('editGoalsModal');
+  });
+  
+  // Export data button
+  document.getElementById('exportDataBtn').addEventListener('click', exportData);
+  
+  // Block site functionality
+  const addBlockBtn = document.getElementById('addBlockBtn');
+  if (addBlockBtn) {
+    addBlockBtn.addEventListener('click', blockSite);
+  }
+  
+  // Initialize collapsible sections
+  initializeCollapsibleSections();
+  
+  // Load initial data
+  await updateAllData();
+  
+  // Set up periodic updates
+  setInterval(updateAllData, 60000); // Update every minute
 });
 
-// Load saved language preference
-chrome.storage.sync.get(['selectedLanguage'], function(result) {
-    if (result.selectedLanguage) {
-        updateLanguage(result.selectedLanguage);
-    }
-});
+// Helper functions for theme management
+function getCurrentTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'light';
+}
+
+function getCurrentAccentColor() {
+  const activeColorBtn = document.querySelector('.color-btn.active');
+  return activeColorBtn ? activeColorBtn.getAttribute('data-color') : 'blue';
+}
+
+// Update all data
+async function updateAllData() {
+  await updateTotalTime();
+  await updateCategoryChart();
+  await updateTopSites();
+  await updateGoalsDisplay();
+  await updateSessionInsights();
+  await updateWeeklyChart();
+  await updateWeeklyDetails();
+  await updateBlockedSitesList();
+  await populateCategoriesList();
+}
+
+// Goals modal functions
+async function populateEditGoalsModal() {
+  const goals = await getGoals();
+  const container = document.getElementById('categoryGoals');
+  
+  container.innerHTML = '';
+  
+  const goalCategories = [
+    { key: 'productiveHours', name: 'Productive / Educational' },
+    { key: 'entertainmentHours', name: 'Entertainment' },
+    { key: 'socialMediaHours', name: 'Social Media' },
+    { key: 'newsHours', name: 'News' },
+    { key: 'gamesHours', name: 'Games' },
+    { key: 'shoppingHours', name: 'Shopping' }
+  ];
+  
+  goalCategories.forEach(({ key, name }) => {
+    const item = document.createElement('div');
+    item.className = 'category-goal-item';
+    item.innerHTML = `
+      <span class="category-goal-name">${name}</span>
+      <div class="goal-input-wrapper">
+        <input type="number" 
+               class="category-goal-input" 
+               value="${goals[key] || 0}" 
+               min="0" 
+               max="24" 
+               step="0.5"
+               data-goal="${key}">
+        <span class="goal-unit">hours</span>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function saveGoalsFromModal() {
+  const inputs = document.querySelectorAll('.category-goal-input');
+  const goals = {};
+  
+  inputs.forEach(input => {
+    const goalKey = input.getAttribute('data-goal');
+    const value = parseFloat(input.value) || 0;
+    goals[goalKey] = value;
+  });
+  
+  // Preserve existing streak
+  chrome.storage.local.get('goals', (result) => {
+    const existingGoals = result.goals || {};
+    goals.streak = existingGoals.streak || 0;
+    
+    chrome.storage.local.set({ goals }, () => {
+      updateGoalsDisplay();
+    });
+  });
+}
+
+// Make functions globally available
+window.blockSite = blockSite;
+window.unblockSite = unblockSite;
+window.exportData = exportData;

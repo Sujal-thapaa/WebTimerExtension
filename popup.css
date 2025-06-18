@@ -314,7 +314,7 @@ button.active {
 
 .stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -371,11 +371,11 @@ h2 {
 }
 
 .charts {
-  background-color: white;
+  background-color: var(--card-bg);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
 }
 
 .chart-container {
@@ -383,11 +383,11 @@ h2 {
 }
 
 .top-sites {
-  background-color: white;
+  background-color: var(--card-bg);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
 }
 
 .sites-list {
@@ -428,6 +428,7 @@ h2 {
 
 .actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -484,7 +485,7 @@ h2 {
 .categories-editor, .goals-editor {
   margin: 20px 0;
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 8px;
 }
 
@@ -514,7 +515,7 @@ input[type="number"] {
 }
 
 .category-item {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px;
@@ -677,7 +678,7 @@ input[type="number"] {
 .streak {
   margin-top: 15px;
   padding: 10px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   text-align: center;
   font-weight: 500;
@@ -700,7 +701,7 @@ progress::-webkit-progress-value {
 
 /* New top sites section */
 .top-sites {
-  background: var(--bg-secondary);
+  background: var(--card-bg);
   padding: 15px;
   border-radius: 10px;
 }
@@ -710,7 +711,7 @@ progress::-webkit-progress-value {
   justify-content: space-between;
   padding: 8px;
   margin: 5px 0;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 5px;
 }
 
@@ -895,10 +896,10 @@ button:hover {
 }
 
 .session-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .session-site {
@@ -918,7 +919,7 @@ button:hover {
 
 .session-stat-value {
   font-weight: 500;
-  color: var(--primary-color);
+  color: var(--accent-color);
 }
 
 .secondary-button {
@@ -1452,8 +1453,8 @@ h1, h2, h3, h4, h5, h6 {
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #e0e0e0;
+    background: var(--modal-bg);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-top: 5px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1476,7 +1477,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .flag-option:hover {
-    background-color: #f5f5f5;
+    background-color: var(--bg-secondary);
 }
 
 .flag-option img {
@@ -1489,7 +1490,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .flag-option span {
     font-size: 14px;
-    color: #333;
+    color: var(--text-color);
 }
 
 /* Total Time header with flag */
@@ -1526,4 +1527,136 @@ h1, h2, h3, h4, h5, h6 {
 
 #dashboardBtn:hover {
     filter: brightness(1.05);
+}
+
+/* Block site styles */
+.block-site {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.block-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.block-input input {
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--input-bg);
+    color: var(--input-text);
+}
+
+.block-input button {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.blocked-sites-list {
+    margin-top: 12px;
+}
+
+.blocked-site-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin: 5px 0;
+    background: var(--bg-secondary);
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+}
+
+.blocked-site-info {
+    flex: 1;
+}
+
+.blocked-site-name {
+    font-weight: 500;
+    color: var(--text-color);
+    display: block;
+}
+
+.blocked-site-time {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+
+.unblock-btn {
+    background: var(--error-color);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.unblock-btn:hover {
+    opacity: 0.9;
+}
+
+/* Close button styles */
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-color);
+}
+
+/* AI and Focus Mode buttons */
+.ai-focus-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.ai-focus-buttons button {
+    flex: 1;
+    padding: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.ai-focus-buttons button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.ai-focus-buttons .focus-btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.ai-focus-buttons .social-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }

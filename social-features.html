@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Features - WebTimeTracker</title>
+    <link rel="stylesheet" href="popup.css">
+    <style>
+        body {
+            background: var(--bg-primary);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .social-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .social-header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 16px;
+            color: white;
+        }
+
+        .social-header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .social-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .feature-button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .feature-button:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .leaderboard {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        .leaderboard-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .leaderboard-item:hover {
+            transform: translateX(4px);
+        }
+
+        .rank {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .rank.gold {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #333;
+        }
+
+        .rank.silver {
+            background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+            color: #333;
+        }
+
+        .rank.bronze {
+            background: linear-gradient(135deg, #cd7f32, #daa520);
+            color: white;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .user-stats {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .user-score {
+            font-weight: bold;
+            color: var(--accent-color);
+            font-size: 1.1rem;
+        }
+
+        .challenges {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        .challenge-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .challenge-info {
+            flex: 1;
+        }
+
+        .challenge-title {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .challenge-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .challenge-progress {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .challenge-progress-bar {
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .challenge-reward {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 16px;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .share-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .share-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .share-option {
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg-secondary);
+        }
+
+        .share-option:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-color);
+        }
+
+        .share-option-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .share-option-label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .social-container {
+                padding: 10px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .social-header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="popup.html" class="back-button">
+        ← Back to Dashboard
+    </a>
+
+    <div class="social-container">
+        <div class="social-header">
+            <h1>🤝 Social Features</h1>
+            <p>Connect, compete, and stay motivated with friends</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <div class="feature-title">Friend Challenges</div>
+                <div class="feature-description">
+                    Challenge friends to productivity competitions and see who can maintain the best focus habits.
+                </div>
+                <button class="feature-button" onclick="showComingSoon()">Start Challenge</button>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Share Progress</div>
+                <div class="feature-description">
+                    Share your productivity achievements and milestones with your network to stay accountable.
+                </div>
+                <button class="feature-button" onclick="openShareModal()">Share Now</button>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🏆</div>
+                <div class="feature-title">Team Leaderboards</div>
+                <div class="feature-description">
+                    Join team leaderboards with colleagues or study groups to boost collective productivity.
+                </div>
+                <button class="feature-button" onclick="showComingSoon()">Join Team</button>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <div class="feature-title">Accountability Partners</div>
+                <div class="feature-description">
+                    Get matched with accountability partners who share similar productivity goals and schedules.
+                </div>
+                <button class="feature-button" onclick="showComingSoon()">Find Partner</button>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <div class="leaderboard-header">
+                <div class="leaderboard-icon">🏆</div>
+                <h2>Weekly Leaderboard</h2>
+            </div>
+            
+            <div class="leaderboard-item">
+                <div class="rank gold">1</div>
+                <div class="user-info">
+                    <div class="user-name">Sarah Chen</div>
+                    <div class="user-stats">7-day streak • 42h focus time</div>
+                </div>
+                <div class="user-score">2,840 pts</div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank silver">2</div>
+                <div class="user-info">
+                    <div class="user-name">Alex Rodriguez</div>
+                    <div class="user-stats">5-day streak • 38h focus time</div>
+                </div>
+                <div class="user-score">2,650 pts</div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank bronze">3</div>
+                <div class="user-info">
+                    <div class="user-name">Jordan Kim</div>
+                    <div class="user-stats">6-day streak • 35h focus time</div>
+                </div>
+                <div class="user-score">2,480 pts</div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank">4</div>
+                <div class="user-info">
+                    <div class="user-name">You</div>
+                    <div class="user-stats">4-day streak • 32h focus time</div>
+                </div>
+                <div class="user-score">2,320 pts</div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank">5</div>
+                <div class="user-info">
+                    <div class="user-name">Maya Patel</div>
+                    <div class="user-stats">3-day streak • 28h focus time</div>
+                </div>
+                <div class="user-score">2,180 pts</div>
+            </div>
+        </div>
+
+        <div class="challenges">
+            <div class="leaderboard-header">
+                <div class="leaderboard-icon">🎯</div>
+                <h2>Active Challenges</h2>
+            </div>
+
+            <div class="challenge-item">
+                <div class="challenge-info">
+                    <div class="challenge-title">7-Day Focus Streak</div>
+                    <div class="challenge-description">Complete at least 2 hours of focused work for 7 consecutive days</div>
+                    <div class="challenge-progress">
+                        <div class="challenge-progress-bar" style="width: 57%"></div>
+                    </div>
+                </div>
+                <div class="challenge-reward">🏆 500 pts</div>
+            </div>
+
+            <div class="challenge-item">
+                <div class="challenge-info">
+                    <div class="challenge-title">Social Media Detox</div>
+                    <div class="challenge-description">Keep social media usage under 30 minutes for 5 days</div>
+                    <div class="challenge-progress">
+                        <div class="challenge-progress-bar" style="width: 80%"></div>
+                    </div>
+                </div>
+                <div class="challenge-reward">🎖️ 300 pts</div>
+            </div>
+
+            <div class="challenge-item">
+                <div class="challenge-info">
+                    <div class="challenge-title">Early Bird</div>
+                    <div class="challenge-description">Start your productive work before 9 AM for 3 days</div>
+                    <div class="challenge-progress">
+                        <div class="challenge-progress-bar" style="width: 33%"></div>
+                    </div>
+                </div>
+                <div class="challenge-reward">🌅 200 pts</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="share-modal">
+        <div class="share-modal-content">
+            <h3>Share Your Progress</h3>
+            <p>Let others know about your productivity achievements!</p>
+            
+            <div class="share-options">
+                <div class="share-option" onclick="shareToTwitter()">
+                    <div class="share-option-icon">🐦</div>
+                    <div class="share-option-label">Twitter</div>
+                </div>
+                <div class="share-option" onclick="shareToLinkedIn()">
+                    <div class="share-option-icon">💼</div>
+                    <div class="share-option-label">LinkedIn</div>
+                </div>
+                <div class="share-option" onclick="copyLink()">
+                    <div class="share-option-icon">🔗</div>
+                    <div class="share-option-label">Copy Link</div>
+                </div>
+            </div>
+            
+            <button onclick="closeShareModal()" style="
+                background: var(--accent-color);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin-top: 20px;
+            ">Close</button>
+        </div>
+    </div>
+
+    <script>
+        function openShareModal() {
+            document.getElementById('shareModal').style.display = 'flex';
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+
+        function shareToTwitter() {
+            const text = "Just completed another productive week with WebTimeTracker! 🎯 32 hours of focused work and a 4-day streak. #productivity #focus";
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+            closeShareModal();
+        }
+
+        function shareToLinkedIn() {
+            const text = "Excited to share my productivity progress this week! Using WebTimeTracker to maintain focus and achieve my goals. 32 hours of deep work completed! 💪";
+            const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+            closeShareModal();
+        }
+
+        function copyLink() {
+            const shareText = "Check out my productivity stats: 32h focus time, 4-day streak! 🎯 #WebTimeTracker";
+            navigator.clipboard.writeText(shareText).then(() => {
+                alert('Progress shared to clipboard!');
+                closeShareModal();
+            });
+        }
+
+        function showComingSoon() {
+            alert('🚀 Coming Soon!\n\nThis feature is currently in development. Stay tuned for updates!');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('shareModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeShareModal();
+            }
+        });
+    </script>
+</body>
+</html>

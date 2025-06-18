@@ -61,6 +61,19 @@
       </div>
     </section>
 
+    <!-- AI and Focus Mode buttons -->
+    <section class="ai-focus-buttons">
+      <button onclick="chrome.tabs.create({url: chrome.runtime.getURL('ai-insights.html')})">
+        🤖 AI Insights
+      </button>
+      <button class="focus-btn" onclick="chrome.tabs.create({url: chrome.runtime.getURL('focus-mode.html')})">
+        🎯 Focus Mode
+      </button>
+      <button class="social-btn" onclick="chrome.tabs.create({url: chrome.runtime.getURL('social-features.html')})">
+        🤝 Social
+      </button>
+    </section>
+
     <section class="actions">
       <button id="goalsBtn" class="action-button">
         <span class="button-icon">🎯</span>

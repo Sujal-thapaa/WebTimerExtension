@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WebTimeTracker",
-  "version": "1.0",
-  "description": "Track your web browsing time across devices",
+  "version": "2.0",
+  "description": "AI-powered cross-platform screen time tracking with focus modes and social features",
   "permissions": [
     "storage",
     "tabs",
@@ -49,10 +49,14 @@
         "laptop-view.js",
         "overall-view.html",
         "overall-view.js",
+        "ai-insights.html",
+        "focus-mode.html",
+        "social-features.html",
         "utils/*",
         "lib/*",
         "blocked.html",
-        "blocked.js"
+        "blocked.js",
+        "popup.js"
       ],
       "matches": ["<all_urls>"]
     }
