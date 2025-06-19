@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WebTimeTracker",
-  "version": "2.0",
-  "description": "AI-powered cross-platform screen time tracking with focus modes and social features",
+  "version": "1.0",
+  "description": "Track your web browsing time across devices",
   "permissions": [
     "storage",
     "tabs",
@@ -12,15 +12,29 @@
     "alarms"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "https://*.youtube.com/*",
+    "https://openrouter.ai/api/v1/chat/completions"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "exclude_matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.youtube.com/watch*"],
+      "js": ["youtube-classifier.js"],
       "run_at": "document_idle"
     }
   ],
@@ -49,14 +63,10 @@
         "laptop-view.js",
         "overall-view.html",
         "overall-view.js",
-        "ai-insights.html",
-        "focus-mode.html",
-        "social-features.html",
         "utils/*",
         "lib/*",
         "blocked.html",
-        "blocked.js",
-        "popup.js"
+        "blocked.js"
       ],
       "matches": ["<all_urls>"]
     }

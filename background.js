@@ -103,6 +103,9 @@ function getTodayString() {
 
 function getDomainFromUrl(url) {
   try {
+    if (url === chrome.runtime.getURL('dashboard.html')) {
+        return 'Dashboard';
+    }
     const domain = new URL(url).hostname.replace('www.', '');
     return domain;
   } catch {
@@ -228,6 +231,7 @@ async function cleanupExpiredBlocks() {
   const now = Date.now();
   const updated = blockedSites.filter(site => site.expiresAt > now);
   await chrome.storage.local.set({ blockedSites: updated });
+  await setupBlockingRules();
 }
 
 // --- BLOCKING LOGIC (Restored) ---
@@ -257,21 +261,19 @@ async function getBlockedSites() {
 
 // --- TRACKING + NOTIFICATIONS ---
 async function updateTime(url, timeSpent) {
-  const today = getTodayString();
-  if (today !== lastTrackedDate) {
-    handleMidnightReset();
-    lastTrackedDate = today;
-  }
+  if (!url || !timeSpent || timeSpent <= 0) return;
 
+  const today = getTodayString();
   const domain = getDomainFromUrl(url);
   if (!domain) return;
-
+  
+  const category = await getCategoryForUrl(url);
+  
   const { timeData = {} } = await chrome.storage.local.get('timeData');
   if (!timeData[today]) timeData[today] = { sites: {}, categories: {} };
 
   timeData[today].sites[domain] = (timeData[today].sites[domain] || 0) + timeSpent;
 
-  const category = await categorizeWebsite(domain);
   timeData[today].categories[category] = (timeData[today].categories[category] || 0) + timeSpent;
   await chrome.storage.local.set({ timeData });
 
@@ -279,14 +281,48 @@ async function updateTime(url, timeSpent) {
   await checkGoalCompletion(category, timeData[today].categories[category]);
 }
 
-async function categorizeWebsite(domain) {
-  for (const [cat, info] of Object.entries(CATEGORY_KEYWORDS)) {
-    if (info.domains.some(d => domain.includes(d))) return cat;
+// --- MAIN CATEGORIZATION LOGIC ---
+async function getCategoryForUrl(url) {
+  const domain = getDomainFromUrl(url);
+  if (!domain) return 'Other / Uncategorized';
+
+  // 1. Special check for YouTube AI Classification
+  if (url.includes('youtube.com/watch')) {
+    const { youtubeClassification } = await chrome.storage.local.get('youtubeClassification');
+    const validCategories = ['Productive', 'Entertainment', 'News', 'Other'];
+    
+    // Use the AI category if it's valid and available
+    if (youtubeClassification?.category && validCategories.includes(youtubeClassification.category)) {
+      // The AI returns 'Productive', but our category is 'Productive / Educational'
+      if (youtubeClassification.category === 'Productive') {
+        return 'Productive / Educational';
+      }
+      return youtubeClassification.category;
+    }
   }
-  return 'Other';
+
+  // 2. Fallback to keyword/domain-based classification
+  const { categories: userCategories } = await chrome.storage.local.get('categories');
+  const allCategories = { ...DEFAULT_CATEGORIES, ...userCategories };
+
+  for (const [category, data] of Object.entries(allCategories)) {
+    if (data.examples?.some(d => domain.includes(d))) {
+      return category;
+    }
+  }
+
+  return 'Other / Uncategorized';
+}
+
+async function categorizeWebsite(domain) {
+  // This function is now replaced by getCategoryForUrl
+  // Keeping it here to avoid breaking other parts of the code if they still reference it.
+  // In a future refactor, all calls should go to getCategoryForUrl.
+  return getCategoryForUrl(`https://${domain}`);
 }
 
 async function checkNotifications(category, timeSpent) {
+  const { notifications } = await chrome.storage.local.get({ notifications: true });
   if (category === 'Social Media' && timeSpent > 1800000 && !notificationsSent.socialMedia) {
     chrome.notifications.create({
       type: 'basic', iconUrl: 'icons/icon128.png',
