@@ -1,0 +1,35 @@
+/* voiceReview.css */
+.voice-review-card {
+    background-color: var(--card-bg, #2c2d3a);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    color: var(--text-color, #ffffff);
+}
+
+.voice-review-card h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+#voiceSummaryText {
+    margin: 0;
+    line-height: 1.5;
+    text-align: center;
+}
+
+#replayVoiceBtn {
+    background-color: var(--accent-color, #4caf50);
+    border: none;
+    color: var(--text-color, #ffffff);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 12px;
+}
+
+#replayVoiceBtn:hover {
+    background-color: var(--accent-color, #66bb6a);
+} 

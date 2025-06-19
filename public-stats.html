@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebTimeWise - Public Stats</title>
+  <link rel="stylesheet" href="popup.css" />
+  <style>
+    body { background:#1a1a1a; color:#fff; font-family: Arial, sans-serif; margin:0; }
+    .container { max-width:700px; margin:40px auto; padding:0 16px; }
+    h1 { font-size:1.4rem; text-align:center; margin-bottom:24px; }
+    #summaryText { text-align:center; margin:16px 0; line-height:1.5; }
+    #badge { text-align:center; font-size:1.2rem; margin-top:12px; }
+    #copyBtn { display:block; width:100%; background:#4a90e2; border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; margin-top:20px; }
+    #copyBtn:hover { background:#6aa8ff; }
+    .chart-wrapper { background:#2d2d2d; padding:16px; border-radius:12px; }
+  </style>
+  <script src="lib/chart.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1 id="pageHeading">📊 Weekly Public Summary</h1>
+
+    <div class="chart-wrapper">
+      <canvas id="categoryChart"></canvas>
+    </div>
+
+    <p id="summaryText">Loading summary...</p>
+    <div id="badge"></div>
+    <button id="copyBtn">🔗 Copy Public Link</button>
+  </div>
+
+  <script type="module" src="public-stats.js"></script>
+</body>
+</html> 

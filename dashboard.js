@@ -31,6 +31,11 @@
         }));
       };
       (document.head || document.documentElement).appendChild(s);
+
+      // Inject voiceReview.js
+      const vr = document.createElement('script');
+      vr.src = chrome.runtime.getURL('voiceReview.js');
+      (document.head || document.documentElement).appendChild(vr);
     }
   } catch (error) {
     console.error('Error loading popup:', error);

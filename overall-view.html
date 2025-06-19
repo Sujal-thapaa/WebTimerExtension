@@ -6,6 +6,7 @@
   <title>WebTimeWise - Overall View</title>
   <link rel="stylesheet" href="popup.css" />
   <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="voiceReview.css" />
   <script src="lib/chart.min.js"></script>
   <style>
     :root {
@@ -200,6 +201,11 @@
         <canvas id="deviceChart"></canvas>
       </div>
     </div>
+    <div id="voiceReviewCard" class="voice-review-card">
+      <h3 style="text-align:center;">🔊 Weekly AI Review</h3>
+      <p id="voiceSummaryText">Generating summary...</p>
+      <button id="replayVoiceBtn" class="action-btn" style="width:100%;margin-top:8px;">Replay 🔁</button>
+    </div>
     <div class="sites-section">
       <div class="top-sites">
         <h2>Browser Sites <span id="browserTime" class="device-time"></span></h2>
@@ -239,5 +245,6 @@
     </div>
   </div>
   <script type="module" src="overall-view.js"></script>
+  <script src="voiceReview.js"></script>
 </body>
 </html>

@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
         case 'laptop':
           window.location.href = 'laptop-view.html';
           break;
+        case 'share':
+          const username = localStorage.getItem('wtw_username') || 'guest';
+          window.location.href = `public-stats.html?user=${encodeURIComponent(username)}`;
+          break;
       }
     });
   });

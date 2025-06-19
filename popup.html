@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebTimeWise</title>
     <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="voiceReview.css">
     <script src="lib/chart.min.js"></script>
 </head>
 <body>
@@ -94,6 +95,11 @@
             <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
                 <canvas id="weeklyWebsiteChart"></canvas>
             </div>
+            <div id="voiceReviewCard" class="voice-review-card">
+                <h3 style="text-align:center;">🔊 Weekly AI Review</h3>
+                <p id="voiceSummaryText">This week, you spent 14 hours on your devices. 5 hours were productive, 4 hours on entertainment, and 5 hours on social media. Great work on hitting your daily goals 4 out of 7 days!</p>
+                <button id="replayVoiceBtn" class="action-btn" style="width:100%;margin-top:8px;">Replay 🔁</button>
+            </div>
             <button id="exportDataBtn" class="action-btn">Export Data</button>
             <!-- Other content for 'More' modal -->
         </div>
@@ -126,5 +132,6 @@
     </div>
 
     <script src="popup.js"></script>
+    <script src="voiceReview.js"></script>
 </body>
 </html>
