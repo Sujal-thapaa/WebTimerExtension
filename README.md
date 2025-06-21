@@ -1,162 +1,188 @@
-Project Name
-───────────
-WebTimeWise – a cross-platform screen-time coach consisting of a Chrome extension, an Expo/React-Native companion app, and a Supabase back-end.
+# 📊 WebTimeWise
 
-High-level flow
-───────────────
-1. Chrome extension tracks browser activity, writes daily aggregates to `chrome.storage.local`, blocks distracting sites, shows interactive dashboards, and fetches mobile data from Supabase.
-2. Expo mobile app lets the user edit / sync their phone-usage data to the same Supabase table.
-3. Supabase (PostgreSQL + PostgREST) acts as the single source of truth for non-browser devices and for public-share links.
-4. A public “Weekly Summary” webpage reads the cached data from the extension and offers one-click share to LinkedIn, Facebook, Twitter, WhatsApp, etc.
+A cross-platform screen-time coach consisting of a **Chrome Extension**, an **Expo/React-Native mobile app**, and a **Supabase back-end**.
 
-────────────────────────────────────────
-Chrome Extension (WebTimeWise)
-────────────────────────────────────────
-Language & tooling
-• Manifest v3, pure JavaScript (ES modules)
-• HTML/CSS (dark-mode variables)
-• Chart.js 4 for pie / doughnut / line charts
-• Google Favicon service for site logos
-• Flags for i18n; translations managed in `popup.js`
-• Bundling: none – shipped as source files
+---
 
-Core background logic (`background.js`)
-• Tab tracking (onActivated, onUpdated, onFocusChanged)
-• 1 s interval to add time-deltas into `timeData[date].sites|categories`
-• Dynamic blocking via `chrome.declarativeNetRequest` for manual blocks
-• Focus-Mode blocking via live redirect inside `startTracking()`
-• Midnight reset scheduler (setTimeout → schedule next midnight)
-• Goals notifications (basic & social-media alert)
-• Alarms:
-– `blockCleanup` (remove expired manual blocks)
-– `focusModeOff` (auto-disable Focus Mode timer)
+## 🔁 High-Level Flow
 
-Popup UI (`popup.html / popup.js / popup.css`)
-• Today / This-week toggles, category/website switcher
-• Top-sites list, category colour dots, session insights, goals modal, settings modal
-• Language flag picker (English, 中文, हिन्दी, 日本語, Français, Español)
-• Focus-Mode section (collapsible `<details>` with favicon list, add-site input, toggle switch, optional timer & live countdown)
-• Removed legacy “Block Website” section and merged timer into Focus panel
-• Footer button opens full-screen dashboard; bolt badge for attribution
+1. 🧩 **Chrome Extension** – Tracks browser activity, blocks distractions, stores usage data, and fetches synced mobile usage from Supabase.
+2. 📱 **Expo Mobile App** – Allows users to sync/edit mobile app usage data to Supabase.
+3. 🛢️ **Supabase** – Central database for syncing mobile and browser usage.
+4. 🌐 **Public Share Page** – A “Weekly Summary” webpage to visualize and share time usage via social platforms.
 
-Dashboard pages
-• dashboard.html – injects popup markup, full-screen layout
-• device-select.html – card grid (Browser, Mobile, Laptop, Overall)
-• mobile-view.html + mobile-view.js – reads Supabase `device_usage` row, draws doughnut & list
-• laptop-view.html – dummy desktop numbers (for demo)
-• overall-view.html – combines browser + mobile + laptop for total pie charts
-• public-stats.html – standalone share page (served by extension); copy-link & share buttons
+---
 
-Blocked page (`blocked.html / blocked.js`)
-• Shows remaining minutes; suggestions list; “Go Back” button
-• When query-string contains `focus=1` it polls `chrome.storage` and redirects back as soon as `focusActive` flips to false or receives a `FOCUS_ENDED` message.
+## 🧩 Chrome Extension
 
-YouTube AI classification (`youtube-classifier.js`)
-• Content-script injected only on `youtube.com/watch*`
-• URL watcher (setInterval) + DOMContentLoaded gate
-• Collects title, channel, description, sends prompt to OpenRouter GPT-3.5-Turbo
-• Caches result in `chrome.storage.local` (key `youtubeClassification`)
-• Normalises replies to {Productive | Entertainment | News | Other}
+### ⚙️ Tech Stack
+- Manifest V3
+- JavaScript (ES modules)
+- HTML/CSS (Dark Mode support)
+- [Chart.js 4](https://www.chartjs.org/)
+- Google Favicon API
+- Multi-language support via flag picker
+- No bundler – all files shipped as source
 
-Content page visit logger (`content.js`)
-• Retries message to background with exponential back-off
-• Extracts page text; very light keyword classification
-• Stores last 1 000 visits locally for weekly summary
+### 🧠 Background Logic
+- Tab activity tracking using Chrome APIs
+- 1s interval delta-tracking into per-site/category store
+- Manual block + Focus Mode blocking via `declarativeNetRequest`
+- Scheduled midnight reset
+- Goal notifications
+- Alarm events for block expiry & Focus timer
 
-────────────────────────────────────────
-Mobile App (Expo + React Native)
-────────────────────────────────────────
-Tooling & libraries
-• Expo SDK 50 (Web + iOS + Android)
-• React-Native hooks (`useMobileData`, `useFrameworkReady`)
-• AsyncStorage for local-draft usage entries
-• Fetch API to Supabase REST endpoints (no native SDK – keeps size tiny)
+### 📺 Popup UI
+- Today / This Week view toggle
+- Top sites, category/session insights
+- Goal & settings modals
+- Focus Mode UI: timer, live favicon list, block list
+- Language flags: English, 中文, हिन्दी, 日本語, Français, Español
+- Dashboard button + Built with Bolt badge
 
-Key files
-• `components/ScreenTimeCard.tsx` – circular progress components
-• `hooks/useScreenTimeData.ts` – gathers dummy or real data, exposes `syncData()`
-• `SyncButton.tsx` – onClick → calls `syncMobileData(payload)`; alerts on success/fail
+### 📊 Dashboard Pages
+- `dashboard.html` – Full-screen injected popup UI
+- `device-select.html` – Cards: Browser, Mobile, Laptop, Overall
+- `mobile-view.html` – Reads mobile usage data from Supabase
+- `laptop-view.html` – Demo-only view
+- `overall-view.html` – Combines all devices
+- `public-stats.html` – Standalone shareable summary
 
-Supabase sync (`syncMobileData`)
+### 🚫 Blocked Page
+- Displays remaining time
+- Shows suggestions + Go Back button
+- Automatically unblocks when Focus ends
+
+### 🎥 YouTube Classification
+- Classifies watched videos via OpenRouter GPT-3.5-Turbo
+- Injected only on `youtube.com/watch*`
+- Cached locally in `chrome.storage.local`
+
+### 🧾 Content Script Logger
+- Captures visit details + light classification
+- Stores last 1000 visits for summaries
+
+---
+
+## 📱 Mobile App (Expo + React Native)
+
+### ⚙️ Libraries
+- Expo SDK 50
+- React Hooks
+- AsyncStorage
+- Supabase REST (no native SDK)
+
+### 🧩 Key Components
+- `ScreenTimeCard.tsx` – Circular progress component
+- `useScreenTimeData.ts` – Data collection + syncing
+- `SyncButton.tsx` – One-click upload to Supabase
+
+### 🔄 Supabase Sync (Example)
 ```ts
 POST https://<project>.supabase.co/rest/v1/device_usage
 Headers:
-apikey, Authorization (anon_key)
-Prefer: resolution=merge-duplicates
+  apikey, Authorization
+  Prefer: resolution=merge-duplicates
+
 Body:
-{ device:'mobile', date:'YYYY-MM-DD', data:[{app,time,domain,category}] }
-```
+{
+  device: "mobile",
+  date: "YYYY-MM-DD",
+  data: [{ app, time, domain, category }]
+}
+🗄️ Supabase Back-End
+PostgreSQL 15, us-east-1 region
 
-On web (localhost:8081) CORS works automatically because Supabase
-sends `Access-Control-Allow-Origin:*`.
+Table: device_usage
 
-────────────────────────────────────────
-Supabase (back-end)
-────────────────────────────────────────
-• PostgreSQL 15, region – us-east-1
-• Table `device_usage`
-Columns: id (uuid default), device (text), date (date), data (jsonb)
-Composite UNIQUE(device,date)
-• Row-Level Security
-```sql
+Columns: id, device, date, data (jsonb)
+
+Unique Composite Key: (device, date)
+
+🔐 Row-Level Security
+sql
+Copy
+Edit
 create policy anon_upsert
 on device_usage
 for insert with check (true)
 using ((device = 'mobile' OR device = 'browser' OR device = 'laptop'));
+
 create policy anon_update
 on device_usage
-for update using ( device = 'mobile' OR device = 'browser' OR device = 'laptop');
-```
+for update using (device = 'mobile' OR device = 'browser' OR device = 'laptop');
+🌐 Public Share Page
+Shows 7-day summary from chrome.storage.local
 
-────────────────────────────────────────
-Public weekly-summary page
-────────────────────────────────────────
-• Fetches last 7 days from `chrome.storage.local` for the active user
-• Pie chart of categories, text summary, “badge” (🏆 / 💪 / ⏳)
-• Share sheet: Web Share API fallback → manual links
-– LinkedIn, Facebook, Twitter (X), WhatsApp; Instagram shows alert to copy link.
+Includes badge (🏆 / 💪 / ⏳)
 
-────────────────────────────────────────
-Browser-extension APIs used
-────────────────────────────────────────
-• storage.local
-• tabs (query, get, update)
-• windows (focus change)
-• alarms
-• declarativeNetRequest (dynamic rules)
-• notifications
-• i18n (flag UI handled manually)
-• runtime messaging (content ⇄ background ⇄ popup)
+Web Share API + manual share links (LinkedIn, X, WhatsApp)
 
-────────────────────────────────────────
-3rd-party services
-────────────────────────────────────────
-• OpenRouter.ai (GPT-3.5-Turbo) – YouTube category AI
-• Supabase – Postgres hosting, REST, RLS, Dashboard
-• Google Favicon – quick site icons
+🌐 Chrome APIs Used
+storage.local
 
-────────────────────────────────────────
-Build / run
-────────────────────────────────────────
-Extension: load `project/` as an unpacked extension in Chrome → click toolbar icon.
-Mobile app: `npm start` inside `MobileApp/`, choose “Run in browser” or scan QR in Expo-Go.
-No bundler/server required; all assets served from extension package or Expo dev-server.
+tabs, windows
 
-────────────────────────────────────────
-Features checklist
-────────────────────────────────────────
-✓ Real-time browser tracking (per-site & per-category)
-✓ Goal setting & notifications
-✓ Focus Mode with per-mode block-list, optional timer, automatic unblock
-✓ Manual temporary block (merged into Focus UI)
-✓ Weekly & full-dashboard views (browser, mobile, laptop, overall)
-✓ AI-based YouTube category override
-✓ Multi-language UI (EN, ZH, HI, JA, FR, ES)
-✓ Public share page + social share sheet
-✓ Expo app to edit/sync mobile usage
-✓ Supabase back-end with row-level security
-✓ Dark/light themes & accent colour support
+alarms
 
-The result is an entirely client-side, privacy-friendly productivity suite that correlates
-desktop and mobile screen-time, blocks distractions on demand, and lets users brag about
-their weekly stats with a single click.
+declarativeNetRequest
+
+notifications
+
+i18n
+
+runtime messaging
+
+🧩 3rd-Party Services
+🧠 OpenRouter.ai (GPT-3.5-Turbo) – YouTube AI classification
+
+🛢️ Supabase – Database & REST sync
+
+🔎 Google Favicon API – Site logos
+
+🛠️ Build & Run
+Chrome Extension
+
+Load /project/ folder as an unpacked extension in chrome://extensions
+
+Mobile App
+
+bash
+Copy
+Edit
+cd MobileApp/
+npm install
+npm start
+Run in browser or scan Expo QR code on your phone
+
+✅ Features Checklist
+✅ Real-time browser activity tracker
+
+✅ Daily/weekly views per site/category
+
+✅ Goal setting + productivity alerts
+
+✅ Focus Mode with smart blocking
+
+✅ AI-powered YouTube categorization
+
+✅ Multi-language support (EN, ZH, HI, JA, FR, ES)
+
+✅ Mobile data sync via Supabase
+
+✅ Public stats share page with social sharing
+
+✅ Bolt-built dashboard interface
+
+✅ Privacy-first (all client-side)
+
+🧩 Built With
+🧱 Bolt.new – UI builder & project base
+
+🛢️ Supabase – Backend as a service
+
+🧠 OpenRouter – AI classification
+
+🧪 Chart.js – Data visualization
+
+
