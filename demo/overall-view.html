@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSetu - Overall View</title>
+    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="voiceReview.css">
+    <link rel="stylesheet" href="focus-block.css">
+    <!-- Shepherd.js for guided tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css" />
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
+    <script src="lib/chart.min.js"></script>
+    <script src="chrome-compat-demo.js"></script>
+    <script src="demo-data.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --card-bg: #1e1e3f;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-color: #ffffff;
+            --accent-color: #4a90e2;
+            --accent-green: #4caf50;
+            --accent-orange: #ff9800;
+            --accent-purple: #9c27b0;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            width: 100vw !important;
+            max-width: none !important;
+        }
+
+        .container {
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 32px 24px !important;
+            width: 100% !important;
+        }
+
+        .demo-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 193, 7, 0.9);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 120px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Browser Header */
+        .browser-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 20px 0;
+        }
+
+        .browser-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0;
+        }
+
+        .view-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            margin-bottom: 24px;
+        }
+
+        /* Theme Toggle */
+        .simple-theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .simple-theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #themeIcon {
+            font-size: 1rem;
+        }
+
+        /* Time Period Buttons */
+        .time-period {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 50px;
+            padding: 6px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .time-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .time-btn.active {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+
+        /* Main Content Grid */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* Total Time Card */
+        .total-time-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            grid-column: 1 / -1;
+        }
+
+        .total-time-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .total-time-card h2 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 0 0 8px 0;
+            font-weight: 500;
+        }
+
+        .total-time-card p {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Overall Stats Grid */
+        .overall-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+            grid-column: 1 / -1;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card h3 {
+            color: var(--accent-green);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            height: 350px;
+            grid-column: 1 / -1;
+        }
+
+        .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; grid-column:1 / -1; }
+
+        /* Device Breakdown */
+        .device-breakdown {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            grid-column: 1 / -1;
+        }
+
+        .device-breakdown h3 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .device-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .device-details h4 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .device-details p {
+            margin: 0;
+            opacity: 0.7;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer */
+        .main-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .footer-btn {
+            background: var(--accent-color);
+            border: none;
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .footer-btn:hover {
+            background: #3a7bc8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        /* List styles */
+        .site-item, .app-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .site-item:last-child, .app-item:last-child { border-bottom: none; }
+        .site-info, .app-info { display: flex; align-items: center; gap: 12px; }
+        .site-logo, .app-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .app-time { font-weight: 600; color: var(--accent-color); }
+
+        /* list cards */
+        .list-card {background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:24px;box-shadow:var(--shadow);backdrop-filter:blur(10px);}
+        .list-card h3{font-size:1.2rem;margin-bottom:16px;color:var(--text-secondary);font-weight:600}
+        .app-icon img,.site-logo img{width:100%;height:100%;object-fit:contain;border-radius:8px;}
+
+        .progress-bar-wrap{background:rgba(255,255,255,0.08);height:8px;border-radius:6px;margin-top:4px;}
+        .progress-bar{height:100%;background:var(--accent-color);border-radius:6px;}
+
+        .lists-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;grid-column:1 / -1;}
+
+        /* Lists Grid */
+        .lists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin: 24px 0;
+            grid-column: 1 / -1;
+        }
+
+        .list-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .list-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .list-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Progress bars */
+        .progress-bar-wrap {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-color));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* App item styling */
+        .app-item .app-icon img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .app-details h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .app-details p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        .bolt-badge {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 25px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bolt-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bolt-badge a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back</a>
+    <div class="demo-indicator">📊 Demo</div>
+
+
+
+    <div class="container">
+        <div class="browser-header">
+            <h1>Overall Screen Uses</h1>
+        </div>
+
+        <div class="time-period">
+            <button id="todayBtn" class="time-btn active">Today</button>
+            <button id="weekBtn" class="time-btn">This Week</button>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="start-overall-tour-btn" class="action-btn" style="background: var(--accent-green); margin: 0 auto;">
+                🎯 Take Dashboard Tour
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="total-time-card">
+                <h2>Total Digital Time Today</h2>
+                <p id="totalTime">12h 34m</p>
+            </div>
+
+            <div class="overall-stats">
+                <div class="stat-card">
+                    <h3>💻 Laptop</h3>
+                    <div class="value">6h 45m</div>
+                    <div>Work & Productivity</div>
+                </div>
+                <div class="stat-card">
+                    <h3>📱 Mobile</h3>
+                    <div class="value">4h 23m</div>
+                    <div>Social & Apps</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🌐 Browser</h3>
+                    <div class="value">1h 26m</div>
+                    <div>Web Browsing</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🎯 Focus Score</h3>
+                    <div class="value">87%</div>
+                    <div>Excellent</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <canvas id="deviceChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="lists-grid">
+            <div class="list-card" id="browserSitesCard">
+                <h3>Browser Sites <span id="browserTotal" style="float:right"></span></h3>
+                <div id="overallBrowserList"></div>
+            </div>
+
+            <div class="list-card" id="mobileAppsCard">
+                <h3>Mobile Apps <span id="mobileTotal" style="float:right"></span></h3>
+                <div id="overallMobileList"></div>
+            </div>
+
+            <div class="list-card" id="laptopAppsCard">
+                <h3>Laptop Apps <span id="laptopTotal" style="float:right"></span></h3>
+                <div id="overallLaptopList"></div>
+            </div>
+            </div><!-- end lists-grid -->
+
+            <div class="list-card" id="goalsCard">
+                <h3>🎯 Overall Usage Goals</h3>
+                <div style="margin: 15px 0; padding: 15px; background: rgba(255, 87, 34, 0.1); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">🔥</div>
+                    <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 3px;">Current Streak</div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #ff5722; margin-bottom: 5px;">7 days</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">You've met your overall goals for 7 consecutive days!</div>
+                </div>
+                
+                <div id="goalsList">
+                    <h4 style="margin: 20px 0 15px 0; font-size: 1rem;">Daily App Category Limits</h4>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Social Media 📱</div>
+                            <div style="font-size: 0.85rem;">1h 37m / 2h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4a90e2; font-weight: 600;">82%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 82%; height: 100%; background: linear-gradient(90deg, #4a90e2, #4a90e2cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Entertainment 🎵</div>
+                            <div style="font-size: 0.85rem;">23m / 1h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4caf50; font-weight: 600;">38%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 38%; height: 100%; background: linear-gradient(90deg, #4caf50, #4caf50cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Games 🎮</div>
+                            <div style="font-size: 0.85rem;">1h 52m / 2h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #ff9800; font-weight: 600;">93%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 93%; height: 100%; background: linear-gradient(90deg, #ff9800, #ff9800cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Productive Apps 💼</div>
+                            <div style="font-size: 0.85rem;">7m / No limit</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4caf50; font-weight: 600;">Great!</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 15%; height: 100%; background: linear-gradient(90deg, #4caf50, #4caf50cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="goalsActions" style="margin-top: 20px; text-align: center;">
+                    <button id="editGoalsBtn" class="action-btn" style="margin: 5px; font-size: 0.9rem; background: var(--accent-color);">✏️ Edit Goals</button>
+                    <button id="resetGoalsBtn" class="action-btn" style="margin: 5px; font-size: 0.9rem; background: #ff5722;">🔄 Reset Goals</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="goalsBtn" class="action-btn">🎯 Goals</button>
+            <button id="settingsBtn" class="action-btn">⚙️ Settings</button>
+            <button id="moreBtn" class="action-btn">📊 More</button>
+        </div>
+
+        <!-- Focus Mode Block List Section -->
+        <details class="focus-block-section" id="focusBlockDropdown">
+            <summary>
+                <span>Focus Mode Block List</span>
+                <label class="focus-switch">
+                    <input type="checkbox" id="focusModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </summary>
+            <p>Automatically block these sites during Focus Mode:</p>
+            <div id="focusBlockedSitesList" class="blocked-sites-list"></div>
+            <div class="block-input">
+                <input type="text" id="focusSiteToBlock" placeholder="e.g., facebook.com">
+                <button id="addFocusBlockBtn">➕</button>
+            </div>
+            <div class="focus-timer">
+                <input type="number" id="focusDuration" placeholder="Minutes (optional)">
+                <button id="startFocusBtn">Start Focus</button>
+            </div>
+            <p id="focusCountdown" class="note"></p>
+            <p class="note">These sites will only be blocked when Focus Mode is active.</p>
+        </details>
+
+        <footer class="main-footer">
+            <button id="dashboardBtn" class="footer-btn">Back to Devices</button>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="moreModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeMoreBtn">&times;</span>
+            <h2>Weekly Summary - All Devices</h2>
+            <div class="chart-container" style="height: 250px; margin: 20px 0;">
+                <canvas id="weeklyOverallChart"></canvas>
+            </div>
+            <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                <canvas id="weeklyDevicesChart"></canvas>
+            </div>
+            <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                <canvas id="weeklyCategoriesChart"></canvas>
+            </div>
+            <div id="voiceReviewCard" class="voice-review-card">
+                <h3 style="text-align:center;">🔊 Weekly AI Review</h3>
+                <p id="voiceSummaryText">This week, you spent 87 hours across all devices. 45 hours were productive on laptop, 25 hours entertainment on mobile, and 17 hours browsing. Your focus score improved by 12% compared to last week. Great balance between work and leisure activities!</p>
+                <button id="replayVoiceBtn" class="action-btn" style="width:100%;margin-top:8px;">Replay 🔁</button>
+            </div>
+            <div style="margin: 20px 0; padding: 15px; background: rgba(74, 144, 226, 0.1); border-radius: 12px; border-left: 4px solid #4a90e2;">
+                <h4 style="margin: 0 0 10px 0; color: #4a90e2;">📊 Weekly Insights</h4>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                    <li>Most productive day: Thursday (8.2h total, 75% productivity)</li>
+                    <li>Peak usage time: 2-4 PM across all devices</li>
+                    <li>Laptop dominates weekdays, mobile peaks on weekends</li>
+                    <li>Social media usage decreased by 18% from last week</li>
+                </ul>
+            </div>
+            <button id="exportDataBtn" class="action-btn">Export All Data</button>
+        </div>
+    </div>
+
+    <div id="goalsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeGoalsBtn">&times;</span>
+            <h2>Your Goals</h2>
+            <div class="streak-info"></div>
+            <div class="goals-container"></div>
+            <button id="editGoalsBtn" class="action-btn">Edit Goals</button>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeSettingsBtn">&times;</span>
+            <h2>Settings</h2>
+            <h3>Manage Categories</h3>
+            <div id="categoriesList"></div>
+            <button id="saveSettingsBtn" class="action-btn">Save Settings</button>
+        </div>
+    </div>
+
+    <div id="editGoalsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeEditGoalsBtn">&times;</span>
+            <h2>Edit Goals</h2>
+            <form id="categoryGoals"></form>
+            <button id="saveGoalsBtn" class="action-btn">Save Goals</button>
+        </div>
+    </div>
+
+    <script>
+        let deviceChart, categoryChart;
+
+        // Dummy data arrays (minutes)
+        const deviceTodayData = [360, 240, 120]; // Laptop, Mobile, Browser
+        const deviceWeekData  = deviceTodayData.map(v => v * 7);
+
+        const categoryTodayData = [180, 120, 90, 60, 45, 75]; // Social, Productive, Games, Other, News, Entertainment
+        const categoryWeekData  = categoryTodayData.map(v => v * 7);
+
+        // Today vs Week data for all sections
+        const todayData = {
+            totalTime: '12h 34m',
+            devices: {
+                laptop: '6h 45m',
+                mobile: '4h 23m',
+                browser: '1h 26m'
+            },
+            focusScore: '87%',
+            title: 'Total Digital Time Today'
+        };
+
+        const weekData = {
+            totalTime: '87h 58m',
+            devices: {
+                laptop: '47h 15m',
+                mobile: '30h 41m',
+                browser: '10h 2m'
+            },
+            focusScore: '82%',
+            title: 'Total Digital Time This Week'
+        };
+
+        // Weekly data for lists (multiplied by 7 with some variation)
+        const weeklyBrowserData = {
+            topSites: [
+                { name: 'YouTube', category: 'Entertainment', time: '14h 35m', favicon: '🎥' },
+                { name: 'GitHub', category: 'Development', time: '12h 20m', favicon: '💻' },
+                { name: 'Stack Overflow', category: 'Development', time: '8h 45m', favicon: '📚' },
+                { name: 'Reddit', category: 'Social Media', time: '7h 30m', favicon: '🔗' },
+                { name: 'Wikipedia', category: 'Educational', time: '6h 15m', favicon: '📖' },
+                { name: 'Gmail', category: 'Communication', time: '5h 40m', favicon: '📧' },
+                { name: 'Twitter', category: 'Social Media', time: '4h 25m', favicon: '🐦' },
+                { name: 'LinkedIn', category: 'Professional', time: '3h 50m', favicon: '💼' }
+            ]
+        };
+
+        const weeklyMobileData = {
+            apps: [
+                { name: 'Instagram', category: 'Social Media', time: '21h 30m', icon: '📷', logo: null },
+                { name: 'WhatsApp', category: 'Communication', time: '18h 45m', icon: '💬', logo: null },
+                { name: 'YouTube', category: 'Entertainment', time: '16h 20m', icon: '🎥', logo: null },
+                { name: 'Spotify', category: 'Music', time: '14h 15m', icon: '🎵', logo: null },
+                { name: 'TikTok', category: 'Entertainment', time: '12h 40m', icon: '🎬', logo: null },
+                { name: 'Gmail', category: 'Communication', time: '9h 25m', icon: '📧', logo: null },
+                { name: 'Maps', category: 'Navigation', time: '7h 10m', icon: '🗺️', logo: null },
+                { name: 'Twitter', category: 'Social Media', time: '6h 35m', icon: '🐦', logo: null }
+            ]
+        };
+
+        const weeklyLaptopData = {
+            applications: [
+                { name: 'Visual Studio Code', category: 'Development', time: '28h 45m', icon: '💻', logo: null },
+                { name: 'Chrome', category: 'Browser', time: '24h 30m', icon: '🌐', logo: null },
+                { name: 'Slack', category: 'Communication', time: '16h 20m', icon: '💬', logo: null },
+                { name: 'Figma', category: 'Design', time: '14h 15m', icon: '🎨', logo: null },
+                { name: 'Terminal', category: 'Development', time: '12h 40m', icon: '⚡', logo: null },
+                { name: 'Spotify', category: 'Music', time: '10h 25m', icon: '🎵', logo: null },
+                { name: 'Notion', category: 'Productivity', time: '8h 50m', icon: '📝', logo: null },
+                { name: 'Zoom', category: 'Communication', time: '7h 15m', icon: '📹', logo: null }
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if Chart.js is available
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js is not loaded!');
+                return;
+            }
+
+            console.log('DOM loaded, initializing charts...');
+            console.log('Chart.js available:', typeof Chart);
+            console.log('DemoDataHelper available:', typeof DemoDataHelper);
+
+            // Check if DemoDataHelper is available
+            if (typeof DemoDataHelper === 'undefined') {
+                console.error('DemoDataHelper is not available!');
+                return;
+            }
+
+            const overallData = DemoDataHelper.getOverallData();
+            console.log('Overall data:', overallData);
+
+            // Check if canvas elements exist
+            const deviceCanvas = document.getElementById('deviceChart');
+            const categoryCanvas = document.getElementById('categoryChart');
+            
+            if (!deviceCanvas) {
+                console.error('Device chart canvas not found!');
+                return;
+            }
+            
+            if (!categoryCanvas) {
+                console.error('Category chart canvas not found!');
+                return;
+            }
+
+            const deviceCtx = document.getElementById('deviceChart').getContext('2d');
+            console.log('Device canvas found:', !!deviceCtx);
+            deviceChart = new Chart(deviceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Laptop', 'Mobile', 'Browser'],
+                    datasets: [{
+                        data: deviceTodayData,
+                        backgroundColor: [
+                            '#007ACC', '#E4405F', '#4285F4'
+                        ],
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                color: '#ffffff',
+                                boxWidth: 15,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    return `${label}: ${value}m`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Device chart created');
+
+            // Category chart setup
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            console.log('Category canvas found:', !!categoryCtx);
+            const categoryColors = ['#4285F4','#34A853','#FBBC05','#EA4335','#9C27B0','#FF9800'];
+
+            // initialise category chart with today data
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Social Media', 'Productive', 'Games', 'Other', 'News', 'Entertainment'],
+                    datasets: [{
+                        data: categoryTodayData,
+                        backgroundColor: categoryColors,
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                color: '#ffffff',
+                                boxWidth: 15,
+                                padding: 20,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context){
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    return `${label}: ${value}m`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Category chart created');
+
+            // Today / Week toggle behaviour
+            const todayBtn = document.getElementById('todayBtn');
+            const weekBtn  = document.getElementById('weekBtn');
+            console.log('Toggle buttons found:', !!todayBtn, !!weekBtn);
+
+            function updateCharts(isWeek){
+                console.log('Updating charts for:', isWeek ? 'week' : 'today');
+                const devData = isWeek ? deviceWeekData : deviceTodayData;
+                const catData = isWeek ? categoryWeekData : categoryTodayData;
+
+                // Update charts
+                deviceChart.data.datasets[0].data = devData;
+                deviceChart.update();
+
+                categoryChart.data.datasets[0].data = catData;
+                categoryChart.update();
+
+                // Update goals
+                updateGoals(isWeek);
+
+                // Update all other sections with weekly/daily data
+                updateAllSections(isWeek);
+
+                if(isWeek){
+                    todayBtn.classList.remove('active');
+                    weekBtn.classList.add('active');
+                }else{
+                    weekBtn.classList.remove('active');
+                    todayBtn.classList.add('active');
+                }
+            }
+
+            function updateAllSections(isWeek) {
+                const currentData = isWeek ? weekData : todayData;
+                const currentBrowserData = isWeek ? weeklyBrowserData : DemoDataHelper.getBrowserData();
+                const currentMobileData = isWeek ? weeklyMobileData : DemoDataHelper.getMobileData();
+                const currentLaptopData = isWeek ? weeklyLaptopData : DemoDataHelper.getLaptopData();
+
+                // Update total time and title
+                const totalTimeEl = document.getElementById('totalTime');
+                const totalTimeCardTitle = document.querySelector('.total-time-card h2');
+                if (totalTimeEl) totalTimeEl.textContent = currentData.totalTime;
+                if (totalTimeCardTitle) totalTimeCardTitle.textContent = currentData.title;
+
+                // Update device stats cards
+                const statCards = document.querySelectorAll('.stat-card');
+                if (statCards.length >= 4) {
+                    statCards[0].querySelector('.value').textContent = currentData.devices.laptop;
+                    statCards[1].querySelector('.value').textContent = currentData.devices.mobile;
+                    statCards[2].querySelector('.value').textContent = currentData.devices.browser;
+                    statCards[3].querySelector('.value').textContent = currentData.focusScore;
+                }
+
+                // Update Browser Sites List
+                const browserList = document.getElementById('overallBrowserList');
+                if (browserList && currentBrowserData.topSites) {
+                    browserList.innerHTML = currentBrowserData.topSites.map(site => `
+                        <div class="app-item">
+                            <div class="app-info">
+                                <div class="app-icon">${site.favicon}</div>
+                                <div class="app-details">
+                                    <h4>${site.name}</h4>
+                                    <p>${site.category}</p>
+                                </div>
+                            </div>
+                            <div class="app-time">${site.time}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Update Mobile Apps List
+                const mobileList = document.getElementById('overallMobileList');
+                if (mobileList && currentMobileData.apps) {
+                    mobileList.innerHTML = currentMobileData.apps.map(app => `
+                        <div class="app-item">
+                            <div class="app-info">
+                                <div class="app-icon">${app.logo ? `<img src="${app.logo}" style="width:40px;height:40px;border-radius:8px;" />` : app.icon}</div>
+                                <div class="app-details">
+                                    <h4>${app.name}</h4>
+                                    <p>${app.category}</p>
+                                </div>
+                            </div>
+                            <div class="app-time">${app.time}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Update Laptop Apps List
+                const laptopList = document.getElementById('overallLaptopList');
+                if (laptopList && currentLaptopData.applications) {
+                    laptopList.innerHTML = currentLaptopData.applications.map(app => `
+                        <div class="app-item">
+                            <div class="app-info">
+                                <div class="app-icon">${app.logo ? `<img src="${app.logo}" style="width:40px;height:40px;border-radius:8px;" />` : app.icon}</div>
+                                <div class="app-details">
+                                    <h4>${app.name}</h4>
+                                    <p>${app.category}</p>
+                                </div>
+                            </div>
+                            <div class="app-time">${app.time}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Update totals
+                const browserTotalEl = document.getElementById('browserTotal');
+                const mobileTotalEl = document.getElementById('mobileTotal');
+                const laptopTotalEl = document.getElementById('laptopTotal');
+
+                if (browserTotalEl && currentBrowserData.topSites) {
+                    const browserTotal = sumMinutes(currentBrowserData.topSites);
+                    browserTotalEl.textContent = formatMinutes(browserTotal);
+                }
+
+                if (mobileTotalEl && currentMobileData.apps) {
+                    const mobileTotal = sumMinutes(currentMobileData.apps);
+                    mobileTotalEl.textContent = formatMinutes(mobileTotal);
+                }
+
+                if (laptopTotalEl && currentLaptopData.applications) {
+                    const laptopTotal = sumMinutes(currentLaptopData.applications);
+                    laptopTotalEl.textContent = formatMinutes(laptopTotal);
+                }
+
+                // Update goals title
+                const goalsCardTitle = document.querySelector('#goalsCard h3');
+                if (goalsCardTitle) {
+                    goalsCardTitle.textContent = isWeek ? '🎯 Weekly Goals Progress' : '🎯 Daily Goals Progress';
+                }
+            }
+
+            todayBtn.addEventListener('click', () => updateCharts(false));
+            weekBtn.addEventListener('click', () => updateCharts(true));
+
+            // Override dashboard button
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
+
+            console.log('All initialization complete');
+
+            // Helper functions for time parsing and formatting
+            function parseTimeToMinutes(timeStr) {
+                let minutes = 0;
+                const parts = timeStr.split(' ');
+                for (const part of parts) {
+                    if (part.endsWith('h')) {
+                        minutes += parseInt(part) * 60;
+                    } else if (part.endsWith('m')) {
+                        minutes += parseInt(part);
+                    }
+                }
+                return minutes;
+            }
+            
+            function formatMinutes(min) {
+                const h = Math.floor(min / 60);
+                const mm = min % 60;
+                return h > 0 ? `${h}h ${mm}m` : `${mm}m`;
+            }
+
+            // Calculate and display totals
+            function sumMinutes(arr) {
+                return arr.reduce((acc, item) => {
+                    let minutes = 0;
+                    const timeStr = item.time;
+                    timeStr.split(' ').forEach(part => {
+                        if (part.endsWith('h')) minutes += parseInt(part) * 60;
+                        if (part.endsWith('m')) minutes += parseInt(part);
+                    });
+                    return acc + minutes;
+                }, 0);
+            }
+
+            // Enhanced Goals progress with more comprehensive data
+            const goalsData = [
+                { 
+                    name: 'Social Media', 
+                    actual: '1h 37m', 
+                    goal: '2h',
+                    icon: '📱',
+                    status: 'good',
+                    streak: 5,
+                    trend: -15
+                },
+                { 
+                    name: 'Entertainment', 
+                    actual: '30m', 
+                    goal: '1h 30m',
+                    icon: '🎬',
+                    status: 'excellent',
+                    streak: 3,
+                    trend: -20
+                },
+                { 
+                    name: 'Productive / Educational', 
+                    actual: '1h 54m', 
+                    goal: '4h',
+                    icon: '📚',
+                    status: 'needs_improvement',
+                    streak: 2,
+                    trend: +5
+                },
+                { 
+                    name: 'Development', 
+                    actual: '31m', 
+                    goal: '3h',
+                    icon: '💻',
+                    status: 'needs_improvement',
+                    streak: 1,
+                    trend: -10
+                },
+                { 
+                    name: 'Games', 
+                    actual: '1h 52m', 
+                    goal: '2h',
+                    icon: '🎮',
+                    status: 'good',
+                    streak: 4,
+                    trend: +8
+                },
+                { 
+                    name: 'Communication', 
+                    actual: '9m', 
+                    goal: '1h',
+                    icon: '💬',
+                    status: 'excellent',
+                    streak: 7,
+                    trend: -5
+                }
+            ];
+            
+            // Weekly goals data (same as daily multiplied by 7)
+            const goalsWeekData = goalsData.map(g => ({
+                name: g.name,
+                actual: formatMinutes(parseTimeToMinutes(g.actual) * 7),
+                goal: formatMinutes(parseTimeToMinutes(g.goal) * 7)
+            }));
+            
+            function updateGoals(isWeek) {
+                const currentGoalsData = isWeek ? goalsWeekData : goalsData;
+                const goalsList = document.getElementById('goalsList');
+                if (goalsList) {
+                    goalsList.innerHTML = currentGoalsData.map(g => {
+                        const actualMin = parseTimeToMinutes(g.actual);
+                        const goalMin = parseTimeToMinutes(g.goal);
+                        const pct = Math.min(100, Math.round(actualMin / goalMin * 100));
+                        
+                        const getStatusColor = (status) => {
+                            switch(status) {
+                                case 'excellent': return '#4caf50';
+                                case 'good': return '#2196f3';
+                                case 'needs_improvement': return '#ff9800';
+                                default: return '#757575';
+                            }
+                        };
+                        
+                        const getStatusText = (status) => {
+                            switch(status) {
+                                case 'excellent': return 'Excellent 🌟';
+                                case 'good': return 'Good ✓';
+                                case 'needs_improvement': return 'Focus needed 🎯';
+                                default: return 'On track';
+                            }
+                        };
+
+                        return `
+                            <div style="margin-bottom: 16px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid ${getStatusColor(g.status || 'good')};">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 1.2rem;">${g.icon || '📊'}</span>
+                                        <strong style="font-size: 0.95rem;">${g.name}</strong>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        ${g.streak ? `<span style="background: #ff5722; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7rem;">🔥 ${g.streak}d</span>` : ''}
+                                        ${g.trend ? `<span style="color: ${g.trend > 0 ? '#f44336' : '#4caf50'}; font-size: 0.8rem; font-weight: 600;">${g.trend > 0 ? '+' : ''}${g.trend}%</span>` : ''}
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px;">
+                                    <span>${g.actual} / ${g.goal}</span>
+                                    <span style="color: ${getStatusColor(g.status || 'good')}; font-weight: 600; font-size: 0.8rem;">${getStatusText(g.status || 'good')}</span>
+                                </div>
+                                <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                                    <div class="progress-bar" style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, ${getStatusColor(g.status || 'good')}, ${getStatusColor(g.status || 'good')}cc); border-radius: 3px; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+            
+            // Initial goals render
+            updateGoals(false);
+
+            // Initial population of all sections with today's data
+            updateAllSections(false);
+
+            // Enhanced Goals functionality event handlers
+            const quickGoalBtn = document.getElementById('quickGoalBtn');
+            const goalInsightsBtn = document.getElementById('goalInsightsBtn');
+            const goalStreakBtn = document.getElementById('goalStreakBtn');
+
+            if (quickGoalBtn) {
+                quickGoalBtn.addEventListener('click', showQuickGoals);
+            }
+            if (goalInsightsBtn) {
+                goalInsightsBtn.addEventListener('click', showGoalInsights);
+            }
+            if (goalStreakBtn) {
+                goalStreakBtn.addEventListener('click', showGoalStreaks);
+            }
+
+            console.log('All data population complete');
+        });
+
+        // Language functionality
+        function initializeLanguageSelector() {
+            const languageToggle = document.getElementById('languageToggle');
+            const languageDropdown = document.getElementById('languageDropdown');
+            const languageOptions = document.querySelectorAll('.language-option');
+            const currentFlag = document.getElementById('currentFlag');
+            const currentLanguage = document.getElementById('currentLanguage');
+            
+            // Load saved language
+            const savedLang = localStorage.getItem('selectedLanguage') || 'en';
+            setLanguage(savedLang);
+            
+            // Toggle dropdown
+            languageToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                languageDropdown.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                languageDropdown.classList.remove('show');
+            });
+            
+            // Handle language selection
+            languageOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const lang = option.dataset.lang;
+                    const flag = option.dataset.flag;
+                    
+                    // Update UI
+                    languageOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    
+                    // Update toggle button
+                    currentFlag.src = `flags/${flag}.png`;
+                    currentLanguage.textContent = option.querySelector('span').textContent;
+                    
+                    // Save and apply language
+                    localStorage.setItem('selectedLanguage', lang);
+                    setLanguage(lang);
+                    
+                    // Close dropdown
+                    languageDropdown.classList.remove('show');
+                    
+                    console.log(`Language changed to: ${option.querySelector('span').textContent}`);
+                });
+            });
+        }
+        
+        function setLanguage(lang) {
+            // Update language selector to show current language
+            const languageOptions = document.querySelectorAll('.language-option');
+            const currentFlag = document.getElementById('currentFlag');
+            const currentLanguage = document.getElementById('currentLanguage');
+            
+            languageOptions.forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.lang === lang) {
+                    option.classList.add('selected');
+                    if (currentFlag && currentLanguage) {
+                        currentFlag.src = `flags/${option.dataset.flag}.png`;
+                        currentLanguage.textContent = option.querySelector('span').textContent;
+                    }
+                }
+            });
+        }
+
+        // Initialize language selector when page loads
+        document.addEventListener('DOMContentLoaded', initializeLanguageSelector);
+
+        // Enhanced Goals Functions
+        function showQuickGoals() {
+            const quickGoalsContent = `
+                <div style="text-align: left; max-height: 70vh; overflow-y: auto;">
+                    <h3>🚀 Quick Goal Setup</h3>
+                    
+                    <div style="margin: 20px 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 10px;">
+                        <h4>✨ Recommended Goals for You</h4>
+                        <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 8px;">Based on your usage patterns</p>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <div style="margin: 12px 0; padding: 15px; background: rgba(33, 150, 243, 0.1); border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-weight: 600;">📱 Reduce Social Media</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.8;">Current: 3h 15m → Target: 2h 00m</div>
+                                </div>
+                                <button onclick="applyQuickGoal('social-limit')" style="padding: 6px 12px; background: #2196f3; color: white; border: none; border-radius: 6px; cursor: pointer;">Set Goal</button>
+                            </div>
+                        </div>
+
+                        <div style="margin: 12px 0; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-weight: 600;">💻 Increase Development Time</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.8;">Current: 31m → Target: 2h 00m</div>
+                                </div>
+                                <button onclick="applyQuickGoal('dev-time')" style="padding: 6px 12px; background: #ff9800; color: white; border: none; border-radius: 6px; cursor: pointer;">Set Goal</button>
+                            </div>
+                        </div>
+
+                        <div style="margin: 12px 0; padding: 15px; background: rgba(156, 39, 176, 0.1); border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-weight: 600;">🎯 Daily Focus Sessions</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.8;">Target: 3 sessions of 45 minutes each</div>
+                                </div>
+                                <button onclick="applyQuickGoal('focus-sessions')" style="padding: 6px 12px; background: #9c27b0; color: white; border: none; border-radius: 6px; cursor: pointer;">Set Goal</button>
+                            </div>
+                        </div>
+
+                        <div style="margin: 12px 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-weight: 600;">🌅 Morning Productivity</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.8;">Start productive work before 9 AM</div>
+                                </div>
+                                <button onclick="applyQuickGoal('morning-start')" style="padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer;">Set Goal</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>⚡ Quick Actions</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px;">
+                            <button onclick="enableFocusMode()" style="padding: 12px; background: rgba(244, 67, 54, 0.1); border: 1px solid #f44336; color: #f44336; border-radius: 8px; cursor: pointer; font-weight: 600;">🔒 Enable Focus Mode</button>
+                            <button onclick="blockSocialMedia()" style="padding: 12px; background: rgba(255, 152, 0, 0.1); border: 1px solid #ff9800; color: #ff9800; border-radius: 8px; cursor: pointer; font-weight: 600;">🚫 Block Social Media</button>
+                            <button onclick="startPomodoroTimer()" style="padding: 12px; background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; color: #4caf50; border-radius: 8px; cursor: pointer; font-weight: 600;">⏰ Start Pomodoro</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            showModal('Quick Goals', quickGoalsContent);
+        }
+
+        function showGoalInsights() {
+            const insightsContent = `
+                <div style="text-align: left; max-height: 70vh; overflow-y: auto;">
+                    <h3>📊 Goal Insights & Analytics</h3>
+                    
+                    <div style="margin: 20px 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 10px; text-align: center;">
+                        <h4>🏆 Overall Goal Score: 73/100</h4>
+                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 10px 0;">
+                            <div style="width: 73%; height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); border-radius: 4px;"></div>
+                        </div>
+                        <p style="font-size: 0.9rem; opacity: 0.8;">Great progress! You're meeting 4 out of 6 goals consistently.</p>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>📈 Weekly Trends</h4>
+                        <div style="margin: 10px 0;">
+                            <div style="margin: 8px 0; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 5px;">📱 Social Media Usage</div>
+                                <div style="font-size: 0.9rem;">↓ 15% decrease from last week - Excellent!</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">You've been under your 2-hour limit for 5 days straight</div>
+                            </div>
+                            
+                            <div style="margin: 8px 0; padding: 12px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 5px;">💻 Development Time</div>
+                                <div style="font-size: 0.9rem;">↑ 12% increase from last week</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">Still below target, but improving steadily</div>
+                            </div>
+
+                            <div style="margin: 8px 0; padding: 12px; background: rgba(76, 175, 80, 0.1); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 5px;">🎯 Focus Sessions</div>
+                                <div style="font-size: 0.9rem;">9 out of 10 target sessions completed</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">Your focus time averages 52 minutes per session</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>🎯 Goal Difficulty Analysis</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                            <div style="padding: 12px; background: rgba(76, 175, 80, 0.1); border-radius: 8px; text-align: center;">
+                                <div style="font-weight: 600; font-size: 0.9rem;">Easy Goals</div>
+                                <div style="font-size: 1.3rem; color: #4caf50; margin: 5px 0;">3</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">Consistently met</div>
+                            </div>
+                            <div style="padding: 12px; background: rgba(255, 152, 0, 0.1); border-radius: 8px; text-align: center;">
+                                <div style="font-weight: 600; font-size: 0.9rem;">Moderate Goals</div>
+                                <div style="font-size: 1.3rem; color: #ff9800; margin: 5px 0;">2</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">Sometimes met</div>
+                            </div>
+                            <div style="padding: 12px; background: rgba(244, 67, 54, 0.1); border-radius: 8px; text-align: center;">
+                                <div style="font-weight: 600; font-size: 0.9rem;">Hard Goals</div>
+                                <div style="font-size: 1.3rem; color: #f44336; margin: 5px 0;">1</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">Needs focus</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>💡 Smart Recommendations</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin: 8px 0; padding: 10px; background: rgba(33, 150, 243, 0.1); border-radius: 8px;">
+                                📱 Your social media usage is lowest on Tuesdays - schedule important work on this day
+                            </li>
+                            <li style="margin: 8px 0; padding: 10px; background: rgba(76, 175, 80, 0.1); border-radius: 8px;">
+                                🌅 You're most productive between 9-11 AM - block this time for development work
+                            </li>
+                            <li style="margin: 8px 0; padding: 10px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
+                                ⏰ Consider shorter, more frequent breaks to maintain focus during long sessions
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            showModal('Goal Insights', insightsContent);
+        }
+
+        function showGoalStreaks() {
+            const streaksContent = `
+                <div style="text-align: left; max-height: 70vh; overflow-y: auto;">
+                    <h3>🔥 Goal Streaks & Achievements</h3>
+                    
+                    <div style="margin: 20px 0; padding: 15px; background: rgba(255, 87, 34, 0.1); border-radius: 10px; text-align: center;">
+                        <h4>🔥 Longest Current Streak: 7 Days</h4>
+                        <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 8px;">Communication goals - Keep it up!</p>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>📊 All Streaks</h4>
+                        ${goalsData.map(goal => `
+                            <div style="margin: 10px 0; padding: 12px; background: rgba(255, 87, 34, 0.1); border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 1.1rem;">${goal.icon}</span>
+                                        <span style="font-weight: 600;">${goal.name}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="background: #ff5722; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem;">
+                                            🔥 ${goal.streak} day${goal.streak !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 0.8rem; opacity: 0.8;">
+                                    ${goal.streak >= 7 ? 'Amazing streak! 🌟' : goal.streak >= 3 ? 'Good momentum! 👍' : 'Building up... 💪'}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>🏆 Achievements Unlocked</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+                            <div style="padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">🔥</div>
+                                <div style="font-weight: 600; font-size: 0.9rem;">Week Warrior</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">7 day streak</div>
+                            </div>
+                            <div style="padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">🎯</div>
+                                <div style="font-weight: 600; font-size: 0.9rem;">Goal Getter</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">Met 5 goals in one day</div>
+                            </div>
+                            <div style="padding: 15px; background: rgba(76, 175, 80, 0.2); border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">📱</div>
+                                <div style="font-weight: 600; font-size: 0.9rem;">Social Limiter</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">Under 2h social media for 5 days</div>
+                            </div>
+                            <div style="padding: 15px; background: rgba(128, 128, 128, 0.2); border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2rem; margin-bottom: 8px;">💻</div>
+                                <div style="font-weight: 600; font-size: 0.9rem;">Code Master</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 4px;">30 hours dev time in a week</div>
+                                <div style="font-size: 0.7rem; color: #ff9800; margin-top: 4px;">🔒 Locked</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h4>📈 Streak History</h4>
+                        <div style="margin: 10px 0; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">📊 Your Best Streaks</div>
+                            <div style="font-size: 0.9rem;">
+                                <p>🥇 Communication: 12 days (Personal best!)</p>
+                                <p>🥈 Social Media Limit: 8 days</p>
+                                <p>🥉 Focus Sessions: 6 days</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            showModal('Goal Streaks', streaksContent);
+        }
+
+        // Helper functions for quick goals
+        function applyQuickGoal(goalType) {
+            const messages = {
+                'social-limit': 'Social media limit set to 2 hours daily!',
+                'dev-time': 'Development time goal set to 2 hours daily!',
+                'focus-sessions': 'Daily focus sessions goal activated!',
+                'morning-start': 'Morning productivity goal enabled!'
+            };
+            
+            showNotification(messages[goalType] || 'Goal applied successfully!');
+            closeModal();
+        }
+
+        function enableFocusMode() {
+            showNotification('🔒 Focus Mode enabled! Distracting websites are now blocked.');
+            closeModal();
+        }
+
+        function blockSocialMedia() {
+            showNotification('🚫 Social media sites blocked until 6 PM today.');
+            closeModal();
+        }
+
+        function startPomodoroTimer() {
+            showNotification('⏰ Pomodoro timer started! 25 minutes of focused work ahead.');
+            closeModal();
+        }
+
+        function showModal(title, content) {
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.innerHTML = `
+                <div class="custom-modal-content" style="background: var(--card-bg, rgba(30, 30, 63, 0.95)); border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1)); border-radius: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); color: var(--text-primary, white);">
+                    <div class="custom-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 16px; border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));">
+                        <h3 style="margin: 0; font-size: 1.3rem; font-weight: 600;">${title}</h3>
+                        <button class="close-modal-btn" onclick="closeModal()" style="background: none; border: none; color: var(--text-secondary, #a0a0b8); font-size: 1.5rem; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s ease;">&times;</button>
+                    </div>
+                    <div class="custom-modal-body" style="padding: 20px 24px; line-height: 1.6;">
+                        ${content}
+                    </div>
+                </div>
+            `;
+
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index: 3000;
+                display: flex; align-items: center; justify-content: center;
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+
+        function closeModal() {
+            const modals = document.querySelectorAll('.custom-modal');
+            modals.forEach(modal => {
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+            });
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 80px; right: 20px;
+                background: linear-gradient(135deg, #4caf50, #45a049); color: white;
+                padding: 15px 20px; border-radius: 12px; z-index: 10000;
+                box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+                animation: slideInNotification 0.4s ease;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px); font-weight: 500;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutNotification 0.4s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 400);
+            }, 3000);
+        }
+    </script>
+    
+    <!-- Theme Toggle Script -->
+    <script src="theme-toggle.js"></script>
+    
+    <style>
+        /* Custom Shepherd.js Styling for Overall View */
+        .shepherd-element {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+        }
+
+        .shepherd-text {
+            color: #1a202c;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .shepherd-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 16px 16px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .shepherd-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .shepherd-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .shepherd-button:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .shepherd-button.shepherd-button-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .shepherd-button.shepherd-button-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* Light mode adjustments */
+        body.light-theme .shepherd-element {
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(132, 204, 22, 0.3);
+        }
+
+        body.light-theme .shepherd-header {
+            background: linear-gradient(135deg, #84cc16, #16a34a);
+        }
+
+        body.light-theme .shepherd-button {
+            background: #84cc16;
+        }
+
+        body.light-theme .shepherd-button:hover {
+            background: #65a30d;
+        }
+
+        /* Tour button pulse animation */
+        .tour-btn-pulse {
+            animation: tourPulse 2s infinite;
+        }
+
+        @keyframes tourPulse {
+            0% { box-shadow: 0 4px 15px rgba(132, 204, 22, 0.3); }
+            50% { 
+                box-shadow: 0 4px 25px rgba(132, 204, 22, 0.5), 0 0 20px rgba(132, 204, 22, 0.4);
+                transform: translateY(-2px) scale(1.02);
+            }
+            100% { box-shadow: 0 4px 15px rgba(132, 204, 22, 0.3); }
+        }
+    </style>
+
+    <script>
+        // Overall View Guided Tour Implementation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for charts to load
+            setTimeout(function() {
+                if (typeof Shepherd === 'undefined') {
+                    console.error('Shepherd.js not loaded');
+                    return;
+                }
+
+                // Initialize Shepherd tour
+                const overallTour = new Shepherd.Tour({
+                    useModalOverlay: true,
+                    defaultStepOptions: {
+                        classes: 'shadow-md bg-purple-dark',
+                        scrollTo: { behavior: 'smooth', block: 'center' },
+                        modalOverlayOpeningPadding: 15,
+                        cancelIcon: {
+                            enabled: true
+                        }
+                    }
+                });
+
+                // Define tour steps
+                overallTour.addStep({
+                    title: '🎯 Dashboard Tour',
+                    text: 'Welcome to the Overall View! This tour will show you all the key features and data visualizations.',
+                    attachTo: {
+                        element: '#start-overall-tour-btn',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Start Tour',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '⏱️ Time Period Selector',
+                    text: 'Switch between "Today" and "This Week" to view different time periods. All charts and data will update accordingly.',
+                    attachTo: {
+                        element: '.time-period',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '📊 Total Screen Time',
+                    text: 'This shows your total digital time across all devices. The number updates based on the selected time period.',
+                    attachTo: {
+                        element: '.total-time-card',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '💻 Device Usage Chart',
+                    text: 'This pie chart shows how your screen time is distributed across different devices - Laptop, Mobile, and Browser.',
+                    attachTo: {
+                        element: '#deviceChart',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '📱 Category Breakdown Chart',
+                    text: 'This chart breaks down your usage by activity categories like Social Media, Productive work, Games, etc.',
+                    attachTo: {
+                        element: '#categoryChart',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '🌐 Browser Sites List',
+                    text: 'This table shows your most visited websites with time spent and categories. Data comes from your browser extension.',
+                    attachTo: {
+                        element: '#browserSitesCard',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '📱 Mobile Apps List',
+                    text: 'This section displays your mobile app usage data, showing which apps you spend the most time on.',
+                    attachTo: {
+                        element: '#mobileAppsCard',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '💻 Laptop Applications',
+                    text: 'Here you can see which desktop applications you use most, including development tools, browsers, and productivity apps.',
+                    attachTo: {
+                        element: '#laptopAppsCard',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '🎯 Daily Goals Progress',
+                    text: 'Track your digital wellness goals here. Set daily limits for different categories and monitor your progress.',
+                    attachTo: {
+                        element: '#goalsCard',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '⚙️ Action Buttons',
+                    text: 'Use these buttons to manage your goals, adjust settings, and access more detailed analytics.',
+                    attachTo: {
+                        element: '.actions',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: overallTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                overallTour.addStep({
+                    title: '🔒 Focus Mode',
+                    text: 'Enable Focus Mode to block distracting websites. Add sites to your block list and set focus durations.',
+                    attachTo: {
+                        element: '#focusBlockDropdown',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: overallTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Done',
+                        action: function() {
+                            overallTour.complete();
+                            localStorage.setItem('overallTourCompleted', 'true');
+                        },
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                // Tour event handlers
+                overallTour.on('complete', function() {
+                    localStorage.setItem('overallTourCompleted', 'true');
+                    console.log('Overall view tour completed!');
+                });
+
+                overallTour.on('cancel', function() {
+                    console.log('Overall view tour cancelled');
+                });
+
+                // Add visual enhancement when highlighting tour button
+                overallTour.on('show', function(event) {
+                    const currentStep = event.step;
+                    const targetElement = currentStep.options.attachTo?.element;
+                    
+                    if (targetElement === '#start-overall-tour-btn') {
+                        const tourBtn = document.getElementById('start-overall-tour-btn');
+                        if (tourBtn) {
+                            tourBtn.classList.add('tour-btn-pulse');
+                        }
+                    }
+                });
+
+                overallTour.on('hide', function(event) {
+                    const tourBtn = document.getElementById('start-overall-tour-btn');
+                    if (tourBtn) {
+                        tourBtn.classList.remove('tour-btn-pulse');
+                    }
+                });
+
+                // Manual tour trigger
+                const startTourBtn = document.getElementById('start-overall-tour-btn');
+                if (startTourBtn) {
+                    startTourBtn.addEventListener('click', function() {
+                        overallTour.start();
+                    });
+                }
+
+                // Check if this is first visit to overall view
+                const overallTourCompleted = localStorage.getItem('overallTourCompleted');
+                if (!overallTourCompleted) {
+                    // Auto-start tour after a short delay
+                    setTimeout(() => {
+                        overallTour.start();
+                    }, 2000);
+                }
+
+                console.log('Overall View guided tour initialized!');
+                
+            }, 1500); // Wait for charts to load
+        });
+    </script>
+    <script src="more-menu.js"></script>
+
+    <script>
+        // Weekly charts for Overall View More modal
+        let weeklyOverallChart = null;
+        let weeklyDevicesChart = null;
+        let weeklyCategoriesChart = null;
+
+        // Add event listener to More button to initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            const moreBtn = document.getElementById('moreBtn');
+            const moreModal = document.getElementById('moreModal');
+            const closeMoreBtn = document.getElementById('closeMoreBtn');
+            
+            if (moreBtn && moreModal) {
+                moreBtn.addEventListener('click', () => {
+                    moreModal.style.display = 'block';
+                    // Initialize weekly charts when modal opens
+                    setTimeout(() => {
+                        initializeOverallWeeklyCharts();
+                    }, 100);
+                });
+                
+                if (closeMoreBtn) {
+                    closeMoreBtn.addEventListener('click', () => {
+                        moreModal.style.display = 'none';
+                        // Clean up charts when modal closes
+                        if (weeklyOverallChart) {
+                            weeklyOverallChart.destroy();
+                            weeklyOverallChart = null;
+                        }
+                        if (weeklyDevicesChart) {
+                            weeklyDevicesChart.destroy();
+                            weeklyDevicesChart = null;
+                        }
+                        if (weeklyCategoriesChart) {
+                            weeklyCategoriesChart.destroy();
+                            weeklyCategoriesChart = null;
+                        }
+                    });
+                }
+            }
+
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === moreModal) {
+                    moreModal.style.display = 'none';
+                    // Clean up charts
+                    if (weeklyOverallChart) { weeklyOverallChart.destroy(); weeklyOverallChart = null; }
+                    if (weeklyDevicesChart) { weeklyDevicesChart.destroy(); weeklyDevicesChart = null; }
+                    if (weeklyCategoriesChart) { weeklyCategoriesChart.destroy(); weeklyCategoriesChart = null; }
+                }
+            });
+        });
+
+        function initializeOverallWeeklyCharts() {
+            console.log('Initializing Overall View weekly charts...');
+            
+            // Check if light theme is active
+            const isLightTheme = document.body.classList.contains('light-theme');
+            const textColor = isLightTheme ? '#1a202c' : '#ffffff';
+            const gridColor = isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            
+            // Weekly overall usage chart (7 days)
+            const weeklyOverallCtx = document.getElementById('weeklyOverallChart');
+            if (weeklyOverallCtx) {
+                if (weeklyOverallChart) weeklyOverallChart.destroy();
+                
+                const overallData = {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Total Time (hours)',
+                        data: [12.2, 11.8, 13.1, 14.5, 12.9, 8.2, 9.6],
+                        backgroundColor: isLightTheme ? 'rgba(132, 204, 22, 0.6)' : 'rgba(74, 144, 226, 0.6)',
+                        borderColor: isLightTheme ? '#84cc16' : '#4a90e2',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                };
+                
+                weeklyOverallChart = new Chart(weeklyOverallCtx, {
+                    type: 'line',
+                    data: overallData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: { color: textColor }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Daily Total Usage - All Devices',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor },
+                                title: {
+                                    display: true,
+                                    text: 'Hours',
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Weekly devices breakdown chart
+            const weeklyDevicesCtx = document.getElementById('weeklyDevicesChart');
+            if (weeklyDevicesCtx) {
+                if (weeklyDevicesChart) weeklyDevicesChart.destroy();
+                
+                const deviceColors = isLightTheme ? 
+                    ['#84cc16', '#16a34a', '#65a30d'] :
+                    ['#007ACC', '#E4405F', '#4285F4'];
+                
+                const devicesData = {
+                    labels: ['Laptop', 'Mobile', 'Browser'],
+                    datasets: [{
+                        data: [52, 28, 20],
+                        backgroundColor: deviceColors,
+                        borderWidth: 2,
+                        borderColor: isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                    }]
+                };
+                
+                weeklyDevicesChart = new Chart(weeklyDevicesCtx, {
+                    type: 'doughnut',
+                    data: devicesData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: { 
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 15
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Weekly Device Distribution (%)',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Weekly categories breakdown chart
+            const weeklyCategoriesCtx = document.getElementById('weeklyCategoriesChart');
+            if (weeklyCategoriesCtx) {
+                if (weeklyCategoriesChart) weeklyCategoriesChart.destroy();
+                
+                const categoryColors = isLightTheme ? 
+                    ['#84cc16', '#16a34a', '#65a30d', '#4d7c0f', '#365314', '#1a2e05'] :
+                    ['#4285F4', '#34A853', '#FBBC05', '#EA4335', '#9C27B0', '#FF9800'];
+                
+                const categoriesData = {
+                    labels: ['Productive', 'Entertainment', 'Social Media', 'Games', 'Communication', 'Other'],
+                    datasets: [{
+                        data: [35, 28, 15, 12, 7, 3],
+                        backgroundColor: categoryColors,
+                        borderWidth: 2,
+                        borderColor: isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                    }]
+                };
+                
+                weeklyCategoriesChart = new Chart(weeklyCategoriesCtx, {
+                    type: 'doughnut',
+                    data: categoriesData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: { 
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 15
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Weekly Category Breakdown (%)',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            console.log('Overall View weekly charts initialized successfully');
+        }
+
+        // Export data functionality for Overall View
+        document.addEventListener('DOMContentLoaded', function() {
+            const exportDataBtn = document.getElementById('exportDataBtn');
+            if (exportDataBtn) {
+                exportDataBtn.addEventListener('click', () => {
+                    const exportData = {
+                        exportDate: new Date().toISOString(),
+                        timeRange: 'Weekly Overall Usage - All Devices',
+                        totalTime: '87h 58m',
+                        devices: {
+                            'Laptop': '47h 15m',
+                            'Mobile': '30h 41m',
+                            'Browser': '10h 2m'
+                        },
+                        categories: {
+                            'Productive': '30h 25m',
+                            'Entertainment': '24h 15m',
+                            'Social Media': '13h 10m',
+                            'Games': '10h 30m',
+                            'Communication': '6h 15m',
+                            'Other': '3h 23m'
+                        },
+                        dailyBreakdown: {
+                            'Monday': '12h 12m',
+                            'Tuesday': '11h 48m',
+                            'Wednesday': '13h 6m',
+                            'Thursday': '14h 30m',
+                            'Friday': '12h 54m',
+                            'Saturday': '8h 12m',
+                            'Sunday': '9h 36m'
+                        },
+                        insights: [
+                            'Most productive day: Thursday (75% productivity)',
+                            'Peak usage time: 2-4 PM across all devices',
+                            'Laptop dominates weekdays, mobile peaks on weekends',
+                            'Social media usage decreased by 18% from last week'
+                        ]
+                    };
+                    
+                    // Create and download JSON file
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `overall-usage-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Show success message
+                    const originalText = exportDataBtn.textContent;
+                    exportDataBtn.textContent = '✅ Data Exported!';
+                    exportDataBtn.style.background = '#10b981';
+                    setTimeout(() => {
+                        exportDataBtn.textContent = originalText;
+                        exportDataBtn.style.background = '';
+                    }, 2000);
+                });
+            }
+        });
+    </script>
+
+    <div class="bolt-badge">
+        <a href="https://bolt.new" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+            </svg>
+            Built with Bolt
+        </a>
+    </div>
+</body>
+</html> 

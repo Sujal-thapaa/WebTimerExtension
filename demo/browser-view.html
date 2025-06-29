@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSetu - Browser View</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <!-- Shepherd.js for guided tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css" />
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
+    <script src="lib/chart.min.js"></script>
+    <script src="demo-data.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --card-bg: #1e1e3f;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-color: #ffffff;
+            --accent-color: #4a90e2;
+            --accent-green: #4caf50;
+            --accent-orange: #ff9800;
+            --accent-purple: #9c27b0;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            width: 100vw !important;
+            max-width: none !important;
+        }
+
+        .container {
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 32px 24px !important;
+            width: 100% !important;
+        }
+
+        .demo-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 193, 7, 0.9);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 120px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Browser Header */
+        .browser-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 20px 0;
+        }
+
+        .browser-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0;
+        }
+
+        .view-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            margin-bottom: 24px;
+        }
+
+        /* Country Flags Section */
+        .flags-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .flags-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .flags-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 60px;
+            box-shadow: var(--shadow);
+        }
+
+        .flag-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .flag-item.selected-flag {
+            border-color: var(--accent-color);
+            background: rgba(74, 144, 226, 0.1);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .flag-img {
+            width: 28px;
+            height: 20px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .flag-item span {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        /* Theme Toggle Section */
+        .theme-section {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .simple-theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        .simple-theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #themeIcon {
+            font-size: 1rem;
+        }
+
+        /* Language Selector */
+        .flag-container {
+            position: absolute;
+            top: 24px;
+            right: 80px;
+            z-index: 100;
+        }
+
+        .selected-flag {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .selected-flag:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .flag-icon {
+            width: 20px;
+            height: 15px;
+            border-radius: 2px;
+            object-fit: cover;
+        }
+
+        .flag-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            margin-top: 4px;
+            min-width: 140px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            display: none;
+            overflow: hidden;
+        }
+
+        .flag-dropdown.show {
+            display: block;
+        }
+
+        .flag-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .flag-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .flag-option img {
+            width: 16px;
+            height: 12px;
+            border-radius: 2px;
+            object-fit: cover;
+        }
+
+        /* Time Period Buttons */
+        .time-period {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 50px;
+            padding: 6px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .time-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .time-btn.active {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+
+        /* Main Content Grid */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* Total Time Card */
+        .total-time-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            grid-column: 1 / -1;
+        }
+
+        .total-time-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .total-time-card h2 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 0 0 8px 0;
+            font-weight: 500;
+        }
+
+        .total-time-card p {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* View Switcher */
+        .view-switcher {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 50px;
+            padding: 6px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: var(--shadow);
+            grid-column: 1 / -1;
+        }
+
+        .view-btn, .switcher-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn.active, .switcher-btn.active {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            height: 350px;
+            grid-column: 1 / -1;
+        }
+
+        /* Data Table Section */
+        .data-table-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+
+        .data-table-section h3 {
+            margin: 0 0 16px 0;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .data-table {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .data-table-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--card-border);
+            transition: background-color 0.3s ease;
+        }
+
+        .data-table-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-table-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+
+        .data-item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .data-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .data-item-details h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .data-item-details p {
+            margin: 0;
+            opacity: 0.7;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .data-item-time {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+
+        .top-sites h2 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+
+
+
+
+        /* Actions */
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer */
+        .main-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .footer-btn {
+            background: var(--accent-color);
+            border: none;
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .footer-btn:hover {
+            background: #3a7bc8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            margin: 5% auto;
+            padding: 32px;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .close-btn {
+            color: var(--text-secondary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 16px;
+            right: 24px;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Demo Popup Modal */
+        .demo-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .demo-popup-modal {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .demo-popup-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .demo-popup-body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+        }
+
+        .demo-popup-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .github-btn {
+            background: #24292e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .github-btn:hover {
+            background: #1a1e22;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(36, 41, 46, 0.4);
+        }
+
+        .demo-continue-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .demo-continue-btn:hover {
+            background: #3a7bc8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .demo-popup-overlay.hidden {
+            display: none;
+        }
+
+        /* Top Right Controls */
+        .top-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        /* Language Dropdown */
+        .language-selector {
+            position: relative;
+        }
+
+        .language-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            min-width: 120px;
+            backdrop-filter: blur(10px);
+        }
+
+        .language-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .current-flag {
+            width: 24px;
+            height: 18px;
+            object-fit: cover;
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .dropdown-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin-top: 8px;
+            min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .language-dropdown.show {
+            display: block;
+            animation: dropdownSlide 0.3s ease-out;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .language-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .language-option.selected {
+            background: rgba(74, 144, 226, 0.2);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .language-option img {
+            width: 24px;
+            height: 18px;
+            border-radius: 3px;
+            object-fit: cover;
+        }
+
+        /* Theme Toggle */
+        .simple-theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .simple-theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #themeIcon {
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .top-controls {
+                top: 15px;
+                right: 15px;
+                gap: 10px;
+            }
+            
+            .language-toggle,
+            .simple-theme-toggle {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .language-dropdown {
+                min-width: 160px;
+            }
+        }
+
+        .bolt-badge {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 25px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bolt-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bolt-badge a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo Popup Modal -->
+    <div id="demoPopupOverlay" class="demo-popup-overlay">
+        <div class="demo-popup-modal">
+            <div class="demo-popup-title">
+                🚧 Demo Dashboard Only
+            </div>
+            <div class="demo-popup-body">
+                This is a simplified demo version of the TimeSetu Dashboard. It is not connected to the backend, mobile app, or AI tools. To use the full version (including the Chrome Extension and Mobile App), please visit the GitHub repository.
+            </div>
+            <div class="demo-popup-buttons">
+                <a href="https://github.com/your-username/timesetu" target="_blank" class="github-btn">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    Go to GitHub
+                </a>
+                <button id="demoContinueBtn" class="demo-continue-btn">
+                    Continue to Demo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="back-btn">← Back</a>
+    <div class="demo-indicator">🌐 Demo</div>
+
+
+
+    <div class="container">
+        <div class="browser-header">
+            <h1>TimeSetu</h1>
+            <div class="view-title">Browser Screen Uses</div>
+        </div>
+
+        <div class="time-period">
+            <button id="todayBtn" class="time-btn active">Today</button>
+            <button id="weekBtn" class="time-btn">This Week</button>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="start-browser-tour-btn" class="action-btn" style="background: var(--accent-color); margin: 0 auto;">
+                🎯 Take Browser Tour
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="total-time-card">
+                <h2>Total Time Today</h2>
+                <p id="totalTime">3h 38m</p>
+            </div>
+
+            <div class="view-switcher">
+                <button id="categoryViewBtn" class="view-btn active">By Category</button>
+                <button id="websiteViewBtn" class="switcher-btn">By Website</button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            
+            <!-- Data Table Section -->
+            <div class="data-table-section">
+                <h3 id="dataTableTitle">Time Breakdown</h3>
+                <div id="dataTableContainer" class="data-table">
+                    <p style="text-align: center; opacity: 0.7; margin: 20px 0;">Click on a chart section to view detailed breakdown</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="goalsBtn" class="action-btn">🎯 Goals</button>
+            <button id="settingsBtn" class="action-btn">⚙️ Settings</button>
+            <button id="moreBtn" class="action-btn">📊 More</button>
+        </div>
+
+        <footer class="main-footer">
+            <button id="dashboardBtn" class="footer-btn">Full Dashboard</button>
+        </footer>
+    </div>
+
+    <!-- Hidden elements for voice review script -->
+    <div style="display: none;">
+        <span id="browserTime">25h 26m</span>
+        <span id="mobileTime">0h 0m</span>
+        <span id="laptopTime">0h 0m</span>
+    </div>
+
+    <!-- Modals -->
+    <div id="moreModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeMoreBtn">&times;</span>
+            <h2>Weekly Summary</h2>
+            <div class="chart-container" style="height: 250px; margin: 20px 0;">
+                <canvas id="weeklyChart"></canvas>
+            </div>
+            <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                <canvas id="weeklyWebsiteChart"></canvas>
+            </div>
+            <div id="voiceReviewCard" class="voice-review-card">
+                <h3 style="text-align:center;">🔊 Weekly AI Review</h3>
+                <p id="voiceSummaryText">This week, you spent 25 hours 26 minutes browsing the web. Your most used category was Entertainment with 9 hours 42 minutes, primarily on YouTube. You also spent 6 hours 18 minutes on Development sites like GitHub and Stack Overflow. Great balance between learning and entertainment!</p>
+                <button id="replayVoiceBtn" class="action-btn" style="width:100%;margin-top:8px;">Replay 🔁</button>
+            </div>
+            <button id="exportDataBtn" class="action-btn">Export Data</button>
+        </div>
+    </div>
+
+    <div id="goalsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeGoalsBtn">&times;</span>
+            <h2>Your Goals</h2>
+            <div class="streak-info"></div>
+            <div class="goals-container"></div>
+            <button id="editGoalsBtn" class="action-btn">Edit Goals</button>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeSettingsBtn">&times;</span>
+            <h2>Settings</h2>
+            <h3>Manage Categories</h3>
+            <div id="categoriesList"></div>
+            <button id="saveSettingsBtn" class="action-btn">Save Settings</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize with dummy data
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle demo popup
+            const demoPopupOverlay = document.getElementById('demoPopupOverlay');
+            const demoContinueBtn = document.getElementById('demoContinueBtn');
+            
+            // Show popup on page load (it's already visible by default)
+            
+            // Handle continue button click
+            if (demoContinueBtn && demoPopupOverlay) {
+                demoContinueBtn.addEventListener('click', () => {
+                    demoPopupOverlay.classList.add('hidden');
+                });
+            }
+            
+            // Close popup when clicking on overlay (outside modal)
+            if (demoPopupOverlay) {
+                demoPopupOverlay.addEventListener('click', (e) => {
+                    if (e.target === demoPopupOverlay) {
+                        demoPopupOverlay.classList.add('hidden');
+                    }
+                });
+            }
+            
+            const browserData = DemoDataHelper.getBrowserData();
+            const chartData = DemoDataHelper.getCategoryChartData();
+            
+            // Data for Today vs Week
+            const todayData = {
+                totalTime: '3h 38m',
+                title: 'Total Time Today'
+            };
+            
+            const weekData = {
+                totalTime: '25h 26m',
+                title: 'Total Time This Week'
+            };
+            
+            // Update total time - fix the display issue
+            const totalTimeEl = document.getElementById('totalTime');
+            const totalTimeTitle = document.querySelector('.total-time-card h2');
+            
+            if (totalTimeEl && browserData.totalTime) {
+                totalTimeEl.textContent = browserData.totalTime;
+            } else if (totalTimeEl) {
+                totalTimeEl.textContent = todayData.totalTime;
+            }
+            
+            // Today/Week toggle functionality
+            const todayBtn = document.getElementById('todayBtn');
+            const weekBtn = document.getElementById('weekBtn');
+            
+            function updateTimeDisplay(isWeek) {
+                const currentData = isWeek ? weekData : todayData;
+                if (totalTimeEl) totalTimeEl.textContent = currentData.totalTime;
+                if (totalTimeTitle) totalTimeTitle.textContent = currentData.title;
+                
+                // Update button states
+                if (isWeek) {
+                    todayBtn.classList.remove('active');
+                    weekBtn.classList.add('active');
+                } else {
+                    weekBtn.classList.remove('active');
+                    todayBtn.classList.add('active');
+                }
+            }
+            
+            if (todayBtn && weekBtn) {
+                todayBtn.addEventListener('click', () => updateTimeDisplay(false));
+                weekBtn.addEventListener('click', () => updateTimeDisplay(true));
+            }
+            
+            // Initialize charts
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            let currentChart;
+            
+            // Function to create category chart
+            function createCategoryChart() {
+                if (currentChart) currentChart.destroy();
+                currentChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            data: chartData.data,
+                            backgroundColor: chartData.colors,
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    color: '#ffffff',
+                                    boxWidth: 15,
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        return `${label}: ${value}%`;
+                                    }
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            // Chart click functionality can be added here if needed
+                            // For now, we always show all categories
+                        }
+                    }
+                });
+                
+                // Show category data by default
+                showCategoryData();
+            }
+            
+            // Function to create website chart
+            function createWebsiteChart() {
+                if (currentChart) currentChart.destroy();
+                const websiteData = browserData.topSites.slice(0, 6);
+                const websiteColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+                
+                currentChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: websiteData.map(site => site.name),
+                        datasets: [{
+                            data: [23, 19, 15, 12, 8, 6],
+                            backgroundColor: websiteColors,
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    color: '#ffffff',
+                                    boxWidth: 15,
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        return `${label}: ${value}%`;
+                                    }
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            // Chart click functionality can be added here if needed
+                            // For now, we always show all websites
+                        }
+                    }
+                });
+                
+                // Show website data by default
+                showWebsiteData();
+            }
+            
+            // Function to show category data in table
+            function showCategoryData(category) {
+                const dataTableTitle = document.getElementById('dataTableTitle');
+                const dataTableContainer = document.getElementById('dataTableContainer');
+                
+                // Always show "Time by Category" title for category view
+                dataTableTitle.textContent = 'Time by Category';
+                
+                // Show all categories with their times
+                const allCategories = [
+                    { name: 'Entertainment', time: '1h 23m 29s', icon: '🎬' },
+                    { name: 'Games', time: '0h 58m 4s', icon: '🎮' },
+                    { name: 'Social Media', time: '0h 39m 17s', icon: '📱' },
+                    { name: 'Other / Uncategorized', time: '0h 37m 56s', icon: '📂' }
+                ];
+                
+                dataTableContainer.innerHTML = allCategories.map(category => `
+                    <div class="data-table-item">
+                        <div class="data-item-info">
+                            <div class="data-item-icon">${category.icon}</div>
+                            <div class="data-item-details">
+                                <h4>${category.name}</h4>
+                            </div>
+                        </div>
+                        <div class="data-item-time">${category.time}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // Function to show website data in table
+            function showWebsiteData(website) {
+                const dataTableTitle = document.getElementById('dataTableTitle');
+                const dataTableContainer = document.getElementById('dataTableContainer');
+                
+                // Always show "Top Sites" title for website view
+                dataTableTitle.textContent = 'Top Sites';
+                
+                // Show all websites with their times and logos
+                const allWebsites = [
+                    { name: 'Youtube', time: '1h 23m 29s', icon: '🎥', domain: 'youtube.com' },
+                    { name: 'Chess', time: '0h 58m 4s', icon: '♟️', domain: 'chess.com' },
+                    { name: 'Facebook', time: '0h 37m 26s', icon: '📘', domain: 'facebook.com' },
+                    { name: '127', time: '0h 9m 42s', icon: '🔧', domain: '127.0.0.1' },
+                    { name: 'Dashboard', time: '0h 5m 29s', icon: '📊', domain: 'moekofcldmjpkbclhodabnpkdechojdb' },
+                    { name: 'Thetruesize', time: '0h 5m 7s', icon: '🌍', domain: 'thetruesize.com' },
+                    { name: 'Localhost', time: '0h 4m 23s', icon: '🖥️', domain: 'localhost' },
+                    { name: 'Dashboard', time: '0h 3m 19s', icon: '📊', domain: 'dashboard' }
+                ];
+                
+                dataTableContainer.innerHTML = allWebsites.map(site => `
+                    <div class="data-table-item">
+                        <div class="data-item-info">
+                            <div class="data-item-icon">${site.icon}</div>
+                            <div class="data-item-details">
+                                <h4>${site.name}</h4>
+                                <p>${site.domain}</p>
+                            </div>
+                        </div>
+                        <div class="data-item-time">${site.time}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // Initialize with category chart
+            createCategoryChart();
+            
+            // Handle view switcher
+            const categoryViewBtn = document.getElementById('categoryViewBtn');
+            const websiteViewBtn = document.getElementById('websiteViewBtn');
+            
+            if (categoryViewBtn && websiteViewBtn) {
+                categoryViewBtn.addEventListener('click', () => {
+                    categoryViewBtn.classList.add('active');
+                    websiteViewBtn.classList.remove('active');
+                    createCategoryChart();
+                    showCategoryData(); // Always show category data for category view
+                });
+                
+                websiteViewBtn.addEventListener('click', () => {
+                    websiteViewBtn.classList.add('active');
+                    categoryViewBtn.classList.remove('active');
+                    createWebsiteChart();
+                    showWebsiteData(); // Always show website data for website view
+                });
+            }
+            
+            
+            // Dashboard button - redirect to overall view
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', () => {
+                    window.location.href = 'overall-view.html';
+                });
+            }
+            
+            // Handle modals
+            const moreBtn = document.getElementById('moreBtn');
+            const moreModal = document.getElementById('moreModal');
+            const closeMoreBtn = document.getElementById('closeMoreBtn');
+            
+            if (moreBtn && moreModal) {
+                moreBtn.addEventListener('click', () => {
+                    moreModal.style.display = 'block';
+                    // Initialize weekly charts when modal opens
+                    setTimeout(() => {
+                        initializeWeeklyCharts();
+                    }, 100);
+                });
+                
+                if (closeMoreBtn) {
+                    closeMoreBtn.addEventListener('click', () => {
+                        moreModal.style.display = 'none';
+                        // Clean up charts when modal closes
+                        if (weeklyChart) {
+                            weeklyChart.destroy();
+                            weeklyChart = null;
+                        }
+                        if (weeklyWebsiteChart) {
+                            weeklyWebsiteChart.destroy();
+                            weeklyWebsiteChart = null;
+                        }
+                    });
+                }
+            }
+            
+            // Handle goals modal
+            const goalsBtn = document.getElementById('goalsBtn');
+            const goalsModal = document.getElementById('goalsModal');
+            const closeGoalsBtn = document.getElementById('closeGoalsBtn');
+            
+            if (goalsBtn && goalsModal) {
+                goalsBtn.addEventListener('click', () => {
+                    goalsModal.style.display = 'block';
+                });
+                
+                if (closeGoalsBtn) {
+                    closeGoalsBtn.addEventListener('click', () => {
+                        goalsModal.style.display = 'none';
+                    });
+                }
+            }
+            
+            // Handle settings modal
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsModal = document.getElementById('settingsModal');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+            
+            if (settingsBtn && settingsModal) {
+                settingsBtn.addEventListener('click', () => {
+                    settingsModal.style.display = 'block';
+                });
+                
+                if (closeSettingsBtn) {
+                    closeSettingsBtn.addEventListener('click', () => {
+                        settingsModal.style.display = 'none';
+                    });
+                }
+            }
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                }
+            });
+            
+            // Flag selector functionality
+            const selectedFlag = document.getElementById('selectedFlag');
+            const flagDropdown = document.getElementById('flagDropdown');
+            const currentFlag = document.getElementById('currentFlag');
+            const flagOptions = document.querySelectorAll('.flag-option');
+            
+            if (selectedFlag && flagDropdown) {
+                // Toggle dropdown on click
+                selectedFlag.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    flagDropdown.classList.toggle('show');
+                });
+                
+                // Handle flag selection
+                flagOptions.forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const flagCode = option.dataset.flag;
+                        const flagImg = option.querySelector('img');
+                        
+                        if (currentFlag && flagImg) {
+                            currentFlag.src = flagImg.src;
+                            currentFlag.alt = flagImg.alt;
+                        }
+                        
+                        flagDropdown.classList.remove('show');
+                    });
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', () => {
+                    flagDropdown.classList.remove('show');
+                });
+            }
+
+            // Country Flags Functionality
+            function initializeFlags() {
+                const flagItems = document.querySelectorAll('.flag-item');
+                const savedCountry = localStorage.getItem('selectedCountry') || 'us';
+                
+                // Set initial selected flag
+                flagItems.forEach(item => {
+                    item.classList.remove('selected-flag');
+                    if (item.dataset.country === savedCountry) {
+                        item.classList.add('selected-flag');
+                    }
+                });
+                
+                // Add click handlers
+                flagItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        // Remove selected class from all flags
+                        flagItems.forEach(flag => flag.classList.remove('selected-flag'));
+                        
+                        // Add selected class to clicked flag
+                        item.classList.add('selected-flag');
+                        
+                        // Save selection
+                        const country = item.dataset.country;
+                        localStorage.setItem('selectedCountry', country);
+                        
+                        // Show notification (simple alert for demo)
+                        const countryNames = {
+                            'us': 'United States',
+                            'de': 'Germany', 
+                            'fr': 'France',
+                            'es': 'Spain',
+                            'jp': 'Japan',
+                            'cn': 'China',
+                            'in': 'India'
+                        };
+                        
+                        console.log(`Country set to: ${countryNames[country] || country.toUpperCase()}`);
+                    });
+                });
+            }
+
+            // Initialize flags
+            initializeFlags();
+            
+            // Weekly chart variables
+            let weeklyChart = null;
+            let weeklyWebsiteChart = null;
+            
+            // Function to initialize weekly charts in More modal
+            function initializeWeeklyCharts() {
+                console.log('Initializing weekly charts...');
+                
+                // Check if light theme is active
+                const isLightTheme = document.body.classList.contains('light-theme');
+                const textColor = isLightTheme ? '#1a202c' : '#ffffff';
+                const gridColor = isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+                
+                // Weekly usage chart (7 days)
+                const weeklyCtx = document.getElementById('weeklyChart');
+                if (weeklyCtx) {
+                    if (weeklyChart) weeklyChart.destroy();
+                    
+                    const weeklyData = {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Browser Time (hours)',
+                            data: [3.2, 4.1, 3.8, 4.5, 3.9, 2.2, 3.1],
+                            backgroundColor: isLightTheme ? 'rgba(132, 204, 22, 0.6)' : 'rgba(66, 133, 244, 0.6)',
+                            borderColor: isLightTheme ? '#84cc16' : '#4285F4',
+                            borderWidth: 2,
+                            fill: true
+                        }]
+                    };
+                    
+                    weeklyChart = new Chart(weeklyCtx, {
+                        type: 'line',
+                        data: weeklyData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: { color: textColor }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Daily Browser Usage This Week',
+                                    color: textColor,
+                                    font: { size: 16, weight: 'bold' }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { color: textColor },
+                                    grid: { color: gridColor }
+                                },
+                                y: {
+                                    ticks: { color: textColor },
+                                    grid: { color: gridColor },
+                                    title: {
+                                        display: true,
+                                        text: 'Hours',
+                                        color: textColor
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Weekly website breakdown chart
+                const weeklyWebsiteCtx = document.getElementById('weeklyWebsiteChart');
+                if (weeklyWebsiteCtx) {
+                    if (weeklyWebsiteChart) weeklyWebsiteChart.destroy();
+                    
+                    const websiteColors = isLightTheme ? 
+                        ['#84cc16', '#16a34a', '#65a30d', '#4d7c0f', '#365314', '#1a2e05'] :
+                        ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+                    
+                    const websiteData = {
+                        labels: ['YouTube', 'GitHub', 'Stack Overflow', 'Reddit', 'Twitter', 'Others'],
+                        datasets: [{
+                            data: [28, 22, 18, 12, 10, 10],
+                            backgroundColor: websiteColors,
+                            borderWidth: 2,
+                            borderColor: isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                        }]
+                    };
+                    
+                    weeklyWebsiteChart = new Chart(weeklyWebsiteCtx, {
+                        type: 'doughnut',
+                        data: websiteData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'right',
+                                    labels: { 
+                                        color: textColor,
+                                        boxWidth: 15,
+                                        padding: 15
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Top Websites This Week (%)',
+                                    color: textColor,
+                                    font: { size: 16, weight: 'bold' }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.label}: ${context.raw}%`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                console.log('Weekly charts initialized successfully');
+            }
+            
+            // Export Data functionality
+            const exportDataBtn = document.getElementById('exportDataBtn');
+            if (exportDataBtn) {
+                exportDataBtn.addEventListener('click', () => {
+                    const browserData = DemoDataHelper.getBrowserData();
+                    const exportData = {
+                        exportDate: new Date().toISOString(),
+                        timeRange: 'Weekly Browser Usage',
+                        totalTime: '25h 26m',
+                        categories: {
+                            'Entertainment': '9h 42m',
+                            'Development': '6h 18m', 
+                            'Social Media': '4h 15m',
+                            'Other': '5h 11m'
+                        },
+                        topWebsites: browserData.topSites,
+                        dailyBreakdown: {
+                            'Monday': '3h 12m',
+                            'Tuesday': '4h 6m',
+                            'Wednesday': '3h 48m',
+                            'Thursday': '4h 30m',
+                            'Friday': '3h 54m',
+                            'Saturday': '2h 12m',
+                            'Sunday': '3h 6m'
+                        }
+                    };
+                    
+                    // Create and download JSON file
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `browser-usage-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Show success message
+                    const originalText = exportDataBtn.textContent;
+                    exportDataBtn.textContent = '✅ Data Exported!';
+                    exportDataBtn.style.background = '#10b981';
+                    setTimeout(() => {
+                        exportDataBtn.textContent = originalText;
+                        exportDataBtn.style.background = '';
+                    }, 2000);
+                });
+            }
+        });
+    </script>
+    
+    <!-- Voice Review Script -->
+    <script src="voiceReview.js"></script>
+    
+    <!-- Theme Toggle Script -->
+    <script src="theme-toggle.js"></script>
+    
+    <style>
+        /* Custom Shepherd.js Styling for Browser View */
+        .shepherd-element {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+        }
+
+        .shepherd-text {
+            color: #1a202c;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .shepherd-header {
+            background: linear-gradient(135deg, #4285F4, #667eea);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 16px 16px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .shepherd-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .shepherd-button {
+            background: #4285F4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .shepherd-button:hover {
+            background: #3367d6;
+            transform: translateY(-1px);
+        }
+
+        .shepherd-button.shepherd-button-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .shepherd-button.shepherd-button-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* Light mode adjustments */
+        body.light-theme .shepherd-element {
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(132, 204, 22, 0.3);
+        }
+
+        body.light-theme .shepherd-header {
+            background: linear-gradient(135deg, #84cc16, #16a34a);
+        }
+
+        body.light-theme .shepherd-button {
+            background: #84cc16;
+        }
+
+        body.light-theme .shepherd-button:hover {
+            background: #65a30d;
+        }
+    </style>
+
+    <script>
+        // Browser View Guided Tour Implementation
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (typeof Shepherd === 'undefined') {
+                    console.error('Shepherd.js not loaded');
+                    return;
+                }
+
+                // Initialize Shepherd tour
+                const browserTour = new Shepherd.Tour({
+                    useModalOverlay: true,
+                    defaultStepOptions: {
+                        classes: 'shadow-md bg-blue-dark',
+                        scrollTo: { behavior: 'smooth', block: 'center' },
+                        modalOverlayOpeningPadding: 15,
+                        cancelIcon: {
+                            enabled: true
+                        }
+                    }
+                });
+
+                // Define tour steps
+                browserTour.addStep({
+                    title: '🌐 Browser Dashboard Tour',
+                    text: 'Welcome to Browser View! This shows your web browsing activity tracked by the Chrome extension.',
+                    attachTo: {
+                        element: '#start-browser-tour-btn',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Start Tour',
+                        action: browserTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                browserTour.addStep({
+                    title: '⏱️ Time Period',
+                    text: 'Switch between Today and This Week to see different time periods of your browsing activity.',
+                    attachTo: {
+                        element: '.time-period',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: browserTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: browserTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                browserTour.addStep({
+                    title: '📊 Total Browser Time',
+                    text: 'This shows your total time spent browsing the web for the selected period.',
+                    attachTo: {
+                        element: '.total-time-card',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: browserTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: browserTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                browserTour.addStep({
+                    title: '🔄 View Toggle',
+                    text: 'Switch between "By Category" and "By Website" to see different breakdowns of your browsing data.',
+                    attachTo: {
+                        element: '.view-switcher',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: browserTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: browserTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                browserTour.addStep({
+                    title: '📈 Category/Website Chart',
+                    text: 'This pie chart visualizes your browsing time by categories (Social, Work, Entertainment) or individual websites.',
+                    attachTo: {
+                        element: '#categoryChart',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: browserTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: browserTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                browserTour.addStep({
+                    title: '📋 Data Table',
+                    text: 'This table shows detailed breakdown of your browsing time with exact durations and categories for each site.',
+                    attachTo: {
+                        element: '#dataTableContainer',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: browserTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: browserTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                browserTour.addStep({
+                    title: '⚙️ Action Controls',
+                    text: 'Use these buttons to set browsing goals, configure settings, and access more detailed analytics.',
+                    attachTo: {
+                        element: '.actions',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: browserTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Done',
+                        action: function() {
+                            browserTour.complete();
+                            localStorage.setItem('browserTourCompleted', 'true');
+                        },
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                // Tour event handlers
+                browserTour.on('complete', function() {
+                    localStorage.setItem('browserTourCompleted', 'true');
+                    console.log('Browser view tour completed!');
+                });
+
+                browserTour.on('cancel', function() {
+                    console.log('Browser view tour cancelled');
+                });
+
+                // Manual tour trigger
+                const startTourBtn = document.getElementById('start-browser-tour-btn');
+                if (startTourBtn) {
+                    startTourBtn.addEventListener('click', function() {
+                        browserTour.start();
+                    });
+                }
+
+                // Auto-start on first visit
+                const browserTourCompleted = localStorage.getItem('browserTourCompleted');
+                if (!browserTourCompleted) {
+                    setTimeout(() => {
+                        browserTour.start();
+                    }, 1500);
+                }
+
+                console.log('Browser View guided tour initialized!');
+                
+            }, 1000);
+        });
+    </script>
+    <script src="more-menu.js"></script>
+
+    <div class="bolt-badge">
+        <a href="https://bolt.new" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+            </svg>
+            Built with Bolt
+        </a>
+    </div>
+</body>
+</html> 

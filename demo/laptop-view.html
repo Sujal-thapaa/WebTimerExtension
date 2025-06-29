@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSetu - Laptop View</title>
+    <link rel="stylesheet" href="popup.css">
+    <!-- Shepherd.js for guided tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css" />
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
+    <script src="lib/chart.min.js"></script>
+    <script src="chrome-compat-demo.js"></script>
+    <script src="demo-data.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --card-bg: #1e1e3f;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-color: #ffffff;
+            --accent-color: #4a90e2;
+            --accent-green: #4caf50;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            width: 100vw !important;
+            max-width: none !important;
+        }
+
+        .container {
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 32px 24px !important;
+            width: 100% !important;
+        }
+        
+        .demo-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 193, 7, 0.9);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .laptop-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .stat-card h3 {
+            color: #4caf50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .app-list {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .app-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .app-item:last-child {
+            border-bottom: none;
+        }
+        .app-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .app-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .app-details h4 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .app-details p {
+            margin: 0;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        .main-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-color), #9c27b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0;
+        }
+        .view-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        /* Country Flags Section */
+        .flags-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .flags-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .flags-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 60px;
+            box-shadow: var(--shadow);
+        }
+
+        .flag-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .flag-item.selected-flag {
+            border-color: var(--accent-color);
+            background: rgba(74, 144, 226, 0.1);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .flag-img {
+            width: 28px;
+            height: 20px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .flag-item span {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        /* Theme Toggle Section */
+        .theme-section {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .simple-theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        .simple-theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #themeIcon {
+            font-size: 1rem;
+        }
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .bolt-badge {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 25px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bolt-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bolt-badge a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back</a>
+    <div class="demo-indicator">💻 Demo</div>
+
+    <div class="container">
+        <header class="main-header">
+            <h1>Laptop Screen Time</h1>
+            
+
+
+
+            
+                    <div class="time-period">
+            <button id="todayBtn" class="time-btn active">Today</button>
+            <button id="weekBtn" class="time-btn">This Week</button>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="start-laptop-tour-btn" class="action-btn" style="background: #007ACC; margin: 0 auto;">
+                🎯 Take Laptop Tour
+            </button>
+        </div>
+        </header>
+
+
+        <section class="main-content">
+            <div class="total-time-card">
+                <h2>Laptop Usage Today</h2>
+                <p id="totalTime">6h 45m</p>
+            </div>
+
+            <div class="laptop-stats">
+                <div class="stat-card">
+                    <h3>💻 Active Time</h3>
+                    <div class="value">5h 12m</div>
+                    <div>Productive work</div>
+                </div>
+                <div class="stat-card">
+                    <h3>⏸️ Idle Time</h3>
+                    <div class="value">1h 33m</div>
+                    <div>Screen saver</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🔋 Battery</h3>
+                    <div class="value">3h 45m</div>
+                    <div>Remaining</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🌐 Network</h3>
+                    <div class="value">2.4GB</div>
+                    <div>Data used</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="laptopChart"></canvas>
+            </div>
+
+            <div class="app-list">
+                <h3 id="appListHeader">Top Applications Today</h3>
+                <div id="laptopAppsList"></div>
+            </div>
+            
+            <div class="app-list" id="laptopGoalsCard">
+                <h3>🎯 Laptop Usage Goals</h3>
+                <div style="margin: 15px 0; padding: 15px; background: rgba(0, 122, 204, 0.1); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">🔥</div>
+                    <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 3px;">Current Streak</div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #007ACC; margin-bottom: 5px;">7 days</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">You've met your laptop goals for 7 consecutive days!</div>
+                </div>
+                
+                <div>
+                    <h4 style="margin: 20px 0 15px 0; font-size: 1rem;">Daily App Category Limits</h4>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Development 💻</div>
+                            <div style="font-size: 0.85rem;">3h 15m / 4h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4a90e2; font-weight: 600;">81%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 81%; height: 100%; background: linear-gradient(90deg, #4a90e2, #4a90e2cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Productivity 📊</div>
+                            <div style="font-size: 0.85rem;">2h 45m / 3h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #ff9800; font-weight: 600;">92%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 92%; height: 100%; background: linear-gradient(90deg, #ff9800, #ff9800cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Browser 🌐</div>
+                            <div style="font-size: 0.85rem;">45m / 1h 30m</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4caf50; font-weight: 600;">50%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 50%; height: 100%; background: linear-gradient(90deg, #4caf50, #4caf50cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Communication 💬</div>
+                            <div style="font-size: 0.85rem;">15m / No limit</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4caf50; font-weight: 600;">Great!</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 25%; height: 100%; background: linear-gradient(90deg, #4caf50, #4caf50cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="editLaptopGoalsBtn" class="action-btn" style="margin: 5px; font-size: 0.9rem; background: #007ACC;">✏️ Edit Goals</button>
+                    <button id="resetLaptopGoalsBtn" class="action-btn" style="margin: 5px; font-size: 0.9rem; background: #ff5722;">🔄 Reset Goals</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="actions">
+            <button id="goalsBtn" class="action-btn">🎯 Goals</button>
+            <button id="settingsBtn" class="action-btn">⚙️ Settings</button>
+            <button id="moreBtn" class="action-btn">📊 More</button>
+        </section>
+
+        <footer class="main-footer">
+            <button id="dashboardBtn" class="footer-btn">Back to Devices</button>
+        </footer>
+    </div>
+
+    <!-- More Modal -->
+    <div id="moreModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">
+        <div class="modal-content" style="background: var(--card-bg); margin: 5% auto; padding: 0; border-radius: 16px; width: 90%; max-width: 900px; border: 1px solid var(--card-border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(20px); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--card-border);">
+                <h2 style="margin: 0; color: var(--text-primary);">Weekly Summary - Laptop</h2>
+                <span class="close-btn" id="closeMoreBtn" style="color: var(--text-secondary); float: right; font-size: 28px; font-weight: bold; cursor: pointer; background: none; border: none;">&times;</span>
+            </div>
+            <div style="padding: 20px 24px;">
+                <div class="chart-container" style="height: 250px; margin: 20px 0;">
+                    <canvas id="weeklyLaptopChart"></canvas>
+                </div>
+                <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                    <canvas id="weeklyLaptopAppsChart"></canvas>
+                </div>
+                <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                    <canvas id="weeklyLaptopProductivityChart"></canvas>
+                </div>
+                <div id="voiceReviewCard" style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #007ACC;">
+                    <h3 style="text-align:center; margin: 0 0 15px 0; color: var(--text-primary);">🔊 Weekly AI Review</h3>
+                    <p id="voiceSummaryText" style="margin: 0; line-height: 1.6; color: var(--text-primary);">This week, you spent 47h 15m on laptop applications. VS Code dominated with 8h 30m for development work, followed by Chrome at 6h 45m. Your productivity score was 78% - excellent focus during work hours. Slack usage increased by 25% indicating more collaboration.</p>
+                    <button id="replayVoiceBtn" class="action-btn" style="width:100%; margin-top:15px; background: #007ACC; border: none; color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 500;">Replay 🔁</button>
+                </div>
+                <div style="margin: 20px 0; padding: 15px; background: rgba(0, 122, 204, 0.1); border-radius: 12px; border-left: 4px solid #007ACC;">
+                    <h4 style="margin: 0 0 10px 0; color: #007ACC;">💻 Laptop Insights</h4>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Most productive day: Thursday (8.2h total, 85% productivity)</li>
+                        <li>Peak development hours: 10 AM - 12 PM (deep work time)</li>
+                        <li>Weekend usage focused on personal projects and learning</li>
+                        <li>Battery optimization: Average 6.2h usage per charge cycle</li>
+                    </ul>
+                </div>
+                <button id="exportLaptopDataBtn" class="action-btn" style="width: 100%; background: #007ACC; border: none; color: white; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-top: 20px;">Export Laptop Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const laptopData = DemoDataHelper.getLaptopData();
+            const ctx = document.getElementById('laptopChart').getContext('2d');
+            // chart helpers
+            let currentChart;
+
+            const createAppsChart = () => {
+                if (currentChart) currentChart.destroy();
+                const labels = laptopData.applications.slice(0,6).map(a=>a.name);
+                const data = laptopData.applications.slice(0,6).map(a=>a.percentage);
+                currentChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                '#007ACC', '#4285F4', '#0078D4', '#217346', '#1DB954', '#4A154B'
+                            ],
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    color: '#ffffff',
+                                    boxWidth: 15,
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        return `${label}: ${value}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const createWeekChart = () => {
+                if (currentChart) currentChart.destroy();
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: laptopData.weeklyProductivity.labels,
+                        datasets: [{
+                            label: 'Productive',
+                            data: laptopData.weeklyProductivity.productive,
+                            backgroundColor: '#4caf50'
+                        },{
+                            label: 'Idle',
+                            data: laptopData.weeklyProductivity.idle,
+                            backgroundColor: '#ff9800'
+                        }]
+                    },
+                    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{stacked:true,ticks:{color:'#fff'},grid:{color:'rgba(255,255,255,0.1)'}}, y:{stacked:true,ticks:{color:'#fff'},grid:{color:'rgba(255,255,255,0.1)'}}}, plugins:{legend:{labels:{color:'#fff'}}}}
+                });
+            };
+
+            createAppsChart();
+
+            // Render apps list
+            const appsListEl = document.getElementById('laptopAppsList');
+            function minutesFromString(str){ let m=0; str.split(' ').forEach(p=>{if(p.endsWith('h'))m+=parseInt(p)*60; if(p.endsWith('m'))m+=parseInt(p);}); return m; }
+            function formatMinutes(min){ const h=Math.floor(min/60); const mm=min%60; return h>0?`${h}h ${mm}m`:`${mm}m`; }
+
+            function renderApps(arr){
+                appsListEl.innerHTML = arr.map(app=>`
+                    <div class="app-item">
+                        <div class="app-info">
+                            <div class="app-icon">${app.logo?`<img src='${app.logo}' alt='${app.name}'/>`:app.icon}</div>
+                            <div class="app-details"><h4>${app.name}</h4><p>${app.category}</p></div>
+                        </div>
+                        <div class="app-time">${app.time}</div>
+                    </div>`).join('');
+            }
+
+            renderApps(laptopData.applications);
+
+            // toggle buttons
+            const todayBtn=document.getElementById('todayBtn');
+            const weekBtn=document.getElementById('weekBtn');
+            const statCards=document.querySelectorAll('.stat-card .value');
+
+            todayBtn.addEventListener('click',()=>{
+                todayBtn.classList.add('active'); weekBtn.classList.remove('active');
+                document.querySelector('.total-time-card h2').textContent='Laptop Usage Today';
+                document.getElementById('totalTime').textContent = laptopData.todayTime;
+                statCards[0].textContent = laptopData.activeTime;
+                statCards[1].textContent = laptopData.idleTime;
+                createAppsChart();
+                renderApps(laptopData.applications);
+                document.getElementById('appListHeader').textContent='Top Applications Today';
+            });
+
+            weekBtn.addEventListener('click',()=>{
+                weekBtn.classList.add('active'); todayBtn.classList.remove('active');
+                document.querySelector('.total-time-card h2').textContent='Laptop Usage This Week';
+                document.getElementById('totalTime').textContent = laptopData.weekTime;
+                // weekly stats multiply
+                const activeMin=minutesFromString(laptopData.activeTime)*7;
+                const idleMin=minutesFromString(laptopData.idleTime)*7;
+                statCards[0].textContent = formatMinutes(activeMin);
+                statCards[1].textContent = formatMinutes(idleMin);
+                createWeekChart();
+                const weeklyApps = laptopData.applications.map(a=>({...a,time:formatMinutes(minutesFromString(a.time)*7)}));
+                renderApps(weeklyApps);
+                document.getElementById('appListHeader').textContent='Top Applications This Week';
+            });
+
+            // Override dashboard button
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
+
+            // Country Flags Functionality
+            function initializeFlags() {
+                const flagItems = document.querySelectorAll('.flag-item');
+                const savedCountry = localStorage.getItem('selectedCountry') || 'us';
+                
+                // Set initial selected flag
+                flagItems.forEach(item => {
+                    item.classList.remove('selected-flag');
+                    if (item.dataset.country === savedCountry) {
+                        item.classList.add('selected-flag');
+                    }
+                });
+                
+                // Add click handlers
+                flagItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        // Remove selected class from all flags
+                        flagItems.forEach(flag => flag.classList.remove('selected-flag'));
+                        
+                        // Add selected class to clicked flag
+                        item.classList.add('selected-flag');
+                        
+                        // Save selection
+                        const country = item.dataset.country;
+                        localStorage.setItem('selectedCountry', country);
+                        
+                        // Show notification (simple alert for demo)
+                        const countryNames = {
+                            'us': 'United States',
+                            'de': 'Germany', 
+                            'fr': 'France',
+                            'es': 'Spain',
+                            'jp': 'Japan',
+                            'cn': 'China',
+                            'in': 'India'
+                        };
+                        
+                        console.log(`Country set to: ${countryNames[country] || country.toUpperCase()}`);
+                    });
+                });
+            }
+
+            // Initialize flags
+            initializeFlags();
+        });
+    </script>
+    
+    <!-- Theme Toggle Script -->
+    <script src="theme-toggle.js"></script>
+    
+    <style>
+        /* Custom Shepherd.js Styling for Laptop View */
+        .shepherd-element {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+        }
+
+        .shepherd-text {
+            color: #1a202c;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .shepherd-header {
+            background: linear-gradient(135deg, #007ACC, #0056B3);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 16px 16px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .shepherd-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .shepherd-button {
+            background: #007ACC;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .shepherd-button:hover {
+            background: #0056B3;
+            transform: translateY(-1px);
+        }
+
+        .shepherd-button.shepherd-button-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .shepherd-button.shepherd-button-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* Light mode adjustments */
+        body.light-theme .shepherd-element {
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(132, 204, 22, 0.3);
+        }
+
+        body.light-theme .shepherd-header {
+            background: linear-gradient(135deg, #84cc16, #16a34a);
+        }
+
+        body.light-theme .shepherd-button {
+            background: #84cc16;
+        }
+
+        body.light-theme .shepherd-button:hover {
+            background: #65a30d;
+        }
+    </style>
+
+    <script>
+        // Laptop View Guided Tour Implementation
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (typeof Shepherd === 'undefined') {
+                    console.error('Shepherd.js not loaded');
+                    return;
+                }
+
+                // Initialize Shepherd tour
+                const laptopTour = new Shepherd.Tour({
+                    useModalOverlay: true,
+                    defaultStepOptions: {
+                        classes: 'shadow-md bg-blue-dark',
+                        scrollTo: { behavior: 'smooth', block: 'center' },
+                        modalOverlayOpeningPadding: 15,
+                        cancelIcon: {
+                            enabled: true
+                        }
+                    }
+                });
+
+                // Define tour steps
+                laptopTour.addStep({
+                    title: '💻 Laptop Dashboard Tour',
+                    text: 'Welcome to Laptop View! This tracks your desktop and laptop application usage and productivity.',
+                    attachTo: {
+                        element: '#start-laptop-tour-btn',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Start Tour',
+                        action: laptopTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                laptopTour.addStep({
+                    title: '⏱️ Time Period',
+                    text: 'Switch between Today and This Week to view different periods of your laptop usage.',
+                    attachTo: {
+                        element: '.time-period',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: laptopTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: laptopTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                laptopTour.addStep({
+                    title: '📊 Total Laptop Time',
+                    text: 'This shows your total time spent on laptop/desktop applications for the selected period.',
+                    attachTo: {
+                        element: '.total-time-card',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: laptopTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: laptopTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                laptopTour.addStep({
+                    title: '📈 Application Usage Chart',
+                    text: 'This pie chart shows your laptop usage by application categories - Development, Productivity, Entertainment, etc.',
+                    attachTo: {
+                        element: '#laptopChart',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: laptopTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: laptopTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                laptopTour.addStep({
+                    title: '📋 Applications List',
+                    text: 'This list shows your most-used desktop applications with time spent and categories like VS Code, Chrome, Slack, etc.',
+                    attachTo: {
+                        element: '#laptopAppsList',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: laptopTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: laptopTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                laptopTour.addStep({
+                    title: '⚙️ Laptop Controls',
+                    text: 'Use these buttons to set productivity goals, configure application settings, and access detailed analytics.',
+                    attachTo: {
+                        element: '.actions',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: laptopTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Done',
+                        action: function() {
+                            laptopTour.complete();
+                            localStorage.setItem('laptopTourCompleted', 'true');
+                        },
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                // Tour event handlers
+                laptopTour.on('complete', function() {
+                    localStorage.setItem('laptopTourCompleted', 'true');
+                    console.log('Laptop view tour completed!');
+                });
+
+                laptopTour.on('cancel', function() {
+                    console.log('Laptop view tour cancelled');
+                });
+
+                // Manual tour trigger
+                const startTourBtn = document.getElementById('start-laptop-tour-btn');
+                if (startTourBtn) {
+                    startTourBtn.addEventListener('click', function() {
+                        laptopTour.start();
+                    });
+                }
+
+                // Auto-start on first visit
+                const laptopTourCompleted = localStorage.getItem('laptopTourCompleted');
+                if (!laptopTourCompleted) {
+                    setTimeout(() => {
+                        laptopTour.start();
+                    }, 1500);
+                }
+
+                console.log('Laptop View guided tour initialized!');
+                
+            }, 1000);
+        });
+    </script>
+    <script src="more-menu.js"></script>
+
+    <script>
+        // Weekly charts for Laptop View More modal
+        let weeklyLaptopChart = null;
+        let weeklyLaptopAppsChart = null;
+        let weeklyLaptopProductivityChart = null;
+
+        // Add event listener to More button to initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            const moreBtn = document.getElementById('moreBtn');
+            const moreModal = document.getElementById('moreModal');
+            const closeMoreBtn = document.getElementById('closeMoreBtn');
+            
+            if (moreBtn && moreModal) {
+                moreBtn.addEventListener('click', () => {
+                    moreModal.style.display = 'block';
+                    // Initialize weekly charts when modal opens
+                    setTimeout(() => {
+                        initializeLaptopWeeklyCharts();
+                    }, 100);
+                });
+                
+                if (closeMoreBtn) {
+                    closeMoreBtn.addEventListener('click', () => {
+                        moreModal.style.display = 'none';
+                        // Clean up charts when modal closes
+                        if (weeklyLaptopChart) {
+                            weeklyLaptopChart.destroy();
+                            weeklyLaptopChart = null;
+                        }
+                        if (weeklyLaptopAppsChart) {
+                            weeklyLaptopAppsChart.destroy();
+                            weeklyLaptopAppsChart = null;
+                        }
+                        if (weeklyLaptopProductivityChart) {
+                            weeklyLaptopProductivityChart.destroy();
+                            weeklyLaptopProductivityChart = null;
+                        }
+                    });
+                }
+            }
+
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === moreModal) {
+                    moreModal.style.display = 'none';
+                    // Clean up charts
+                    if (weeklyLaptopChart) { weeklyLaptopChart.destroy(); weeklyLaptopChart = null; }
+                    if (weeklyLaptopAppsChart) { weeklyLaptopAppsChart.destroy(); weeklyLaptopAppsChart = null; }
+                    if (weeklyLaptopProductivityChart) { weeklyLaptopProductivityChart.destroy(); weeklyLaptopProductivityChart = null; }
+                }
+            });
+        });
+
+        function initializeLaptopWeeklyCharts() {
+            console.log('Initializing Laptop View weekly charts...');
+            
+            // Check if light theme is active
+            const isLightTheme = document.body.classList.contains('light-theme');
+            const textColor = isLightTheme ? '#1a202c' : '#ffffff';
+            const gridColor = isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            
+            // Weekly laptop usage chart (7 days)
+            const weeklyLaptopCtx = document.getElementById('weeklyLaptopChart');
+            if (weeklyLaptopCtx) {
+                if (weeklyLaptopChart) weeklyLaptopChart.destroy();
+                
+                const laptopData = {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Laptop Time (hours)',
+                        data: [7.2, 6.8, 7.5, 8.2, 7.1, 4.5, 5.2],
+                        backgroundColor: isLightTheme ? 'rgba(132, 204, 22, 0.6)' : 'rgba(0, 122, 204, 0.6)',
+                        borderColor: isLightTheme ? '#84cc16' : '#007ACC',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                };
+                
+                weeklyLaptopChart = new Chart(weeklyLaptopCtx, {
+                    type: 'line',
+                    data: laptopData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: { color: textColor }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Daily Laptop Usage This Week',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor },
+                                title: {
+                                    display: true,
+                                    text: 'Hours',
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Weekly laptop apps breakdown chart
+            const weeklyLaptopAppsCtx = document.getElementById('weeklyLaptopAppsChart');
+            if (weeklyLaptopAppsCtx) {
+                if (weeklyLaptopAppsChart) weeklyLaptopAppsChart.destroy();
+                
+                const appColors = isLightTheme ? 
+                    ['#84cc16', '#16a34a', '#65a30d', '#4d7c0f', '#365314', '#1a2e05'] :
+                    ['#007ACC', '#4285F4', '#0078D4', '#217346', '#1DB954', '#4A154B'];
+                
+                const appsData = {
+                    labels: ['VS Code', 'Chrome', 'Slack', 'Figma', 'Terminal', 'Others'],
+                    datasets: [{
+                        data: [28, 22, 18, 12, 10, 10],
+                        backgroundColor: appColors,
+                        borderWidth: 2,
+                        borderColor: isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                    }]
+                };
+                
+                weeklyLaptopAppsChart = new Chart(weeklyLaptopAppsCtx, {
+                    type: 'doughnut',
+                    data: appsData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: { 
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 15
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Top Laptop Apps This Week (%)',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Weekly laptop productivity chart
+            const weeklyLaptopProductivityCtx = document.getElementById('weeklyLaptopProductivityChart');
+            if (weeklyLaptopProductivityCtx) {
+                if (weeklyLaptopProductivityChart) weeklyLaptopProductivityChart.destroy();
+                
+                const productivityData = {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Productive Time',
+                        data: [5.8, 5.2, 6.1, 7.0, 5.9, 3.2, 3.8],
+                        backgroundColor: isLightTheme ? 'rgba(132, 204, 22, 0.7)' : 'rgba(76, 175, 80, 0.7)',
+                        borderColor: isLightTheme ? '#84cc16' : '#4caf50',
+                        borderWidth: 1
+                    }, {
+                        label: 'Idle/Break Time',
+                        data: [1.4, 1.6, 1.4, 1.2, 1.2, 1.3, 1.4],
+                        backgroundColor: isLightTheme ? 'rgba(255, 152, 0, 0.7)' : 'rgba(255, 152, 0, 0.7)',
+                        borderColor: isLightTheme ? '#ff9800' : '#ff9800',
+                        borderWidth: 1
+                    }]
+                };
+                
+                weeklyLaptopProductivityChart = new Chart(weeklyLaptopProductivityCtx, {
+                    type: 'bar',
+                    data: productivityData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: { color: textColor }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Weekly Productivity Breakdown',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.raw}h`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                stacked: true,
+                                ticks: { color: textColor },
+                                grid: { color: gridColor },
+                                title: {
+                                    display: true,
+                                    text: 'Hours',
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            console.log('Laptop View weekly charts initialized successfully');
+        }
+
+        // Export data functionality for Laptop View
+        document.addEventListener('DOMContentLoaded', function() {
+            const exportLaptopDataBtn = document.getElementById('exportLaptopDataBtn');
+            if (exportLaptopDataBtn) {
+                exportLaptopDataBtn.addEventListener('click', () => {
+                    const exportData = {
+                        exportDate: new Date().toISOString(),
+                        timeRange: 'Weekly Laptop Usage',
+                        totalTime: '47h 15m',
+                        productiveTime: '37h 10m',
+                        idleTime: '10h 5m',
+                        productivityScore: '78%',
+                        topApplications: {
+                            'Visual Studio Code': '8h 30m',
+                            'Chrome': '6h 45m',
+                            'Slack': '5h 20m',
+                            'Figma': '4h 15m',
+                            'Terminal': '3h 40m',
+                            'Spotify': '3h 10m',
+                            'Notion': '2h 50m',
+                            'Zoom': '2h 15m'
+                        },
+                        categories: {
+                            'Development': '15h 45m',
+                            'Communication': '7h 30m',
+                            'Design': '6h 20m',
+                            'Productivity': '5h 40m',
+                            'Entertainment': '4h 25m',
+                            'Other': '7h 35m'
+                        },
+                        dailyBreakdown: {
+                            'Monday': '7h 12m (5h 48m productive)',
+                            'Tuesday': '6h 48m (5h 12m productive)',
+                            'Wednesday': '7h 30m (6h 6m productive)',
+                            'Thursday': '8h 12m (7h 0m productive)',
+                            'Friday': '7h 6m (5h 54m productive)',
+                            'Saturday': '4h 30m (3h 12m productive)',
+                            'Sunday': '5h 12m (3h 48m productive)'
+                        },
+                        systemStats: {
+                            averageBatteryLife: '6h 20m',
+                            dataUsage: '16.8GB',
+                            peakPerformanceHours: '10 AM - 12 PM'
+                        },
+                        insights: [
+                            'Most productive day: Thursday (8.2h total, 85% productivity)',
+                            'Peak development hours: 10 AM - 12 PM (deep work time)',
+                            'Weekend usage focused on personal projects and learning',
+                            'Battery optimization: Average 6.2h usage per charge cycle'
+                        ]
+                    };
+                    
+                    // Create and download JSON file
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `laptop-usage-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Show success message
+                    const originalText = exportLaptopDataBtn.textContent;
+                    exportLaptopDataBtn.textContent = '✅ Data Exported!';
+                    exportLaptopDataBtn.style.background = '#10b981';
+                    setTimeout(() => {
+                        exportLaptopDataBtn.textContent = originalText;
+                        exportLaptopDataBtn.style.background = '#007ACC';
+                    }, 2000);
+                });
+            }
+        });
+    </script>
+
+    <div class="bolt-badge">
+        <a href="https://bolt.new" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+            </svg>
+            Built with Bolt
+        </a>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSetu - Mobile View</title>
+    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <!-- Shepherd.js for guided tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css" />
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
+    <script src="lib/chart.min.js"></script>
+    <script src="chrome-compat-demo.js"></script>
+    <script src="demo-data.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --card-bg: #1e1e3f;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-color: #ffffff;
+            --accent-color: #4a90e2;
+            --accent-green: #4caf50;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            width: 100vw !important;
+            max-width: none !important;
+        }
+
+        .container {
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 32px 24px !important;
+            width: 100% !important;
+        }
+
+        .demo-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 193, 7, 0.9);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 120px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .browser-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 20px 0;
+        }
+
+        .browser-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0;
+        }
+
+        .view-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        /* Country Flags Section */
+        .flags-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .flags-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .flags-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 60px;
+            box-shadow: var(--shadow);
+        }
+
+        .flag-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .flag-item.selected-flag {
+            border-color: var(--accent-color);
+            background: rgba(74, 144, 226, 0.1);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .flag-img {
+            width: 28px;
+            height: 20px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .flag-item span {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        /* Theme Toggle Section */
+        .theme-section {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .simple-theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .simple-theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #themeIcon {
+            font-size: 1rem;
+        }
+
+        .time-period {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 50px;
+            padding: 6px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .time-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .time-btn.active {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .total-time-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .total-time-card h2 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 0 0 8px 0;
+            font-weight: 500;
+        }
+
+        .total-time-card p {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mobile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card h3 {
+            color: var(--accent-green);
+            margin-bottom: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            height: 400px;
+        }
+
+        .app-list {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .app-list h3 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .main-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .footer-btn {
+            background: var(--accent-color);
+            border: none;
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .app-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .app-item:last-child {
+            border-bottom: none;
+        }
+
+        .app-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .app-details h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .app-details p {
+            margin: 0;
+            opacity: 0.7;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .app-time {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        /* Site list styles */
+        .site-list h3 {
+            font-size: 1.6rem;
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .site-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .site-logo {
+            width: 40px;
+            height: 40px;
+            font-size: 1.4rem;
+        }
+
+        .site-info > div strong {
+            font-size: 1rem;
+        }
+
+        .site-time {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        /* Top Right Controls */
+        .top-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        /* Language Dropdown */
+        .language-selector {
+            position: relative;
+        }
+
+        .language-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            min-width: 120px;
+            backdrop-filter: blur(10px);
+        }
+
+        .language-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .current-flag {
+            width: 24px;
+            height: 18px;
+            object-fit: cover;
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .dropdown-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin-top: 8px;
+            min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .language-dropdown.show {
+            display: block;
+            animation: dropdownSlide 0.3s ease-out;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .language-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .language-option.selected {
+            background: rgba(74, 144, 226, 0.2);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .language-option img {
+            width: 24px;
+            height: 18px;
+            border-radius: 3px;
+            object-fit: cover;
+        }
+
+        @media (max-width: 768px) {
+            .top-controls {
+                top: 15px;
+                right: 15px;
+                gap: 10px;
+            }
+            
+            .language-toggle,
+            .simple-theme-toggle {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .language-dropdown {
+                min-width: 160px;
+            }
+        }
+
+        .bolt-badge {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 25px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bolt-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bolt-badge a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back</a>
+    <div class="demo-indicator">📱 Demo</div>
+
+    <div class="container">
+        <div class="browser-header">
+            <h1>TimeSetu</h1>
+            
+
+
+
+        </div>
+
+        <div class="view-title">Mobile Screen Time</div>
+
+        <div class="time-period">
+            <button id="todayBtn" class="time-btn active">Today</button>
+            <button id="weekBtn" class="time-btn">This Week</button>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="start-mobile-tour-btn" class="action-btn" style="background: #E4405F; margin: 0 auto;">
+                🎯 Take Mobile Tour
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="total-time-card">
+                <h2>Mobile Screen Time Today</h2>
+                <p id="totalTime">4h 23m</p>
+            </div>
+
+            <div class="mobile-stats">
+                <div class="stat-card">
+                    <h3>📱 Pickups</h3>
+                    <div class="value">47</div>
+                    <div>Today</div>
+                </div>
+                <div class="stat-card">
+                    <h3>⏰ Avg Session</h3>
+                    <div class="value">5m 36s</div>
+                    <div>Per pickup</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🔔 Notifications</h3>
+                    <div class="value">23</div>
+                    <div>Received</div>
+                </div>
+                <div class="stat-card">
+                    <h3>📱 Most Used</h3>
+                    <div class="value">Instagram</div>
+                    <div>1h 23m</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="mobileChart"></canvas>
+            </div>
+
+            <div class="app-list">
+                <h3>Top Apps Today</h3>
+                <div id="topAppsList"></div>
+            </div>
+            
+            <div class="app-list" id="mobileGoalsCard">
+                <h3>🎯 Mobile Usage Goals</h3>
+                <div style="margin: 15px 0; padding: 15px; background: rgba(228, 64, 95, 0.1); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">🔥</div>
+                    <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 3px;">Current Streak</div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #E4405F; margin-bottom: 5px;">7 days</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">You've met your mobile goals for 7 consecutive days!</div>
+                </div>
+                
+                <div>
+                    <h4 style="margin: 20px 0 15px 0; font-size: 1rem;">Daily App Category Limits</h4>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Social Media 📱</div>
+                            <div style="font-size: 0.85rem;">1h 37m / 2h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4a90e2; font-weight: 600;">82%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 82%; height: 100%; background: linear-gradient(90deg, #4a90e2, #4a90e2cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Entertainment 🎵</div>
+                            <div style="font-size: 0.85rem;">23m / 1h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4caf50; font-weight: 600;">38%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 38%; height: 100%; background: linear-gradient(90deg, #4caf50, #4caf50cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Games 🎮</div>
+                            <div style="font-size: 0.85rem;">1h 52m / 2h</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #ff9800; font-weight: 600;">93%</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 93%; height: 100%; background: linear-gradient(90deg, #ff9800, #ff9800cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">Productive Apps 💼</div>
+                            <div style="font-size: 0.85rem;">7m / No limit</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #4caf50; font-weight: 600;">Great!</div>
+                        </div>
+                        <div class="progress-bar-wrap" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+                            <div class="progress-bar" style="width: 15%; height: 100%; background: linear-gradient(90deg, #4caf50, #4caf50cc); border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="editMobileGoalsBtn" class="action-btn" style="margin: 5px; font-size: 0.9rem; background: #E4405F;">✏️ Edit Goals</button>
+                    <button id="resetMobileGoalsBtn" class="action-btn" style="margin: 5px; font-size: 0.9rem; background: #ff5722;">🔄 Reset Goals</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="goalsBtn" class="action-btn">🎯 Goals</button>
+            <button id="settingsBtn" class="action-btn">⚙️ Settings</button>
+            <button id="moreBtn" class="action-btn">📊 More</button>
+        </div>
+
+        <footer class="main-footer">
+            <button id="dashboardBtn" class="footer-btn">Back to Devices</button>
+        </footer>
+    </div>
+
+    <!-- More Modal -->
+    <div id="moreModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">
+        <div class="modal-content" style="background: var(--card-bg); margin: 5% auto; padding: 0; border-radius: 16px; width: 90%; max-width: 900px; border: 1px solid var(--card-border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(20px); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--card-border);">
+                <h2 style="margin: 0; color: var(--text-primary);">Weekly Summary - Mobile</h2>
+                <span class="close-btn" id="closeMoreBtn" style="color: var(--text-secondary); float: right; font-size: 28px; font-weight: bold; cursor: pointer; background: none; border: none;">&times;</span>
+            </div>
+            <div style="padding: 20px 24px;">
+                <div class="chart-container" style="height: 250px; margin: 20px 0;">
+                    <canvas id="weeklyMobileChart"></canvas>
+                </div>
+                <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                    <canvas id="weeklyMobileAppsChart"></canvas>
+                </div>
+                <div class="chart-container" style="height: 250px; margin: 30px 0 20px 0;">
+                    <canvas id="weeklyMobileCategoriesChart"></canvas>
+                </div>
+                <div id="voiceReviewCard" style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #E4405F;">
+                    <h3 style="text-align:center; margin: 0 0 15px 0; color: var(--text-primary);">🔊 Weekly AI Review</h3>
+                    <p id="voiceSummaryText" style="margin: 0; line-height: 1.6; color: var(--text-primary);">This week, you spent 30h 41m on mobile apps. Instagram was your top app with 6h 20m, followed by WhatsApp at 4h 15m. Your screen time decreased by 8% compared to last week. You averaged 47 pickups per day with sessions lasting 5m 36s each.</p>
+                    <button id="replayVoiceBtn" class="action-btn" style="width:100%; margin-top:15px; background: #E4405F; border: none; color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 500;">Replay 🔁</button>
+                </div>
+                <div style="margin: 20px 0; padding: 15px; background: rgba(228, 64, 95, 0.1); border-radius: 12px; border-left: 4px solid #E4405F;">
+                    <h4 style="margin: 0 0 10px 0; color: #E4405F;">📱 Mobile Insights</h4>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Most active mobile day: Friday (5.2h total usage)</li>
+                        <li>Peak mobile usage: 8-10 PM during evening wind-down</li>
+                        <li>Social media dominates weekend usage (+35% vs weekdays)</li>
+                        <li>Productivity apps used mostly during commute hours</li>
+                    </ul>
+                </div>
+                <button id="exportMobileDataBtn" class="action-btn" style="width: 100%; background: #E4405F; border: none; color: white; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-top: 20px;">Export Mobile Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize mobile view with dummy data
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileData = DemoDataHelper.getMobileData();
+            const chartData = DemoDataHelper.getMobileChartData();
+            const weekPickups = mobileData.weeklyStats.pickups.reduce((a,b)=>a+b,0);
+            const weekScreenTime = mobileData.weeklyStats.screenTime;
+            const weekChartLabels = mobileData.weeklyStats.labels;
+            
+            // Update stats with dummy data
+            document.getElementById('totalTime').textContent = mobileData.totalTime;
+            
+            // Update mobile stats cards
+            const statCards = document.querySelectorAll('.stat-card .value');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = mobileData.pickups;
+                statCards[1].textContent = mobileData.avgSession;
+                statCards[2].textContent = mobileData.notifications;
+                statCards[3].textContent = mobileData.mostUsed;
+            }
+            
+            // Chart context and helper functions
+            const ctx = document.getElementById('mobileChart').getContext('2d');
+            let currentChart;
+
+            const createAppsChart = () => {
+                if (currentChart) currentChart.destroy();
+                currentChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            data: chartData.data,
+                            backgroundColor: chartData.colors,
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    color: '#ffffff',
+                                    boxWidth: 12,
+                                    padding: 15,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        return `${label}: ${value}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const createWeekChart = () => {
+                if (currentChart) currentChart.destroy();
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: weekChartLabels,
+                        datasets: [{
+                            label: 'Screen Time (hrs)',
+                            data: weekScreenTime,
+                            backgroundColor: '#4a90e2',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.parsed.y}h`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color:'#fff' }, grid:{ color:'rgba(255,255,255,0.1)' } },
+                            y: { ticks: { color:'#fff' }, grid:{ color:'rgba(255,255,255,0.1)' } }
+                        }
+                    }
+                });
+            };
+
+            // Initial chart
+            createAppsChart();
+
+            // Populate top apps list
+            const topAppsList = document.getElementById('topAppsList');
+            if (topAppsList && mobileData.apps) {
+                renderApps(topAppsList, mobileData.apps);
+            }
+
+            // Populate top websites list
+            const mobileSitesList = document.getElementById('mobileSitesList');
+            if (mobileSitesList && mobileData.topSites) {
+                mobileSitesList.innerHTML = mobileData.topSites.map(site => `
+                    <div class="site-item">
+                        <div class="site-info">
+                            <span class="site-logo">${site.favicon}</span>
+                            <div>
+                                <div><strong>${site.name}</strong></div>
+                                <div style="opacity:0.8;font-size:0.8rem;">${site.category}</div>
+                            </div>
+                        </div>
+                        <div>${site.time}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Override dashboard button
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
+
+            // Handle Today / This Week toggle
+            const todayBtn = document.getElementById('todayBtn');
+            const weekBtn = document.getElementById('weekBtn');
+
+            if (todayBtn && weekBtn) {
+                todayBtn.addEventListener('click', () => {
+                    todayBtn.classList.add('active');
+                    weekBtn.classList.remove('active');
+
+                    document.getElementById('totalTime').textContent = mobileData.totalTime;
+                    document.querySelector('.total-time-card h2').textContent = 'Mobile Screen Time Today';
+                    statCards[0].textContent = mobileData.pickups;
+                    statCards[1].textContent = mobileData.avgSession;
+                    statCards[2].textContent = mobileData.notifications;
+                    statCards[3].textContent = mobileData.mostUsed;
+                    renderApps(topAppsList, mobileData.apps);
+                    createAppsChart();
+                });
+
+                weekBtn.addEventListener('click', () => {
+                    weekBtn.classList.add('active');
+                    todayBtn.classList.remove('active');
+
+                    document.getElementById('totalTime').textContent = mobileData.weekTime;
+                    document.querySelector('.total-time-card h2').textContent = 'Mobile Screen Time This Week';
+
+                    statCards[0].textContent = weekPickups;
+                    statCards[1].textContent = mobileData.avgSession;
+                    statCards[2].textContent = mobileData.notifications * 7;
+                    statCards[3].textContent = mobileData.mostUsed;
+
+                    // build weekly app times
+                    const weeklyApps = mobileData.apps.map(a => {
+                        const mins = minutesFromString(a.time) * 7;
+                        return { ...a, time: formatMinutes(mins) };
+                    });
+                    renderApps(topAppsList, weeklyApps);
+                    // change header text
+                    document.querySelector('.app-list h3').textContent = 'Top Apps This Week';
+                    createWeekChart();
+                });
+            }
+        });
+
+        // helper to convert "Xh Ym" or "Xm" to minutes
+        function minutesFromString(str) {
+            const parts = str.split(' ');
+            let minutes = 0;
+            parts.forEach(p => {
+                if (p.endsWith('h')) minutes += parseInt(p) * 60;
+                if (p.endsWith('m')) minutes += parseInt(p);
+            });
+            return minutes;
+        }
+
+        function formatMinutes(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        }
+
+        function renderApps(listElement, appsArray) {
+            listElement.innerHTML = appsArray.map(app => `
+                <div class="app-item">
+                    <div class="app-info">
+                        <div class="app-icon">${app.logo ? `<img src='${app.logo}' alt='${app.name} logo'/>` : app.icon}</div>
+                        <div class="app-details">
+                            <h4>${app.name}</h4>
+                            <p>${app.category}</p>
+                        </div>
+                    </div>
+                    <div class="app-time">${app.time}</div>
+                </div>
+            `).join('');
+        }
+
+        // Country Flags Functionality
+        function initializeFlags() {
+            const flagItems = document.querySelectorAll('.flag-item');
+            const savedCountry = localStorage.getItem('selectedCountry') || 'us';
+            
+            // Set initial selected flag
+            flagItems.forEach(item => {
+                item.classList.remove('selected-flag');
+                if (item.dataset.country === savedCountry) {
+                    item.classList.add('selected-flag');
+                }
+            });
+            
+            // Add click handlers
+            flagItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // Remove selected class from all flags
+                    flagItems.forEach(flag => flag.classList.remove('selected-flag'));
+                    
+                    // Add selected class to clicked flag
+                    item.classList.add('selected-flag');
+                    
+                    // Save selection
+                    const country = item.dataset.country;
+                    localStorage.setItem('selectedCountry', country);
+                    
+                    // Show notification (simple alert for demo)
+                    const countryNames = {
+                        'us': 'United States',
+                        'de': 'Germany', 
+                        'fr': 'France',
+                        'es': 'Spain',
+                        'jp': 'Japan',
+                        'cn': 'China',
+                        'in': 'India'
+                    };
+                    
+                    console.log(`Country set to: ${countryNames[country] || country.toUpperCase()}`);
+                });
+            });
+        }
+
+        // Initialize flags when page loads
+        document.addEventListener('DOMContentLoaded', initializeFlags);
+    </script>
+    
+    <!-- Theme Toggle Script -->
+    <script src="theme-toggle.js"></script>
+    
+    <style>
+        /* Custom Shepherd.js Styling for Mobile View */
+        .shepherd-element {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+        }
+
+        .shepherd-text {
+            color: #1a202c;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .shepherd-header {
+            background: linear-gradient(135deg, #E4405F, #F56565);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 16px 16px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .shepherd-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .shepherd-button {
+            background: #E4405F;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .shepherd-button:hover {
+            background: #d73447;
+            transform: translateY(-1px);
+        }
+
+        .shepherd-button.shepherd-button-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .shepherd-button.shepherd-button-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* Light mode adjustments */
+        body.light-theme .shepherd-element {
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(132, 204, 22, 0.3);
+        }
+
+        body.light-theme .shepherd-header {
+            background: linear-gradient(135deg, #84cc16, #16a34a);
+        }
+
+        body.light-theme .shepherd-button {
+            background: #84cc16;
+        }
+
+        body.light-theme .shepherd-button:hover {
+            background: #65a30d;
+        }
+    </style>
+
+    <script>
+        // Mobile View Guided Tour Implementation
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (typeof Shepherd === 'undefined') {
+                    console.error('Shepherd.js not loaded');
+                    return;
+                }
+
+                // Initialize Shepherd tour
+                const mobileTour = new Shepherd.Tour({
+                    useModalOverlay: true,
+                    defaultStepOptions: {
+                        classes: 'shadow-md bg-pink-dark',
+                        scrollTo: { behavior: 'smooth', block: 'center' },
+                        modalOverlayOpeningPadding: 15,
+                        cancelIcon: {
+                            enabled: true
+                        }
+                    }
+                });
+
+                // Define tour steps
+                mobileTour.addStep({
+                    title: '📱 Mobile Dashboard Tour',
+                    text: 'Welcome to Mobile View! This displays your smartphone app usage and screen time data.',
+                    attachTo: {
+                        element: '#start-mobile-tour-btn',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Start Tour',
+                        action: mobileTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                mobileTour.addStep({
+                    title: '⏱️ Time Period',
+                    text: 'Toggle between Today and This Week to view different periods of your mobile usage.',
+                    attachTo: {
+                        element: '.time-period',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: mobileTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: mobileTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                mobileTour.addStep({
+                    title: '📊 Total Mobile Time',
+                    text: 'This shows your total screen time on mobile devices for the selected time period.',
+                    attachTo: {
+                        element: '.total-time-card',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: mobileTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: mobileTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                mobileTour.addStep({
+                    title: '📈 App Usage Chart',
+                    text: 'This pie chart breaks down your mobile usage by app categories - Social Media, Productivity, Games, etc.',
+                    attachTo: {
+                        element: '#mobileChart',
+                        on: 'bottom'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: mobileTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: mobileTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                mobileTour.addStep({
+                    title: '📋 Top Apps List',
+                    text: 'This list shows your most-used mobile apps with exact time spent and app categories.',
+                    attachTo: {
+                        element: '#topAppsList',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: mobileTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Next',
+                        action: mobileTour.next,
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                mobileTour.addStep({
+                    title: '⚙️ Mobile Controls',
+                    text: 'Use these buttons to set mobile usage goals, configure app settings, and access detailed analytics.',
+                    attachTo: {
+                        element: '.actions',
+                        on: 'top'
+                    },
+                    buttons: [{
+                        text: 'Back',
+                        action: mobileTour.back,
+                        classes: 'shepherd-button shepherd-button-secondary'
+                    }, {
+                        text: 'Done',
+                        action: function() {
+                            mobileTour.complete();
+                            localStorage.setItem('mobileTourCompleted', 'true');
+                        },
+                        classes: 'shepherd-button'
+                    }]
+                });
+
+                // Tour event handlers
+                mobileTour.on('complete', function() {
+                    localStorage.setItem('mobileTourCompleted', 'true');
+                    console.log('Mobile view tour completed!');
+                });
+
+                mobileTour.on('cancel', function() {
+                    console.log('Mobile view tour cancelled');
+                });
+
+                // Manual tour trigger
+                const startTourBtn = document.getElementById('start-mobile-tour-btn');
+                if (startTourBtn) {
+                    startTourBtn.addEventListener('click', function() {
+                        mobileTour.start();
+                    });
+                }
+
+                // Auto-start on first visit
+                const mobileTourCompleted = localStorage.getItem('mobileTourCompleted');
+                if (!mobileTourCompleted) {
+                    setTimeout(() => {
+                        mobileTour.start();
+                    }, 1500);
+                }
+
+                console.log('Mobile View guided tour initialized!');
+                
+            }, 1000);
+        });
+    </script>
+    <script src="more-menu.js"></script>
+
+    <script>
+        // Weekly charts for Mobile View More modal
+        let weeklyMobileChart = null;
+        let weeklyMobileAppsChart = null;
+        let weeklyMobileCategoriesChart = null;
+
+        // Add event listener to More button to initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            const moreBtn = document.getElementById('moreBtn');
+            const moreModal = document.getElementById('moreModal');
+            const closeMoreBtn = document.getElementById('closeMoreBtn');
+            
+            if (moreBtn && moreModal) {
+                moreBtn.addEventListener('click', () => {
+                    moreModal.style.display = 'block';
+                    // Initialize weekly charts when modal opens
+                    setTimeout(() => {
+                        initializeMobileWeeklyCharts();
+                    }, 100);
+                });
+                
+                if (closeMoreBtn) {
+                    closeMoreBtn.addEventListener('click', () => {
+                        moreModal.style.display = 'none';
+                        // Clean up charts when modal closes
+                        if (weeklyMobileChart) {
+                            weeklyMobileChart.destroy();
+                            weeklyMobileChart = null;
+                        }
+                        if (weeklyMobileAppsChart) {
+                            weeklyMobileAppsChart.destroy();
+                            weeklyMobileAppsChart = null;
+                        }
+                        if (weeklyMobileCategoriesChart) {
+                            weeklyMobileCategoriesChart.destroy();
+                            weeklyMobileCategoriesChart = null;
+                        }
+                    });
+                }
+            }
+
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === moreModal) {
+                    moreModal.style.display = 'none';
+                    // Clean up charts
+                    if (weeklyMobileChart) { weeklyMobileChart.destroy(); weeklyMobileChart = null; }
+                    if (weeklyMobileAppsChart) { weeklyMobileAppsChart.destroy(); weeklyMobileAppsChart = null; }
+                    if (weeklyMobileCategoriesChart) { weeklyMobileCategoriesChart.destroy(); weeklyMobileCategoriesChart = null; }
+                }
+            });
+        });
+
+        function initializeMobileWeeklyCharts() {
+            console.log('Initializing Mobile View weekly charts...');
+            
+            // Check if light theme is active
+            const isLightTheme = document.body.classList.contains('light-theme');
+            const textColor = isLightTheme ? '#1a202c' : '#ffffff';
+            const gridColor = isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            
+            // Weekly mobile usage chart (7 days)
+            const weeklyMobileCtx = document.getElementById('weeklyMobileChart');
+            if (weeklyMobileCtx) {
+                if (weeklyMobileChart) weeklyMobileChart.destroy();
+                
+                const mobileData = {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Mobile Time (hours)',
+                        data: [3.8, 4.2, 4.5, 4.1, 5.2, 4.8, 4.5],
+                        backgroundColor: isLightTheme ? 'rgba(132, 204, 22, 0.6)' : 'rgba(228, 64, 95, 0.6)',
+                        borderColor: isLightTheme ? '#84cc16' : '#E4405F',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                };
+                
+                weeklyMobileChart = new Chart(weeklyMobileCtx, {
+                    type: 'line',
+                    data: mobileData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: { color: textColor }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Daily Mobile Usage This Week',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor },
+                                title: {
+                                    display: true,
+                                    text: 'Hours',
+                                    color: textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Weekly mobile apps breakdown chart
+            const weeklyMobileAppsCtx = document.getElementById('weeklyMobileAppsChart');
+            if (weeklyMobileAppsCtx) {
+                if (weeklyMobileAppsChart) weeklyMobileAppsChart.destroy();
+                
+                const appColors = isLightTheme ? 
+                    ['#84cc16', '#16a34a', '#65a30d', '#4d7c0f', '#365314', '#1a2e05'] :
+                    ['#E4405F', '#4267B2', '#FF0000', '#1DB954', '#FF69B4', '#00D9FF'];
+                
+                const appsData = {
+                    labels: ['Instagram', 'WhatsApp', 'YouTube', 'Spotify', 'TikTok', 'Others'],
+                    datasets: [{
+                        data: [25, 20, 18, 14, 12, 11],
+                        backgroundColor: appColors,
+                        borderWidth: 2,
+                        borderColor: isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                    }]
+                };
+                
+                weeklyMobileAppsChart = new Chart(weeklyMobileAppsCtx, {
+                    type: 'doughnut',
+                    data: appsData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: { 
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 15
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Top Mobile Apps This Week (%)',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Weekly mobile categories breakdown chart
+            const weeklyMobileCategoriesCtx = document.getElementById('weeklyMobileCategoriesChart');
+            if (weeklyMobileCategoriesCtx) {
+                if (weeklyMobileCategoriesChart) weeklyMobileCategoriesChart.destroy();
+                
+                const categoryColors = isLightTheme ? 
+                    ['#84cc16', '#16a34a', '#65a30d', '#4d7c0f', '#365314', '#1a2e05'] :
+                    ['#E4405F', '#FF69B4', '#4267B2', '#1DB954', '#FF8C00', '#9370DB'];
+                
+                const categoriesData = {
+                    labels: ['Social Media', 'Entertainment', 'Communication', 'Music', 'Productivity', 'Games'],
+                    datasets: [{
+                        data: [42, 25, 15, 10, 5, 3],
+                        backgroundColor: categoryColors,
+                        borderWidth: 2,
+                        borderColor: isLightTheme ? 'rgba(26, 32, 44, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                    }]
+                };
+                
+                weeklyMobileCategoriesChart = new Chart(weeklyMobileCategoriesCtx, {
+                    type: 'doughnut',
+                    data: categoriesData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: { 
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 15
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Mobile Categories This Week (%)',
+                                color: textColor,
+                                font: { size: 16, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            console.log('Mobile View weekly charts initialized successfully');
+        }
+
+        // Export data functionality for Mobile View
+        document.addEventListener('DOMContentLoaded', function() {
+            const exportMobileDataBtn = document.getElementById('exportMobileDataBtn');
+            if (exportMobileDataBtn) {
+                exportMobileDataBtn.addEventListener('click', () => {
+                    const exportData = {
+                        exportDate: new Date().toISOString(),
+                        timeRange: 'Weekly Mobile Usage',
+                        totalTime: '30h 41m',
+                        totalPickups: 329,
+                        averageSession: '5m 36s',
+                        topApps: {
+                            'Instagram': '6h 20m',
+                            'WhatsApp': '4h 15m',
+                            'YouTube': '4h 2m',
+                            'Spotify': '3h 18m',
+                            'TikTok': '2h 45m',
+                            'Gmail': '2h 1m'
+                        },
+                        categories: {
+                            'Social Media': '12h 52m',
+                            'Entertainment': '7h 40m',
+                            'Communication': '4h 36m',
+                            'Music': '3h 18m',
+                            'Productivity': '1h 32m',
+                            'Games': '55m'
+                        },
+                        dailyBreakdown: {
+                            'Monday': '3h 48m (38 pickups)',
+                            'Tuesday': '4h 12m (42 pickups)',
+                            'Wednesday': '4h 30m (45 pickups)', 
+                            'Thursday': '4h 6m (41 pickups)',
+                            'Friday': '5h 12m (52 pickups)',
+                            'Saturday': '4h 48m (48 pickups)',
+                            'Sunday': '4h 30m (45 pickups)'
+                        },
+                        insights: [
+                            'Most active mobile day: Friday (5.2h total usage)',
+                            'Peak mobile usage: 8-10 PM during evening wind-down',
+                            'Social media dominates weekend usage (+35% vs weekdays)',
+                            'Productivity apps used mostly during commute hours'
+                        ]
+                    };
+                    
+                    // Create and download JSON file
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `mobile-usage-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Show success message
+                    const originalText = exportMobileDataBtn.textContent;
+                    exportMobileDataBtn.textContent = '✅ Data Exported!';
+                    exportMobileDataBtn.style.background = '#10b981';
+                    setTimeout(() => {
+                        exportMobileDataBtn.textContent = originalText;
+                        exportMobileDataBtn.style.background = '#E4405F';
+                    }, 2000);
+                });
+            }
+        });
+    </script>
+
+    <div class="bolt-badge">
+        <a href="https://bolt.new" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+            </svg>
+            Built with Bolt
+        </a>
+    </div>
+</body>
+</html> 

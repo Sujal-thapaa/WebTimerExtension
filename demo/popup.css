@@ -1,0 +1,720 @@
+/* General Styles */
+:root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --card-bg: #252525;
+    --text-color: #ffffff;
+    --text-secondary: #a0a0a0;
+    --accent-color: #4a90e2;
+    --border-color: #404040;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-color);
+    margin: 0;
+    width: 380px;
+}
+
+.container {
+    padding: 16px;
+}
+
+/* Header */
+.main-header {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.main-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.time-period {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.time-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.time-btn.active, .time-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    border-color: var(--accent-color);
+}
+
+/* Main Content */
+.main-content {
+    margin-bottom: 16px;
+}
+
+.total-time-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.total-time-card h2 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 4px 0;
+    font-weight: 400;
+}
+
+#totalTime {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin: 8px 0;
+}
+
+.time-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* View Switcher */
+.view-switcher {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.switcher-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 1rem;
+    position: relative;
+}
+
+.switcher-btn.active {
+    color: var(--text-color);
+}
+
+.switcher-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background-color: var(--accent-color);
+    transition: width 0.3s ease;
+}
+
+.switcher-btn.active::after {
+    width: 100%;
+}
+
+/* Chart */
+.chart-container {
+    height: 200px;
+    margin-bottom: 16px;
+}
+
+/* Top Sites */
+.top-sites h2, .block-site-section h2 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-align: center;
+}
+
+.sites-list .site-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: transform 0.2s ease;
+}
+
+.sites-list .site-item:hover {
+    transform: translateY(-2px);
+}
+
+/* Style for the new category list item */
+.sites-list .category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: transform 0.2s ease;
+}
+
+.sites-list .category-item:hover {
+    transform: translateY(-2px);
+}
+
+.category-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.site-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.site-logo {
+    width: 24px;
+    height: 24px;
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    justify-content: space-around;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.action-btn {
+    background-color: var(--card-bg);
+    border: none;
+    color: var(--text-color);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex: 1;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.action-btn:hover {
+    background-color: var(--accent-color);
+}
+
+/* Block Site Section */
+.block-site-section {
+    margin-top: 16px;
+}
+
+.block-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.block-input input {
+    flex: 1;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.block-input button {
+    background-color: var(--accent-color);
+    border: none;
+    color: var(--text-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.blocked-sites-list .blocked-site-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+/* Footer */
+.main-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.footer-btn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.footer-btn:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: var(--bg-secondary);
+    margin: 15% auto; /* Start lower and animate up */
+    padding: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: 90%; 
+    max-width: 900px; /* Much larger maximum width */
+    max-height: 85vh; /* Make modal taller */
+    overflow-y: auto; /* Add scroll for smaller screens */
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    color: var(--text-color);
+    position: relative;
+    animation: slide-up 0.4s ease-out forwards;
+    backdrop-filter: blur(10px);
+}
+
+@keyframes slide-up {
+    from {
+        margin-top: 25%;
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        margin-top: 3%; /* Final position - higher */
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.close-btn {
+    color: var(--text-secondary);
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: var(--text-color);
+    text-decoration: none;
+    cursor: pointer;
+    transform: scale(1.2);
+}
+
+.modal-content h2 {
+    text-align: center;
+    color: var(--accent-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Styles for Goals inside Modal */
+.goals-container {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.goal-item {
+    background-color: var(--card-bg);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+/* Make modal action buttons have some space */
+.modal-content .action-btn {
+    width: 100%;
+    margin-top: 10px;
+    box-sizing: border-box; /* Ensure padding doesn't break layout */
+}
+
+/* Enhanced Modal Content Layout */
+.modal-content h2 {
+    font-size: 1.8rem;
+    margin-bottom: 24px;
+}
+
+/* Improved Chart Containers in Modals */
+.modal-content .chart-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    height: 400px !important; /* Make charts much taller */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Voice Review Card Enhancement */
+.voice-review-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.voice-review-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+    color: var(--accent-color);
+}
+
+.voice-review-card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* Modal Grid Layout for Better Use of Space */
+.modal-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 24px 0;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        padding: 20px;
+    }
+    
+    .modal-charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .modal-content .chart-container {
+        height: 300px !important;
+        padding: 16px;
+    }
+}
+
+/* New Bolt Badge Styles */
+.bolt-badge-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 14px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bolt-badge-logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.bolt-badge-logo svg {
+  flex-shrink: 0;
+}
+
+/* YouTube Classification Card */
+.classification-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-left: 4px solid var(--accent-color);
+}
+
+.classification-card h4 {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.classification-card p {
+    font-size: 0.95rem;
+    text-align: left;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.classification-card p strong {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+/* --- Flag Selector Styles --- */
+.flag-container {
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.flag-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.flag-dropdown {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.flag-dropdown.show {
+    display: block;
+}
+
+.flag-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.flag-option:hover {
+    background-color: var(--accent-color);
+}
+
+.flag-option img {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+/* Enhanced Settings Styles */
+.settings-section {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-section h3 {
+    color: var(--accent-color);
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+}
+
+.settings-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.setting-item {
+    padding: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.setting-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-color);
+}
+
+.setting-description {
+    margin: 8px 0 0 30px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Category Management */
+.category-management {
+    display: grid;
+    gap: 12px;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.category-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.category-count {
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Goals Styles */
+.goals-overview {
+    margin-bottom: 32px;
+}
+
+.streak-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--accent-color) 0%, #357abd 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.streak-icon {
+    font-size: 3rem;
+}
+
+.streak-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    color: white;
+}
+
+.streak-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.streak-content p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.goals-section h3 {
+    color: var(--accent-color);
+    margin-bottom: 20px;
+}
+
+.goal-items {
+    display: grid;
+    gap: 16px;
+}
+
+.goal-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.goal-name {
+    font-weight: 600;
+}
+
+.goal-time {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.goal-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar div {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.3s ease;
+}
+
+.progress-bar.progress-good div {
+    background: #ff9800;
+}
+
+.progress-bar.progress-complete div {
+    background: #4caf50;
+}
+
+.goal-percentage {
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+}

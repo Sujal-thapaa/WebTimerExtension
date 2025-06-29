@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Charts</title>
+    <script src="lib/chart.min.js"></script>
+    <script src="demo-data.js"></script>
+    <style>
+        body { background: #0f0f23; color: white; font-family: Arial; padding: 20px; }
+        .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-container { background: #1e1e3f; padding: 20px; border-radius: 10px; height: 300px; }
+        canvas { max-height: 250px; }
+    </style>
+</head>
+<body>
+    <h1>Chart Test</h1>
+    
+    <div class="charts">
+        <div class="chart-container">
+            <h3>Device Usage</h3>
+            <canvas id="deviceChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Category Usage</h3>
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        console.log('Testing charts...');
+        console.log('Chart.js available:', typeof Chart);
+        console.log('DemoDataHelper available:', typeof DemoDataHelper);
+
+        const deviceTodayData = [360, 240, 120]; // minutes
+        const categoryTodayData = [180, 120, 90, 60, 45, 75];
+
+        // Device Chart
+        const deviceCtx = document.getElementById('deviceChart').getContext('2d');
+        const deviceChart = new Chart(deviceCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Laptop', 'Mobile', 'Browser'],
+                datasets: [{
+                    data: deviceTodayData,
+                    backgroundColor: ['#007ACC', '#E4405F', '#4285F4'],
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'right', labels: { color: '#ffffff' } }
+                }
+            }
+        });
+
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Social Media', 'Productive', 'Games', 'Other', 'News', 'Entertainment'],
+                datasets: [{
+                    data: categoryTodayData,
+                    backgroundColor: ['#4285F4','#34A853','#FBBC05','#EA4335','#9C27B0','#FF9800'],
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'right', labels: { color: '#ffffff' } }
+                }
+            }
+        });
+
+        console.log('Charts created successfully!');
+    </script>
+</body>
+</html> 

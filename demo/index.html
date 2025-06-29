@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSetu - Demo Dashboard</title>
+    <!-- Shepherd.js for guided tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css" />
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #fff, #f0f0f0, #fff);
+            background-size: 200% 200%;
+            animation: shimmer 3s ease-in-out infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -2px;
+        }
+
+        /* Light Mode Styling for Main Title */
+        body.light-theme .header h1 {
+            background: linear-gradient(45deg, #1a202c, #2d3748, #1a202c) !important;
+            background-size: 200% 200% !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+            color: #1a202c !important; /* Fallback color */
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.4rem;
+            opacity: 0.95;
+            margin-bottom: 20px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .demo-banner {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24, #ff6b6b);
+            background-size: 200% 200%;
+            animation: gradientPulse 4s ease infinite;
+            color: white;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes gradientPulse {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        .device-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 35px 25px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-decoration: none;
+            color: white;
+            display: block;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .device-card:hover::before {
+            left: 100%;
+        }
+
+        .device-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .device-card:active {
+            transform: translateY(-4px) scale(1.01);
+        }
+
+        .device-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .device-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .device-card p {
+            opacity: 0.85;
+            font-size: 1rem;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .features {
+            margin-top: 50px;
+        }
+
+        .features h2 {
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 25px 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-item:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-item strong {
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        .bolt-badge {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 25px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bolt-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bolt-badge a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Tour Button Styling */
+        .tour-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 15px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .tour-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Custom Shepherd.js Styling */
+        .shepherd-element {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+        }
+
+        .shepherd-text {
+            color: #1a202c;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .shepherd-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 16px 16px 0 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .shepherd-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .shepherd-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .shepherd-button:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .shepherd-button.shepherd-button-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .shepherd-button.shepherd-button-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* Light mode adjustments for tour */
+        body.light-theme .shepherd-element {
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(132, 204, 22, 0.3);
+        }
+
+        body.light-theme .shepherd-header {
+            background: linear-gradient(135deg, #84cc16, #16a34a);
+        }
+
+        body.light-theme .shepherd-button {
+            background: #84cc16;
+        }
+
+        body.light-theme .shepherd-button:hover {
+            background: #65a30d;
+        }
+
+        /* Responsive Tour Styles */
+        @media (max-width: 768px) {
+            .shepherd-element {
+                max-width: 280px;
+                margin: 10px;
+            }
+            
+            .shepherd-text {
+                font-size: 0.9rem;
+                padding: 15px;
+            }
+            
+            .shepherd-header {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+            
+            .shepherd-footer {
+                padding: 12px 15px;
+            }
+            
+            .tour-btn {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+                margin-left: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tour-btn {
+                display: block;
+                margin: 10px auto 0;
+                margin-left: 0;
+            }
+        }
+
+        /* Tour button highlight animation */
+        .tour-btn.shepherd-enabled {
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+            }
+            50% {
+                box-shadow: 0 4px 25px rgba(255, 255, 255, 0.4), 0 0 20px rgba(255, 255, 255, 0.3);
+                transform: translateY(-2px) scale(1.02);
+            }
+            100% {
+                box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        .demo-indicator {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3); }
+            50% { box-shadow: 0 4px 20px rgba(255, 193, 7, 0.5); }
+        }
+
+        /* Demo Popup Modal */
+        .demo-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .demo-popup-modal {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+            animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: white;
+        }
+
+        .demo-popup-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .demo-popup-body {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.7;
+            margin-bottom: 30px;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .demo-popup-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .github-btn {
+            background: linear-gradient(135deg, #24292e, #1a1e22);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .github-btn:hover {
+            background: linear-gradient(135deg, #1a1e22, #0d1117);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(36, 41, 46, 0.4);
+        }
+
+        .demo-video-btn {
+            background: linear-gradient(135deg, #ff4757, #ff3742);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .demo-video-btn:hover {
+            background: linear-gradient(135deg, #ff3742, #ff2f3a);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
+        }
+
+        .demo-continue-btn {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .demo-continue-btn:hover {
+            background: linear-gradient(135deg, #45a049, #388e3c);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-40px) scale(0.9);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .demo-popup-overlay.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .device-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .demo-popup-buttons {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .demo-popup-modal {
+                margin: 20px;
+                padding: 30px;
+            }
+
+            .device-card {
+                padding: 30px 20px;
+            }
+
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .demo-popup-modal {
+                padding: 25px;
+            }
+
+            .demo-popup-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Top Right Controls */
+        .top-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        /* Language Dropdown */
+        .language-selector {
+            position: relative;
+        }
+
+        .language-toggle {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-width: 120px;
+        }
+
+        .language-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .current-flag {
+            width: 24px;
+            height: 18px;
+            object-fit: cover;
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .dropdown-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin-top: 8px;
+            min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none;
+            overflow: hidden;
+        }
+
+        .language-dropdown.show {
+            display: block;
+            animation: dropdownSlide 0.3s ease-out;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .language-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .language-option.selected {
+            background: rgba(76, 175, 80, 0.2);
+            border-left: 3px solid #4caf50;
+        }
+
+        .language-option img {
+            width: 24px;
+            height: 18px;
+            border-radius: 3px;
+            object-fit: cover;
+        }
+
+        /* Theme Toggle */
+        .simple-theme-toggle {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 10px 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .simple-theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        #themeIcon {
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .top-controls {
+                top: 15px;
+                right: 15px;
+                gap: 10px;
+            }
+            
+            .language-toggle,
+            .simple-theme-toggle {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .language-dropdown {
+                min-width: 160px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo Popup Modal -->
+    <div id="demoPopupOverlay" class="demo-popup-overlay hidden">
+        <div class="demo-popup-modal">
+            <div class="demo-popup-title">
+                🚧 ⚠️ Demo Notice
+            </div>
+            <div class="demo-popup-body">
+                🚀 <strong>⚠️ Demo Dashboard</strong><br><br>
+                This is a frontend-only preview — just 1% of TimeSetu.
+The full project includes a Chrome Extension, Mobile App, Supabase backend, and AI features, which can't be hosted publicly.
+▶️ Watch the full demo on YouTube or 📂 copy the code from GitHub and run it locally for the full experience.
+            </div>
+            <div class="demo-popup-buttons">
+                <a href="https://github.com/your-username/timesetu" target="_blank" class="github-btn">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    Go to GitHub
+                </a>
+                <a href="https://www.youtube.com/watch?v=demo-video-id" target="_blank" class="demo-video-btn">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.007 2.007 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.007 2.007 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31.4 31.4 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.007 2.007 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A99.788 99.788 0 0 1 7.858 2h.193zM6.4 5.209v4.818l4.157-2.408L6.4 5.209z"/>
+                    </svg>
+                    Watch Demo Video
+                </a>
+                <button id="demoContinueBtn" class="demo-continue-btn">
+                    Continue to Demo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-indicator">🎮 Demo Mode</div>
+
+    <!-- Top Right Controls -->
+    <div class="top-controls">
+        <!-- Language Selector -->
+        <div class="language-selector">
+            <div class="language-toggle" id="language-button">
+                <img src="flags/us.png" alt="English" class="current-flag" id="currentFlag">
+                <span id="currentLanguage">English</span>
+                <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="language-dropdown" id="languageDropdown">
+                <div class="language-option selected" data-lang="en" data-flag="us">
+                    <img src="flags/us.png" alt="English">
+                    <span>English</span>
+                </div>
+                <div class="language-option" data-lang="de" data-flag="de">
+                    <img src="flags/de.png" alt="Deutsch">
+                    <span>Deutsch</span>
+                </div>
+                <div class="language-option" data-lang="fr" data-flag="fr">
+                    <img src="flags/fr.png" alt="Français">
+                    <span>Français</span>
+                </div>
+                <div class="language-option" data-lang="es" data-flag="es">
+                    <img src="flags/es.png" alt="Español">
+                    <span>Español</span>
+                </div>
+                <div class="language-option" data-lang="jp" data-flag="jp">
+                    <img src="flags/jp.png" alt="日本語">
+                    <span>日本語</span>
+                </div>
+                <div class="language-option" data-lang="cn" data-flag="cn">
+                    <img src="flags/cn.png" alt="中文">
+                    <span>中文</span>
+                </div>
+                <div class="language-option" data-lang="in" data-flag="in">
+                    <img src="flags/in.png" alt="हिन्दी">
+                    <span>हिन्दी</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle" class="simple-theme-toggle">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">Dark</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 id="mainTitle">🌐 TimeSetu</h1>
+            <p id="mainSubtitle">Your comprehensive digital wellness companion</p>
+        </div>
+
+        <div class="demo-banner">
+            🚀 <strong>Demo Mode</strong> - Experience TimeSetu with realistic data across all devices
+            <button id="start-tour-btn" class="tour-btn">🎯 Take a Tour</button>
+        </div>
+
+        <h2 id="selectDeviceTitle" style="font-size: 2rem; margin-bottom: 15px; font-weight: 700;">📱 Select Device</h2>
+        <p id="selectDeviceSubtitle" style="margin-bottom: 30px; opacity: 0.9; font-size: 1.1rem;">Choose a device to view its screen time data</p>
+
+        <div class="device-grid">
+            <a href="overall-view.html" class="device-card" id="overall-view">
+                <span class="device-icon">📊</span>
+                <h3 id="overallViewTitle">Overall View</h3>
+                <p id="overallViewDesc">Combined view of all your devices with comprehensive analytics and insights</p>
+            </a>
+
+            <a href="browser-view.html" class="device-card" id="browser-view">
+                <span class="device-icon">🌐</span>
+                <h3 id="browserTitle">Browser</h3>
+                <p id="browserDesc">View your browser activity, website tracking, and Chrome extension data</p>
+            </a>
+
+            <a href="mobile-view.html" class="device-card" id="mobile-view">
+                <span class="device-icon">📱</span>
+                <h3 id="mobileTitle">Mobile</h3>
+                <p id="mobileDesc">View your mobile app usage, screen time, and app-specific analytics</p>
+            </a>
+
+            <a href="laptop-view.html" class="device-card" id="laptop-view">
+                <span class="device-icon">💻</span>
+                <h3 id="laptopTitle">Laptop</h3>
+                <p id="laptopDesc">View your laptop app usage, productivity tracking, and desktop analytics</p>
+            </a>
+
+            <a href="share-stats.html" class="device-card" id="share-stats">
+                <span class="device-icon">📤</span>
+                <h3 id="shareStatsTitle">Share Stats</h3>
+                <p id="shareStatsDesc">Create a public weekly summary to share your digital wellness progress</p>
+            </a>
+        </div>
+
+        <div class="features">
+            <h2 id="keyFeaturesTitle">🌟 Key Features</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <strong id="feature1Title">🔍 Real-time Tracking</strong><br>
+                    <span id="feature1Desc">Monitor usage across all devices</span>
+                </div>
+                <div class="feature-item">
+                    <strong id="feature2Title">📊 Smart Analytics</strong><br>
+                    <span id="feature2Desc">Detailed insights and patterns</span>
+                </div>
+                <div class="feature-item">
+                    <strong id="feature3Title">🎯 Goal Setting</strong><br>
+                    <span id="feature3Desc">Set and track productivity goals</span>
+                </div>
+                <div class="feature-item">
+                    <strong id="feature4Title">🔒 Focus Mode</strong><br>
+                    <span id="feature4Desc">Block distractions when needed</span>
+                </div>
+                <div class="feature-item">
+                    <strong id="feature5Title">🗣️ Voice AI Reviews</strong><br>
+                    <span id="feature5Desc">Weekly voice summaries</span>
+                </div>
+                <div class="feature-item">
+                    <strong id="feature6Title">📱 Cross-Platform</strong><br>
+                    <span id="feature6Desc">Chrome extension + Web + Mobile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bolt-badge">
+        <a href="https://bolt.new" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+            </svg>
+            Built with Bolt
+        </a>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            en: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "Your comprehensive digital wellness companion",
+                selectDeviceTitle: "📱 Select Device",
+                selectDeviceSubtitle: "Choose a device to view its screen time data",
+                overallViewTitle: "Overall View",
+                overallViewDesc: "Combined view of all your devices with comprehensive analytics and insights",
+                browserTitle: "Browser",
+                browserDesc: "View your browser activity, website tracking, and Chrome extension data",
+                mobileTitle: "Mobile",
+                mobileDesc: "View your mobile app usage, screen time, and app-specific analytics",
+                laptopTitle: "Laptop",
+                laptopDesc: "View your laptop app usage, productivity tracking, and desktop analytics",
+                shareStatsTitle: "Share Stats",
+                shareStatsDesc: "Create a public weekly summary to share your digital wellness progress",
+                keyFeaturesTitle: "🌟 Key Features",
+                feature1Title: "🔍 Real-time Tracking",
+                feature1Desc: "Monitor usage across all devices",
+                feature2Title: "📊 Smart Analytics",
+                feature2Desc: "Detailed insights and patterns",
+                feature3Title: "🎯 Goal Setting",
+                feature3Desc: "Set and track productivity goals",
+                feature4Title: "🔒 Focus Mode",
+                feature4Desc: "Block distractions when needed",
+                feature5Title: "🗣️ Voice AI Reviews",
+                feature5Desc: "Weekly voice summaries",
+                feature6Title: "📱 Cross-Platform",
+                feature6Desc: "Chrome extension + Web + Mobile"
+            },
+            de: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "Ihr umfassender digitaler Wellness-Begleiter",
+                selectDeviceTitle: "📱 Gerät auswählen",
+                selectDeviceSubtitle: "Wählen Sie ein Gerät aus, um dessen Bildschirmzeit-Daten anzuzeigen",
+                overallViewTitle: "Gesamtansicht",
+                overallViewDesc: "Kombinierte Ansicht aller Ihrer Geräte mit umfassenden Analysen und Einblicken",
+                browserTitle: "Browser",
+                browserDesc: "Zeigen Sie Ihre Browser-Aktivität, Website-Tracking und Chrome-Erweiterungsdaten an",
+                mobileTitle: "Mobil",
+                mobileDesc: "Zeigen Sie Ihre mobile App-Nutzung, Bildschirmzeit und app-spezifische Analysen an",
+                laptopTitle: "Laptop",
+                laptopDesc: "Zeigen Sie Ihre Laptop-App-Nutzung, Produktivitätsverfolgung und Desktop-Analysen an",
+                shareStatsTitle: "Statistiken teilen",
+                shareStatsDesc: "Erstellen Sie eine öffentliche wöchentliche Zusammenfassung, um Ihren digitalen Wellness-Fortschritt zu teilen",
+                keyFeaturesTitle: "🌟 Hauptfunktionen",
+                feature1Title: "🔍 Echtzeit-Tracking",
+                feature1Desc: "Überwachen Sie die Nutzung auf allen Geräten",
+                feature2Title: "📊 Intelligente Analysen",
+                feature2Desc: "Detaillierte Einblicke und Muster",
+                feature3Title: "🎯 Zielsetzung",
+                feature3Desc: "Setzen und verfolgen Sie Produktivitätsziele",
+                feature4Title: "🔒 Fokus-Modus",
+                feature4Desc: "Blockieren Sie Ablenkungen bei Bedarf",
+                feature5Title: "🗣️ Voice AI Bewertungen",
+                feature5Desc: "Wöchentliche Sprachzusammenfassungen",
+                feature6Title: "📱 Plattformübergreifend",
+                feature6Desc: "Chrome-Erweiterung + Web + Mobile"
+            },
+            fr: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "Votre compagnon complet de bien-être numérique",
+                selectDeviceTitle: "📱 Sélectionner l'appareil",
+                selectDeviceSubtitle: "Choisissez un appareil pour voir ses données de temps d'écran",
+                overallViewTitle: "Vue d'ensemble",
+                overallViewDesc: "Vue combinée de tous vos appareils avec des analyses et des insights complets",
+                browserTitle: "Navigateur",
+                browserDesc: "Visualisez votre activité de navigation, le suivi des sites web et les données d'extension Chrome",
+                mobileTitle: "Mobile",
+                mobileDesc: "Visualisez l'utilisation de vos applications mobiles, le temps d'écran et les analyses spécifiques aux applications",
+                laptopTitle: "Ordinateur portable",
+                laptopDesc: "Visualisez l'utilisation des applications de votre ordinateur portable, le suivi de productivité et les analyses de bureau",
+                shareStatsTitle: "Partager les statistiques",
+                shareStatsDesc: "Créez un résumé hebdomadaire public pour partager vos progrès de bien-être numérique",
+                keyFeaturesTitle: "🌟 Fonctionnalités clés",
+                feature1Title: "🔍 Suivi en temps réel",
+                feature1Desc: "Surveillez l'utilisation sur tous les appareils",
+                feature2Title: "📊 Analyses intelligentes",
+                feature2Desc: "Insights détaillés et modèles",
+                feature3Title: "🎯 Définition d'objectifs",
+                feature3Desc: "Définissez et suivez les objectifs de productivité",
+                feature4Title: "🔒 Mode Focus",
+                feature4Desc: "Bloquez les distractions si nécessaire",
+                feature5Title: "🗣️ Avis vocaux IA",
+                feature5Desc: "Résumés vocaux hebdomadaires",
+                feature6Title: "📱 Multi-plateformes",
+                feature6Desc: "Extension Chrome + Web + Mobile"
+            },
+            es: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "Tu compañero integral de bienestar digital",
+                selectDeviceTitle: "📱 Seleccionar dispositivo",
+                selectDeviceSubtitle: "Elige un dispositivo para ver sus datos de tiempo de pantalla",
+                overallViewTitle: "Vista general",
+                overallViewDesc: "Vista combinada de todos tus dispositivos con análisis e insights completos",
+                browserTitle: "Navegador",
+                browserDesc: "Ve tu actividad del navegador, seguimiento de sitios web y datos de extensión de Chrome",
+                mobileTitle: "Móvil",
+                mobileDesc: "Ve el uso de tus aplicaciones móviles, tiempo de pantalla y análisis específicos de aplicaciones",
+                laptopTitle: "Portátil",
+                laptopDesc: "Ve el uso de aplicaciones de tu portátil, seguimiento de productividad y análisis de escritorio",
+                shareStatsTitle: "Compartir estadísticas",
+                shareStatsDesc: "Crea un resumen semanal público para compartir tu progreso de bienestar digital",
+                keyFeaturesTitle: "🌟 Características principales",
+                feature1Title: "🔍 Seguimiento en tiempo real",
+                feature1Desc: "Monitorea el uso en todos los dispositivos",
+                feature2Title: "📊 Análisis inteligentes",
+                feature2Desc: "Insights detallados y patrones",
+                feature3Title: "🎯 Establecimiento de objetivos",
+                feature3Desc: "Establece y rastrea objetivos de productividad",
+                feature4Title: "🔒 Modo enfoque",
+                feature4Desc: "Bloquea distracciones cuando sea necesario",
+                feature5Title: "🗣️ Reseñas de voz IA",
+                feature5Desc: "Resúmenes de voz semanales",
+                feature6Title: "📱 Multiplataforma",
+                feature6Desc: "Extensión Chrome + Web + Móvil"
+            },
+            jp: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "あなたの包括的なデジタルウェルネスコンパニオン",
+                selectDeviceTitle: "📱 デバイスを選択",
+                selectDeviceSubtitle: "スクリーンタイムデータを表示するデバイスを選択してください",
+                overallViewTitle: "総合ビュー",
+                overallViewDesc: "包括的な分析と洞察を備えた全デバイスの統合ビュー",
+                browserTitle: "ブラウザ",
+                browserDesc: "ブラウザ活動、ウェブサイト追跡、Chrome拡張機能データを表示",
+                mobileTitle: "モバイル",
+                mobileDesc: "モバイルアプリの使用状況、スクリーンタイム、アプリ固有の分析を表示",
+                laptopTitle: "ラップトップ",
+                laptopDesc: "ラップトップアプリの使用状況、生産性追跡、デスクトップ分析を表示",
+                shareStatsTitle: "統計を共有",
+                shareStatsDesc: "デジタルウェルネスの進捗を共有するための公開週次サマリーを作成",
+                keyFeaturesTitle: "🌟 主な機能",
+                feature1Title: "🔍 リアルタイム追跡",
+                feature1Desc: "全デバイスでの使用状況を監視",
+                feature2Title: "📊 スマート分析",
+                feature2Desc: "詳細な洞察とパターン",
+                feature3Title: "🎯 目標設定",
+                feature3Desc: "生産性目標を設定し追跡",
+                feature4Title: "🔒 フォーカスモード",
+                feature4Desc: "必要に応じて気を散らすものをブロック",
+                feature5Title: "🗣️ 音声AIレビュー",
+                feature5Desc: "週次音声サマリー",
+                feature6Title: "📱 クロスプラットフォーム",
+                feature6Desc: "Chrome拡張機能 + Web + モバイル"
+            },
+            cn: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "您的综合数字健康伴侣",
+                selectDeviceTitle: "📱 选择设备",
+                selectDeviceSubtitle: "选择一个设备来查看其屏幕时间数据",
+                overallViewTitle: "总览",
+                overallViewDesc: "所有设备的综合视图，包含全面的分析和洞察",
+                browserTitle: "浏览器",
+                browserDesc: "查看您的浏览器活动、网站跟踪和Chrome扩展数据",
+                mobileTitle: "手机",
+                mobileDesc: "查看您的手机应用使用情况、屏幕时间和应用特定分析",
+                laptopTitle: "笔记本电脑",
+                laptopDesc: "查看您的笔记本电脑应用使用情况、生产力跟踪和桌面分析",
+                shareStatsTitle: "分享统计",
+                shareStatsDesc: "创建公开的每周摘要来分享您的数字健康进展",
+                keyFeaturesTitle: "🌟 主要功能",
+                feature1Title: "🔍 实时跟踪",
+                feature1Desc: "监控所有设备上的使用情况",
+                feature2Title: "📊 智能分析",
+                feature2Desc: "详细洞察和模式",
+                feature3Title: "🎯 目标设定",
+                feature3Desc: "设定和跟踪生产力目标",
+                feature4Title: "🔒 专注模式",
+                feature4Desc: "必要时阻止干扰",
+                feature5Title: "🗣️ 语音AI评论",
+                feature5Desc: "每周语音摘要",
+                feature6Title: "📱 跨平台",
+                feature6Desc: "Chrome扩展 + 网页 + 移动端"
+            },
+            in: {
+                mainTitle: "🌐 TimeSetu",
+                mainSubtitle: "आपका व्यापक डिजिटल कल्याण साथी",
+                selectDeviceTitle: "📱 डिवाइस चुनें",
+                selectDeviceSubtitle: "अपने स्क्रीन टाइम डेटा को देखने के लिए एक डिवाइस चुनें",
+                overallViewTitle: "समग्र दृश्य",
+                overallViewDesc: "व्यापक विश्लेषण और अंतर्दृष्टि के साथ आपके सभी उपकरणों का संयुक्त दृश्य",
+                browserTitle: "ब्राउज़र",
+                browserDesc: "अपनी ब्राउज़र गतिविधि, वेबसाइट ट्रैकिंग और Chrome एक्सटेंशन डेटा देखें",
+                mobileTitle: "मोबाइल",
+                mobileDesc: "अपने मोबाइल ऐप उपयोग, स्क्रीन टाइम और ऐप-विशिष्ट एनालिटिक्स देखें",
+                laptopTitle: "लैपटॉप",
+                laptopDesc: "अपने लैपटॉप ऐप उपयोग, उत्पादकता ट्रैकिंग और डेस्कटॉप एनालिटिक्स देखें",
+                shareStatsTitle: "आंकड़े साझा करें",
+                shareStatsDesc: "अपनी डिजिटल कल्याण प्रगति साझा करने के लिए एक सार्वजनिक साप्ताहिक सारांश बनाएं",
+                keyFeaturesTitle: "🌟 मुख्य विशेषताएं",
+                feature1Title: "🔍 रियल-टाइम ट्रैकिंग",
+                feature1Desc: "सभी उपकरणों पर उपयोग की निगरानी करें",
+                feature2Title: "📊 स्मार्ट एनालिटिक्स",
+                feature2Desc: "विस्तृत अंतर्दृष्टि और पैटर्न",
+                feature3Title: "🎯 लक्ष्य निर्धारण",
+                feature3Desc: "उत्पादकता लक्ष्य निर्धारित करें और ट्रैक करें",
+                feature4Title: "🔒 फोकस मोड",
+                feature4Desc: "आवश्यकता पड़ने पर विकर्षणों को ब्लॉक करें",
+                feature5Title: "🗣️ वॉयस AI समीक्षाएं",
+                feature5Desc: "साप्ताहिक वॉयस सारांश",
+                feature6Title: "📱 क्रॉस-प्लेटफॉर्म",
+                feature6Desc: "Chrome एक्सटेंशन + वेब + मोबाइल"
+            }
+        };
+
+        // Language functionality
+        function initializeLanguageSelector() {
+            const languageToggle = document.getElementById('language-button');
+            const languageDropdown = document.getElementById('languageDropdown');
+            const languageOptions = document.querySelectorAll('.language-option');
+            const currentFlag = document.getElementById('currentFlag');
+            const currentLanguage = document.getElementById('currentLanguage');
+            
+            // Load saved language
+            const savedLang = localStorage.getItem('selectedLanguage') || 'en';
+            setLanguage(savedLang);
+            
+            // Toggle dropdown
+            languageToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                languageDropdown.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                languageDropdown.classList.remove('show');
+            });
+            
+            // Handle language selection
+            languageOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const lang = option.dataset.lang;
+                    const flag = option.dataset.flag;
+                    
+                    // Update UI
+                    languageOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    
+                    // Update toggle button
+                    currentFlag.src = `flags/${flag}.png`;
+                    currentLanguage.textContent = option.querySelector('span').textContent;
+                    
+                    // Save and apply language
+                    localStorage.setItem('selectedLanguage', lang);
+                    setLanguage(lang);
+                    
+                    // Close dropdown
+                    languageDropdown.classList.remove('show');
+                    
+                    // Show notification
+                    showNotification(`Language changed to: ${option.querySelector('span').textContent}`);
+                });
+            });
+        }
+        
+        function setLanguage(lang) {
+            const translation = translations[lang];
+            if (!translation) return;
+            
+            // Update all translatable elements
+            Object.keys(translation).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = translation[key];
+                }
+            });
+            
+            // Update language selector to show current language
+            const languageOptions = document.querySelectorAll('.language-option');
+            const currentFlag = document.getElementById('currentFlag');
+            const currentLanguage = document.getElementById('currentLanguage');
+            
+            languageOptions.forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.lang === lang) {
+                    option.classList.add('selected');
+                    if (currentFlag && currentLanguage) {
+                        currentFlag.src = `flags/${option.dataset.flag}.png`;
+                        currentLanguage.textContent = option.querySelector('span').textContent;
+                    }
+                }
+            });
+        }
+
+        // Store selected scenario in localStorage
+        function setScenario(scenario) {
+            localStorage.setItem('timesetu_demoScenario', scenario);
+            
+            // Update active button
+            document.querySelectorAll('.scenario-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            // Show notification
+            showNotification(`Scenario set to: ${getScenarioName(scenario)}`);
+        }
+
+        function getScenarioName(scenario) {
+            const names = {
+                'productive': '📚 Productive Day',
+                'social': '📱 Social Media Day',
+                'mixed': '🔄 Mixed Usage',
+                'gaming': '🎮 Gaming Day',
+                'work': '💼 Work Day'
+            };
+            return names[scenario] || scenario;
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: linear-gradient(135deg, #4caf50, #45a049);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 12px;
+                z-index: 10000;
+                box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+                animation: slideInNotification 0.4s ease;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px);
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutNotification 0.4s ease';
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        }
+
+        // Add CSS animations for notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInNotification {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutNotification {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize language selector
+            initializeLanguageSelector();
+            
+            // Check if user has already seen the demo popup in this session
+            const hasSeenDemoPopup = sessionStorage.getItem('timesetu_hasSeenDemoPopup');
+            const demoPopupOverlay = document.getElementById('demoPopupOverlay');
+            const demoContinueBtn = document.getElementById('demoContinueBtn');
+            
+            // Only show popup if user hasn't seen it in this session
+            if (!hasSeenDemoPopup && demoPopupOverlay) {
+                demoPopupOverlay.classList.remove('hidden');
+            }
+            
+            // Handle continue button click
+            if (demoContinueBtn && demoPopupOverlay) {
+                demoContinueBtn.addEventListener('click', () => {
+                    demoPopupOverlay.classList.add('hidden');
+                    // Mark that user has seen the popup in this session
+                    sessionStorage.setItem('timesetu_hasSeenDemoPopup', 'true');
+                });
+            }
+            
+            // Close popup when clicking on overlay (outside modal)
+            if (demoPopupOverlay) {
+                demoPopupOverlay.addEventListener('click', (e) => {
+                    if (e.target === demoPopupOverlay) {
+                        demoPopupOverlay.classList.add('hidden');
+                        // Mark that user has seen the popup in this session
+                        sessionStorage.setItem('timesetu_hasSeenDemoPopup', 'true');
+                    }
+                });
+            }
+            
+            // Initialize default scenario
+            const savedScenario = localStorage.getItem('timesetu_demoScenario') || 'productive';
+            setScenario(savedScenario);
+
+            // Add entrance animation delay for device cards
+            const deviceCards = document.querySelectorAll('.device-card');
+            deviceCards.forEach((card, index) => {
+                card.style.animation = `fadeInUp 0.6s ease-out ${index * 0.1}s both`;
+            });
+
+            // Add entrance animation for feature items
+            const featureItems = document.querySelectorAll('.feature-item');
+            featureItems.forEach((item, index) => {
+                item.style.animation = `fadeInUp 0.6s ease-out ${0.5 + index * 0.1}s both`;
+            });
+        });
+
+        // Add keyboard support for accessibility
+        document.addEventListener('keydown', (e) => {
+            const demoPopupOverlay = document.getElementById('demoPopupOverlay');
+            if (e.key === 'Escape' && demoPopupOverlay && !demoPopupOverlay.classList.contains('hidden')) {
+                demoPopupOverlay.classList.add('hidden');
+                sessionStorage.setItem('timesetu_hasSeenDemoPopup', 'true');
+            }
+        });
+    </script>
+    
+    <!-- Theme Toggle Script -->
+    <script src="theme-toggle.js"></script>
+    
+    <script>
+        // Guided Tour Implementation using Shepherd.js
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Shepherd tour
+            const tour = new Shepherd.Tour({
+                useModalOverlay: true,
+                defaultStepOptions: {
+                    classes: 'shadow-md bg-purple-dark',
+                    scrollTo: { behavior: 'smooth', block: 'center' },
+                    modalOverlayOpeningPadding: 15,
+                    cancelIcon: {
+                        enabled: true
+                    }
+                }
+            });
+
+            // Add tour completion handler
+            tour.on('complete', function() {
+                localStorage.setItem('tourCompleted', 'true');
+                console.log('Tour completed!');
+            });
+
+            tour.on('cancel', function() {
+                console.log('Tour cancelled by user');
+            });
+
+            // Add visual enhancement when tour is active
+            tour.on('show', function(event) {
+                const currentStep = event.step;
+                const targetElement = currentStep.options.attachTo?.element;
+                
+                // Add special highlighting for the tour button
+                if (targetElement === '#start-tour-btn') {
+                    const tourBtn = document.getElementById('start-tour-btn');
+                    if (tourBtn) {
+                        tourBtn.classList.add('shepherd-enabled');
+                    }
+                }
+            });
+
+            tour.on('hide', function(event) {
+                // Remove special highlighting
+                const tourBtn = document.getElementById('start-tour-btn');
+                if (tourBtn) {
+                    tourBtn.classList.remove('shepherd-enabled');
+                }
+            });
+
+            // Define tour steps
+            tour.addStep({
+                title: '🎯 Welcome to TimeSetu!',
+                text: 'Click here anytime to take a guided tour of the dashboard features.',
+                attachTo: {
+                    element: '#start-tour-btn',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Start Tour',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '🌍 Language Selection',
+                text: 'Click here to change the language of your dashboard.',
+                attachTo: {
+                    element: '#language-button',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Next',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '🌙 Theme Toggle',
+                text: 'Use this button to switch between light and dark mode.',
+                attachTo: {
+                    element: '#theme-toggle',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Next',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '📊 Overall View',
+                text: 'See a combined summary of your activity across all devices here.',
+                attachTo: {
+                    element: '#overall-view',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Next',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '🌐 Browser View',
+                text: 'Click here to view your browser activity in detail.',
+                attachTo: {
+                    element: '#browser-view',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Next',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '📱 Mobile View',
+                text: 'Tap here to explore your mobile app usage.',
+                attachTo: {
+                    element: '#mobile-view',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Next',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '💻 Laptop View',
+                text: 'Check out your laptop usage stats here.',
+                attachTo: {
+                    element: '#laptop-view',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Next',
+                    action: tour.next,
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            tour.addStep({
+                title: '📤 Share Stats',
+                text: 'Create a public weekly summary of your screen time to share with others.',
+                attachTo: {
+                    element: '#share-stats',
+                    on: 'bottom'
+                },
+                buttons: [{
+                    text: 'Back',
+                    action: tour.back,
+                    classes: 'shepherd-button shepherd-button-secondary'
+                }, {
+                    text: 'Done',
+                    action: function() {
+                        tour.complete();
+                        localStorage.setItem('tourCompleted', 'true');
+                    },
+                    classes: 'shepherd-button'
+                }]
+            });
+
+            // Check if tour has been completed
+            const tourCompleted = localStorage.getItem('tourCompleted');
+            
+            // Start tour after "Continue to Demo" button is clicked (only on first visit)
+            const demoContinueBtn = document.getElementById('demoContinueBtn');
+            if (demoContinueBtn && !tourCompleted) {
+                demoContinueBtn.addEventListener('click', function() {
+                    setTimeout(() => {
+                        tour.start();
+                    }, 800); // Small delay to let the button action complete
+                });
+            }
+
+            // Manual tour trigger
+            const startTourBtn = document.getElementById('start-tour-btn');
+            if (startTourBtn) {
+                startTourBtn.addEventListener('click', function() {
+                    tour.start();
+                });
+            }
+
+            // Add a way to reset tour completion (for testing)
+            // Double-click the tour button to reset completion status
+            if (startTourBtn) {
+                startTourBtn.addEventListener('dblclick', function() {
+                    localStorage.removeItem('tourCompleted');
+                    alert('Tour completion status reset! Refresh the page to see the auto-tour.');
+                });
+            }
+
+            // Update language button reference when language changes
+            const languageOptions = document.querySelectorAll('.language-option');
+            languageOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Update the tour reference if needed
+                    setTimeout(() => {
+                        // Re-initialize tour if language changes
+                        if (tour.isActive()) {
+                            tour.cancel();
+                        }
+                    }, 100);
+                });
+            });
+
+            console.log('Guided tour initialized!', tourCompleted ? 'Tour already completed' : 'First visit - tour will start after "Continue to Demo" button click');
+        });
+    </script>
+    <script src="more-menu.js"></script>
+</body>
+</html> 

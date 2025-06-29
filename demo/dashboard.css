@@ -1,0 +1,213 @@
+/* dashboard.css – overrides for full-page dashboard */
+
+:root {
+  /* dashboard specific optional vars can be here */
+}
+
+body {
+  background: var(--bg-primary);
+  font-family: "Inter", sans-serif;
+  color: var(--text-color);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Header (Today / Week buttons + flag) */
+header {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+.time-period {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.time-period button {
+  font-size: 0.95rem;
+  padding: 10px 20px;
+}
+
+#dashboardBtn {
+  max-width: 150px;
+}
+
+/* Stats grid */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.total-time, .productivity {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.total-time h2 {
+  font-size: 1.2rem;
+}
+
+#totalTime {
+  font-size: 2.2rem;
+}
+
+/* Charts section */
+.charts {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.chart-container {
+  height: 350px;
+}
+
+/* Actions */
+.actions {
+  gap: 20px;
+}
+.actions .action-button {
+  padding: 18px;
+  font-size: 1rem;
+}
+
+/* Top sites */
+.top-sites {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Ensure primary containers inherit dynamic text color */
+.total-time, .productivity, .top-sites, .charts, header, .navbar {
+  color: var(--text-color);
+}
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .container {
+    padding: 24px 16px;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Navbar */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.95rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: var(--text-color);
+}
+
+.nav-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.nav-btn.active {
+  background: var(--accent-color, #4a90e2);
+  color: #fff;
+}
+
+/* Additional demo-specific styles */
+.app-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-item:last-child {
+  border-bottom: none;
+}
+
+.app-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.app-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.app-details h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.app-details p {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+} 

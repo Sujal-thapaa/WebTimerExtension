@@ -1,0 +1,20 @@
+{
+  "name": "timesetu-demo",
+  "version": "1.0.0",
+  "description": "TimeSetu Demo Dashboard - TypeScript Edition",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chart.js": "^2.9.41",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0"
+  }
+}
