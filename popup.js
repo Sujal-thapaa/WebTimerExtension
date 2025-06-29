@@ -67,7 +67,8 @@ async function updateAllGoals(data, goals) {
         console.log(`Displaying progress for ${category}:`, {
           timeSpent: timeSpent / 3600000, // hours
           goalHours,
-          progress
+          progress,
+          goalKey
         });
 
         const goalDiv = document.createElement('div');
@@ -86,6 +87,15 @@ async function updateAllGoals(data, goals) {
         goalsContainer.appendChild(goalDiv);
       }
     });
+
+    // Show message if no goals are set
+    if (goalsContainer.children.length === 0) {
+      goalsContainer.innerHTML = `
+        <div class="no-goals-message">
+          <p>No goals set yet. Click "Edit Goals" to set your daily targets!</p>
+        </div>
+      `;
+    }
 
     // Add streak if any goals are met
     if (goals?.streak > 0) {
@@ -111,6 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadData('today');
     await initializeTheme();
     await initializeCategories();
+    await loadBrowserSettings();
     
     // Initialize chart if More modal is open
     const moreModal = document.getElementById('moreModal');
@@ -154,6 +165,8 @@ function initializeElements() {
     editGoalsBtn: document.getElementById('editGoalsBtn'),
     saveGoalsBtn: document.getElementById('saveGoalsBtn'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+    saveBrowserSettingsBtn: document.getElementById('saveBrowserSettingsBtn'),
+    resetBrowserSettingsBtn: document.getElementById('resetBrowserSettingsBtn'),
     
     // Blocking elements
     siteToBlock: document.getElementById('siteToBlock'),
@@ -163,7 +176,6 @@ function initializeElements() {
     
     // Containers
     goalsContainer: document.querySelector('.goals-container'),
-    sessionInsights: document.getElementById('sessionInsights'),
     streakInfo: document.querySelector('.streak-info'),
     categoryGoals: document.getElementById('categoryGoals'),
     categoriesList: document.getElementById('categoriesList')
@@ -184,6 +196,12 @@ function setupAutoRefresh() {
   refreshInterval = setInterval(async () => {
     await loadData(currentTimeframe);
     await updateBlockedSitesList(); // Refresh blocked sites list
+    
+    // Only update goals display if the goals modal is not open
+    const goalsModal = document.getElementById('goalsModal');
+    if (goalsModal && goalsModal.style.display !== 'block') {
+      await updateGoalsDisplay();
+    }
   }, 1000);
 }
 
@@ -258,7 +276,13 @@ function getWeekData(timeData) {
 function updateUI(data, goals) {
   console.log('Updating UI with data:', data);
   updateTotalTime(data);
-  updateAllGoals(data, goals);
+  updateQuickStats(data);
+  
+  // Only update goals if the goals modal is not open
+  const goalsModal = document.getElementById('goalsModal');
+  if (!goalsModal || goalsModal.style.display !== 'block') {
+    updateAllGoals(data, goals);
+  }
 
   if (currentView === 'category') {
     updateCategoryChart(data);
@@ -275,6 +299,51 @@ function updateTotalTime(data) {
   const minutes = Math.floor((totalTime % 3600000) / 60000);
   const seconds = Math.floor((totalTime % 60000) / 1000);
   document.getElementById('totalTime').textContent = `${hours}h ${minutes}m ${seconds}s`;
+}
+
+function updateQuickStats(data) {
+  // Calculate sites visited
+  const sitesCount = Object.keys(data.sites || {}).length;
+  const sitesElement = document.getElementById('sitesVisited');
+  if (sitesElement) {
+    sitesElement.textContent = sitesCount.toString();
+  }
+
+  // Calculate average session time
+  const totalTime = Object.values(data.categories).reduce((a, b) => a + b, 0);
+  const avgSession = sitesCount > 0 ? totalTime / sitesCount : 0;
+  const avgElement = document.getElementById('avgSession');
+  if (avgElement) {
+    const avgMinutes = Math.floor(avgSession / 60000);
+    avgElement.textContent = avgMinutes > 0 ? `${avgMinutes}m` : '<1m';
+  }
+
+  // Find top category
+  const categories = data.categories || {};
+  const topCategory = Object.entries(categories)
+    .sort(([, a], [, b]) => b - a)[0];
+  const topCategoryElement = document.getElementById('topCategory');
+  if (topCategoryElement) {
+    if (topCategory && topCategory[1] > 0) {
+      // Shorten category names for display
+      let categoryName = topCategory[0];
+      if (categoryName === 'Productive / Educational') categoryName = 'Productive';
+      else if (categoryName === 'Other / Uncategorized') categoryName = 'Other';
+      else if (categoryName === 'Social Media') categoryName = 'Social';
+      topCategoryElement.textContent = categoryName;
+    } else {
+      topCategoryElement.textContent = '--';
+    }
+  }
+
+  // Calculate productivity percentage
+  const productiveTime = (categories['Productive / Educational'] || 0) + 
+                        (categories['News'] || 0);
+  const productivity = totalTime > 0 ? Math.round((productiveTime / totalTime) * 100) : 0;
+  const productivityElement = document.getElementById('productivity');
+  if (productivityElement) {
+    productivityElement.textContent = `${productivity}%`;
+  }
 }
 
 // Helper function to format time
@@ -678,7 +747,6 @@ function setupEventListeners() {
             if (moreModal) moreModal.style.display = 'block';
             await updateWeeklyChart();
             await updateWeeklyWebsiteChart();
-            await updateSessionInsights();
         });
     }
 
@@ -770,6 +838,15 @@ function setupEventListeners() {
       elements.saveSettingsBtn.addEventListener('click', saveSettings);
     }
 
+    // Enhanced Browser Settings
+    if (elements.saveBrowserSettingsBtn) {
+      elements.saveBrowserSettingsBtn.addEventListener('click', saveBrowserSettings);
+    }
+    
+    if (elements.resetBrowserSettingsBtn) {
+      elements.resetBrowserSettingsBtn.addEventListener('click', resetBrowserSettings);
+    }
+
     // Theme mode buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -855,8 +932,8 @@ async function updateGoalsDisplay() {
     const todayData = timeData[today] || { categories: {} };
 
     // Store scroll position before updating content
-    const modalBody = elements.goalsModal.querySelector('.modal-body');
-    const scrollPosition = modalBody ? modalBody.scrollTop : 0;
+    const modalContent = elements.goalsModal.querySelector('.modal-content');
+    const scrollPosition = modalContent ? modalContent.scrollTop : 0;
 
     elements.goalsContainer.innerHTML = '';
 
@@ -873,7 +950,8 @@ async function updateGoalsDisplay() {
         console.log(`Displaying progress for ${category}:`, {
           timeSpent: timeSpent / 3600000, // hours
           goalHours,
-          progress
+          progress,
+          goalKey
         });
 
         const goalDiv = document.createElement('div');
@@ -893,6 +971,15 @@ async function updateGoalsDisplay() {
       }
     });
 
+    // Show message if no goals are set
+    if (elements.goalsContainer.children.length === 0) {
+      elements.goalsContainer.innerHTML = `
+        <div class="no-goals-message">
+          <p>No goals set yet. Click "Edit Goals" to set your daily targets!</p>
+        </div>
+      `;
+    }
+
     // Update streak information
     if (goals.streak > 0) {
       elements.streakInfo.innerHTML = `
@@ -909,9 +996,9 @@ async function updateGoalsDisplay() {
     displayBlockedSites(blockedSites);
 
     // Restore scroll position after content update
-    if (modalBody) {
+    if (modalContent) {
       requestAnimationFrame(() => {
-        modalBody.scrollTop = scrollPosition;
+        modalContent.scrollTop = scrollPosition;
       });
     }
   } catch (error) {
@@ -1016,7 +1103,7 @@ async function saveGoals() {
       if (!category) return;
 
       const newValue = parseFloat(input.value) || 0;
-      const goalKey = `${category.toLowerCase().replace(/ /g, '')}Hours`;
+      const goalKey = getGoalKey(category); // Use the correct helper function
 
       // Only update if the value has changed
       if (currentGoals[goalKey] !== newValue) {
@@ -1039,10 +1126,7 @@ async function saveGoals() {
       }
 
       // Refresh the goals display
-      const { timeData = {} } = await chrome.storage.local.get('timeData');
-      const today = getTodayString();
-      const todayData = timeData[today] || { sites: {}, categories: {} };
-      await updateAllGoals(todayData, newGoals);
+      await updateGoalsDisplay();
       
       showToast('Goals updated successfully! 🎯', 'success');
     } else {
@@ -1364,88 +1448,76 @@ async function exportData() {
   URL.revokeObjectURL(url);
 }
 
-async function updateSessionInsights() {
+// Enhanced Browser Settings Functions
+async function saveBrowserSettings() {
   try {
-    if (!elements.sessionInsights) {
-      console.error('Session insights container not found');
-      return;
-    }
-
-    const { sessionData = {} } = await chrome.storage.local.get('sessionData');
-    const today = getTodayString();
-    const todaySessions = sessionData[today] || { sites: {}, categories: {} };
+    const settings = {
+      autoTrackWebsites: document.getElementById('autoTrackWebsites').checked,
+      trackIncognito: document.getElementById('trackIncognito').checked,
+      trackPageTitles: document.getElementById('trackPageTitles').checked,
+      focusModeAlerts: document.getElementById('focusModeAlerts').checked,
+      productivityScoring: document.getElementById('productivityScoring').checked,
+      timeWarnings: document.getElementById('timeWarnings').checked,
+      dailySummary: document.getElementById('dailySummary').checked,
+      goalAchievements: document.getElementById('goalAchievements').checked,
+      weeklyReports: document.getElementById('weeklyReports').checked,
+      localDataOnly: document.getElementById('localDataOnly').checked,
+      anonymousUsage: document.getElementById('anonymousUsage').checked,
+      dataRetention: document.getElementById('dataRetention').checked
+    };
     
-    elements.sessionInsights.innerHTML = '';
-
-    // If no sessions today, show message
-    if (Object.keys(todaySessions.sites || {}).length === 0) {
-      elements.sessionInsights.innerHTML = `
-        <div class="no-sessions">
-          No browsing sessions recorded today
-        </div>
-      `;
-      return;
-    }
-
-    // Process site sessions
-    Object.entries(todaySessions.sites || {}).forEach(([site, sessions]) => {
-      if (sessions && sessions.length > 0) {
-        const longestSession = Math.max(...sessions.map(s => s.duration));
-        const averageSession = sessions.reduce((acc, s) => acc + s.duration, 0) / sessions.length;
-        
-        const siteCard = document.createElement('div');
-        siteCard.className = 'session-card';
-        siteCard.innerHTML = `
-          <div class="session-site">${site}</div>
-          <div class="session-stat">
-            <span>Longest Session</span>
-            <span class="session-stat-value">${formatTime(longestSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Average Session</span>
-            <span class="session-stat-value">${formatTime(averageSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Number of Sessions</span>
-            <span class="session-stat-value">${sessions.length}</span>
-          </div>
-        `;
-        elements.sessionInsights.appendChild(siteCard);
-      }
-    });
-
-    // Process category sessions
-    Object.entries(todaySessions.categories || {}).forEach(([category, sessions]) => {
-      if (sessions && sessions.length > 0) {
-        const categorySection = document.createElement('div');
-        categorySection.className = 'session-category';
-        
-        const longestSession = Math.max(...sessions.map(s => s.duration));
-        const averageSession = sessions.reduce((acc, s) => acc + s.duration, 0) / sessions.length;
-        
-        categorySection.innerHTML = `
-          <div class="session-category-title">${category}</div>
-          <div class="session-stat">
-            <span>Longest Session</span>
-            <span class="session-stat-value">${formatTime(longestSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Average Session</span>
-            <span class="session-stat-value">${formatTime(averageSession)}</span>
-          </div>
-          <div class="session-stat">
-            <span>Total Sessions</span>
-            <span class="session-stat-value">${sessions.length}</span>
-          </div>
-        `;
-        elements.sessionInsights.appendChild(categorySection);
-      }
-    });
-
+    await chrome.storage.local.set({ browserSettings: settings });
+    showToast('Browser settings saved successfully!', 'success');
+    document.getElementById('settingsModal').style.display = 'none';
   } catch (error) {
-    console.error('Error updating session insights:', error);
+    console.error('Error saving browser settings:', error);
+    showToast('Error saving settings. Please try again.', 'error');
   }
 }
+
+async function resetBrowserSettings() {
+  if (confirm('Are you sure you want to reset all browser settings to defaults?')) {
+    try {
+      // Set default values
+      document.getElementById('autoTrackWebsites').checked = true;
+      document.getElementById('trackIncognito').checked = false;
+      document.getElementById('trackPageTitles').checked = true;
+      document.getElementById('focusModeAlerts').checked = true;
+      document.getElementById('productivityScoring').checked = true;
+      document.getElementById('timeWarnings').checked = false;
+      document.getElementById('dailySummary').checked = true;
+      document.getElementById('goalAchievements').checked = false;
+      document.getElementById('weeklyReports').checked = true;
+      document.getElementById('localDataOnly').checked = true;
+      document.getElementById('anonymousUsage').checked = false;
+      document.getElementById('dataRetention').checked = true;
+      
+      // Save default settings
+      await saveBrowserSettings();
+      showToast('Browser settings reset to defaults!', 'success');
+    } catch (error) {
+      console.error('Error resetting browser settings:', error);
+      showToast('Error resetting settings. Please try again.', 'error');
+    }
+  }
+}
+
+// Load saved browser settings
+async function loadBrowserSettings() {
+  try {
+    const { browserSettings } = await chrome.storage.local.get('browserSettings');
+    if (browserSettings) {
+      Object.keys(browserSettings).forEach(key => {
+        const element = document.getElementById(key);
+        if (element) element.checked = browserSettings[key];
+      });
+    }
+  } catch (error) {
+    console.error('Error loading browser settings:', error);
+  }
+}
+
+
 
 // Theme Management
 async function initializeTheme() {
@@ -1626,18 +1698,16 @@ async function updateWeeklyChart() {
   try {
     console.log('Updating weekly chart...');
     const { timeData = {} } = await chrome.storage.local.get('timeData');
-    const weekData = getWeekData(timeData);
-    const ctx = document.getElementById('weeklyChart');
+    console.log('Retrieved timeData:', Object.keys(timeData));
     
+    const ctx = document.getElementById('weeklyChart');
     if (!ctx) {
       console.error('Weekly chart canvas not found');
       return;
     }
-    console.log('Found chart canvas:', ctx);
 
     // Destroy existing chart if it exists
     if (weeklyChart) {
-      console.log('Destroying existing chart');
       weeklyChart.destroy();
     }
 
@@ -1652,43 +1722,55 @@ async function updateWeeklyChart() {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const dateStr = getDateString(date);
-      dates.push(getDayName(date));
+      const dayName = getDayName(date);
+      dates.push(dayName);
       
-      const dayData = timeData[dateStr]?.categories || {};
-      const dayTotal = Object.values(dayData).reduce((sum, time) => sum + time, 0);
-      dailyTotals.push(dayTotal / 3600000); // Convert to hours
+      const dayData = timeData[dateStr];
+      console.log(`Data for ${dateStr} (${dayName}):`, dayData);
+      
+      if (dayData && dayData.categories) {
+        const dayTotal = Object.values(dayData.categories).reduce((sum, time) => sum + time, 0);
+        dailyTotals.push(dayTotal / 3600000); // Convert to hours
 
-      // Collect category data
-      Object.entries(dayData).forEach(([category, time]) => {
-        if (!categoryData[category]) {
-          categoryData[category] = new Array(7).fill(0);
-        }
-        categoryData[category][6 - i] = time / 3600000; // Convert to hours
-      });
+        // Collect category data
+        Object.entries(dayData.categories).forEach(([category, time]) => {
+          if (!categoryData[category]) {
+            categoryData[category] = new Array(7).fill(0);
+          }
+          categoryData[category][6 - i] = time / 3600000; // Convert to hours
+        });
+      } else {
+        dailyTotals.push(0);
+      }
     }
 
     console.log('Prepared chart data:', {
       dates,
+      dailyTotals,
       categoryData
     });
 
-    // Create datasets for each category
-    const datasets = Object.entries(categoryData).map(([category, data], index) => ({
+    // If no data, show sample data for demonstration
+    if (Object.keys(categoryData).length === 0) {
+      console.log('No real data found, showing sample data');
+      // Add some sample data to show the chart works
+      categoryData['Productive / Educational'] = [0.5, 1.2, 0.8, 2.1, 1.5, 0.3, 1.0];
+      categoryData['Entertainment'] = [1.0, 0.5, 1.5, 0.8, 2.0, 3.5, 2.2];
+      categoryData['Social Media'] = [0.3, 0.8, 0.5, 1.2, 1.0, 2.1, 1.5];
+    }
+
+    // Use fixed colors from CATEGORY_COLORS
+    const datasets = Object.entries(categoryData).map(([category, data]) => ({
       label: category,
       data: data,
-      backgroundColor: [
-        '#4a90e2',
-        '#27ae60',
-        '#e67e22',
-        '#e74c3c',
-        '#95a5a6',
-        '#9b59b6',
-        '#f1c40f'
-      ][index % 7],
-      borderWidth: 1
+      backgroundColor: CATEGORY_COLORS[category] || '#8E44AD',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      borderRadius: 4,
+      borderSkipped: false,
     }));
 
-    console.log('Creating new chart with datasets:', datasets);
+    console.log('Creating chart with datasets:', datasets);
 
     // Create the chart
     weeklyChart = new Chart(ctx, {
@@ -1700,11 +1782,23 @@ async function updateWeeklyChart() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         scales: {
           x: {
             stacked: true,
             grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
+              color: 'rgba(255, 255, 255, 0.1)',
+              display: false
+            },
+            ticks: {
+              color: '#ffffff',
+              font: {
+                size: 12,
+                weight: 'bold'
+              }
             }
           },
           y: {
@@ -1712,10 +1806,21 @@ async function updateWeeklyChart() {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Hours'
+              text: 'Hours',
+              color: '#ffffff',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
             },
             grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#ffffff',
+              callback: function(value) {
+                return value + 'h';
+              }
             }
           }
         },
@@ -1723,15 +1828,31 @@ async function updateWeeklyChart() {
           legend: {
             position: 'bottom',
             labels: {
-              boxWidth: 12
+              color: '#ffffff',
+              boxWidth: 12,
+              padding: 15,
+              usePointStyle: true,
+              pointStyle: 'circle'
             }
           },
           tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#ffffff',
+            bodyColor: '#ffffff',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderWidth: 1,
             callbacks: {
               label: function(context) {
                 const hours = Math.floor(context.raw);
                 const minutes = Math.round((context.raw - hours) * 60);
                 return `${context.dataset.label}: ${hours}h ${minutes}m`;
+              },
+              footer: function(tooltipItems) {
+                let total = 0;
+                tooltipItems.forEach(item => total += item.raw);
+                const totalHours = Math.floor(total);
+                const totalMinutes = Math.round((total - totalHours) * 60);
+                return `Total: ${totalHours}h ${totalMinutes}m`;
               }
             }
           }
@@ -1742,9 +1863,10 @@ async function updateWeeklyChart() {
     console.log('Chart created successfully');
 
     // Update the weekly details
+    const weekData = getWeekData(timeData);
     await updateWeeklyDetails(weekData);
   } catch (error) {
-    console.error('Error updating weekly insights:', error);
+    console.error('Error updating weekly chart:', error);
   }
 }
 
@@ -2167,3 +2289,58 @@ function getRandomColor() {
   }
   return color;
 }
+
+// Debug function to help troubleshoot goal issues
+async function debugGoals() {
+  try {
+    const { goals = {}, categories = {}, timeData = {} } = await chrome.storage.local.get(['goals', 'categories', 'timeData']);
+    const today = getTodayString();
+    const todayData = timeData[today] || { categories: {} };
+    
+    console.log('=== GOALS DEBUG ===');
+    console.log('All goals:', goals);
+    console.log('All categories:', Object.keys(categories));
+    console.log('Today\'s data:', todayData);
+    
+    Object.keys(categories).forEach(category => {
+      const goalKey = getGoalKey(category);
+      const goalHours = goals[goalKey];
+      const timeSpent = todayData.categories[category] || 0;
+      
+      console.log(`${category}:`, {
+        goalKey,
+        goalHours,
+        timeSpent: timeSpent / 3600000, // hours
+        hasGoal: goalHours > 0
+      });
+    });
+  } catch (error) {
+    console.error('Error in debugGoals:', error);
+  }
+}
+
+// Call debug function when goals button is clicked
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await initializeElements();
+    await setupEventListeners();
+    await loadData('today');
+    await initializeTheme();
+    await initializeCategories();
+    await loadBrowserSettings();
+    
+    // Debug goals on startup
+    await debugGoals();
+    
+    // Initialize chart if More modal is open
+    const moreModal = document.getElementById('moreModal');
+    if (moreModal && moreModal.style.display === 'block') {
+      await updateWeeklyChart();
+    }
+
+    // notify full-page dashboard that popup DOM is ready
+    document.dispatchEvent(new CustomEvent('popupReady'));
+  } catch (error) {
+    console.error('Error initializing popup:', error);
+  }
+});

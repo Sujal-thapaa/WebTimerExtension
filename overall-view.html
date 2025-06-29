@@ -3,196 +3,558 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WebTimeWise - Overall View</title>
+  <title>TimeSetu - Overall View</title>
   <link rel="stylesheet" href="popup.css" />
   <link rel="stylesheet" href="dashboard.css" />
   <link rel="stylesheet" href="voiceReview.css" />
+  <link rel="stylesheet" href="dashboard-responsive.css">
   <script src="lib/chart.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
     :root {
-      --bg-primary: #1a1a1a;
-      --bg-secondary: #2d2d2d;
-      --card-bg: #2d2d2d;
-      --text-color: #ffffff;
-      --text-secondary: #a0a0a0;
+      --bg-primary: #0f0f23;
+      --bg-secondary: #1a1a2e;
+      --bg-tertiary: #16213e;
+      --card-bg: #1e1e3f;
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b8;
       --accent-color: #4a90e2;
-      --border-color: #404040;
+      --accent-green: #4caf50;
+      --accent-orange: #ff9800;
+      --border-color: rgba(255, 255, 255, 0.15);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body, html {
       height: 100%;
       margin: 0;
-      background: var(--bg-primary);
-      color: var(--text-color);
-      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      width: 100vw !important;
+      max-width: none !important;
     }
+
     .container {
-      width: 100%;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 16px;
+      max-width: 1400px !important;
+      margin: 0 auto !important;
+      padding: 40px 24px !important;
+      width: 100% !important;
     }
+
     .overall-header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 48px;
+      padding: 20px 0;
     }
+
     .overall-header h1 {
-      font-size: 1.6rem;
-      margin-bottom: 8px;
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
+
     .overall-header p {
       color: var(--text-secondary);
-      font-size: 0.85rem;
+      font-size: 1.1rem;
+      font-weight: 400;
     }
+
     .total-time {
       background: var(--card-bg);
-      padding: 14px;
-      border-radius: 10px;
-      margin-bottom: 18px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border: 1px solid var(--card-border);
+      padding: 32px;
+      border-radius: 20px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      backdrop-filter: blur(10px);
     }
+
     .total-time h2 {
-      font-size: 1.1rem;
-      margin: 0 0 4px 0;
+      font-size: 1.2rem;
+      margin: 0 0 16px 0;
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
     .time-value {
-      font-size: 1.4rem;
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--accent-color);
     }
+
     .charts {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      margin-bottom: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 32px;
+      margin-bottom: 48px;
     }
+
     .chart-container {
       background: var(--card-bg);
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      height: 220px;
+      border: 1px solid var(--card-border);
+      padding: 32px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      height: 400px;
       display: flex;
       align-items: center;
       justify-content: center;
-      /* Each container has the same background */
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
     }
-    /* Add a background to both canvases, so even if the first has two, the second matches visually */
+
+    .chart-container:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+
     .chart-container canvas {
-      background: #222 !important; /* Add a matching background for both charts */
+      background: transparent !important;
       border-radius: 10px;
       display: block;
-      box-shadow: none !important;
     }
-    .sites-section {
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      gap: 12px;
-      margin-bottom: 18px;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .top-sites {
-      flex: 1 1 0;
-      min-width: 0;
+
+    /* Voice Review Card Styling */
+    #voiceReviewCard {
       background: var(--card-bg);
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      height: 100%;
+      border: 1px solid var(--card-border);
+      padding: 32px;
+      border-radius: 20px;
+      margin-bottom: 48px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
     }
+
+    /* Sites Section - Complete Redesign */
+    .sites-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+
+    .top-sites {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 32px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .top-sites:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+
     .top-sites h2 {
-      font-size: 1rem;
-      margin-bottom: 8px;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 24px;
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 16px;
     }
+
     .device-time {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin-left: 6px;
+      font-size: 1rem;
+      color: var(--accent-color);
+      font-weight: 600;
+      background: rgba(74, 144, 226, 0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(74, 144, 226, 0.3);
     }
+
     .sites-list {
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 16px;
     }
+
     .site-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 7px 9px;
-      background: #1e1e1e;
-      border-radius: 7px;
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-color);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
     }
+
+    .site-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(8px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
     .site-info {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 16px;
       min-width: 0;
+      flex: 1;
     }
+
     .site-logo {
-      width: 19px;
-      height: 19px;
+      width: 32px;
+      height: 32px;
       flex-shrink: 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
+
     .site-name {
-      color: var(--text-color);
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 0.98rem;
+      flex: 1;
     }
+
+    .site-time {
+      color: var(--accent-orange);
+      font-size: 1rem;
+      font-weight: 600;
+      background: rgba(255, 152, 0, 0.1);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 152, 0, 0.3);
+      white-space: nowrap;
+    }
+
+    /* Goals Container */
     .goals-container {
       background: var(--card-bg);
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border: 1px solid var(--card-border);
+      padding: 32px;
+      border-radius: 20px;
+      margin-bottom: 48px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
     }
+
+    .goals-container:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+
     .goals-container h2 {
-      font-size: 1.1rem;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 16px;
     }
+
     .goals-list {
-      font-size: 0.98rem;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
+
     .goal-item {
-      border-bottom: 1px solid var(--border-color);
-      padding: 8px 0;
+      padding: 16px 0;
+      transition: background-color 0.2s ease, border-radius 0.2s ease;
+      will-change: background-color, border-radius;
     }
-    .goal-item:last-child {
-      border-bottom: none;
+
+    .goal-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding-left: 16px;
+      padding-right: 16px;
     }
+
+    .goal-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .goal-category {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+
+    .goal-limit {
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .goal-progress {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      height: 12px;
+      overflow: hidden;
+      margin-top: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+      position: relative;
+      display: block;
+      width: 100%;
+    }
+
     .progress-bar {
-      background: var(--accent-color);
-      height: 5px;
-      border-radius: 3px;
-      margin-top: 2px;
+      background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-orange) 100%);
+      background-color: var(--accent-green);
+      height: 100%;
+      border-radius: 12px;
+      transition: width 0.5s ease;
+      min-width: 2px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      display: block;
+      position: relative;
     }
-    @media (max-width: 1024px) {
+
+    /* Back Button Styling */
+    .back-button {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+    }
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .back-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Simple Theme Toggle - File Protocol Compatible */
+    .theme-toggle-container {
+      position: absolute;
+      top: 80px;
+      right: 24px;
+      z-index: 100;
+    }
+
+    .simple-theme-toggle {
+      background: #1e1e3f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 25px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .simple-theme-toggle:hover {
+      background: #2a2a4f;
+      transform: translateY(-1px);
+    }
+
+    .simple-theme-toggle:active {
+      transform: translateY(0);
+    }
+
+    /* Direct light mode styles */
+    body.light-theme {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 50%, #e8f0fe 100%) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .overall-header h1 {
+      background: linear-gradient(135deg, #4a90e2, #9c27b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    body.light-theme .overall-header p {
+      color: #666666 !important;
+    }
+
+    body.light-theme .total-time,
+    body.light-theme .chart-container,
+    body.light-theme .top-sites,
+    body.light-theme .goals-container {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .time-value {
+      color: #4a90e2 !important;
+    }
+
+    body.light-theme .site-item {
+      background: rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .simple-theme-toggle {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.2) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .simple-theme-toggle:hover {
+      background: #f0f0f0 !important;
+    }
+
+    /* Built with Bolt Badge */
+    .bolt-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #000000;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .bolt-badge:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      background: #1a1a1a;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
       .sites-section {
-        flex-direction: column;
-        align-items: center;
-        max-width: 98%;
+        grid-template-columns: 1fr;
+        gap: 24px;
       }
-      .top-sites {
-        max-width: 98%;
+      
+      .charts {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .back-button {
+        top: 16px;
+        left: 16px;
+        padding: 10px 16px;
+      }
+
+      .overall-header h1 {
+        font-size: 2rem;
+      }
+      
+      .container {
+        padding: 24px 16px !important;
+      }
+      
+      .site-item {
+        padding: 16px 20px;
+      }
+      
+      .site-name {
+        font-size: 1rem;
+      }
+      
+      .site-time {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+      }
+      
+      .top-sites h2 {
+        font-size: 1.2rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .device-time {
+        font-size: 0.9rem;
       }
     }
   </style>
 </head>
 <body>
+  <!-- Back Button -->
+  <a href="device-select.html" class="back-button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
+
+  <!-- Simple Theme Toggle -->
+  <div class="theme-toggle-container">
+    <button id="simpleThemeToggle" class="simple-theme-toggle" title="Toggle between light and dark mode">
+      <span id="themeIcon">🌙</span>
+      <span id="themeText">Dark</span>
+    </button>
+  </div>
+
   <div class="container">
     <div class="overall-header">
       <h1>Overall Screen Time</h1>
-      
+      <p>Your comprehensive daily activity overview</p>
     </div>
+    
     <div class="total-time">
-      <h2>Total Time</h2>
+      <h2>Total Screen Time Today</h2>
       <div class="time-value" id="totalTime">4h 59m</div>
     </div>
+    
     <div class="charts">
       <div class="chart-container">
         <canvas id="categoryChart"></canvas>
@@ -201,50 +563,105 @@
         <canvas id="deviceChart"></canvas>
       </div>
     </div>
+    
     <div id="voiceReviewCard" class="voice-review-card">
       <h3 style="text-align:center;">🔊 Weekly AI Review</h3>
       <p id="voiceSummaryText">Generating summary...</p>
       <button id="replayVoiceBtn" class="action-btn" style="width:100%;margin-top:8px;">Replay 🔁</button>
     </div>
+    
     <div class="sites-section">
       <div class="top-sites">
-        <h2>Browser Sites <span id="browserTime" class="device-time"></span></h2>
+        <h2>
+          Browser Sites 
+          <span id="browserTime" class="device-time">0h 0m</span>
+        </h2>
         <div class="sites-list" id="browserSitesList"></div>
       </div>
+      
       <div class="top-sites">
-        <h2>Mobile Apps <span id="mobileTime" class="device-time"></span></h2>
+        <h2>
+          Mobile Apps 
+          <span id="mobileTime" class="device-time">0h 0m</span>
+        </h2>
         <div class="sites-list" id="mobileSitesList"></div>
       </div>
+      
       <div class="top-sites">
-        <h2>Laptop Apps <span id="laptopTime" class="device-time"></span></h2>
+        <h2>
+          Laptop Apps 
+          <span id="laptopTime" class="device-time">0h 0m</span>
+        </h2>
         <div class="sites-list" id="laptopSitesList"></div>
       </div>
     </div>
+    
     <div class="goals-container">
-      <h2>Daily Goals</h2>
+      <h2>🎯 Daily Goals Progress</h2>
       <div class="goals-list">
         <div class="goal-item">
           <div class="goal-info">
             <span class="goal-category">Social Media</span>
-            <span class="goal-limit">2h / 1h</span>
+            <span class="goal-limit">1h 37m / 2h</span>
           </div>
           <div class="goal-progress">
-            <div class="progress-bar" style="width: 200%"></div>
+            <div class="progress-bar" style="width: 82%"></div>
           </div>
         </div>
         <div class="goal-item">
           <div class="goal-info">
             <span class="goal-category">Entertainment</span>
-            <span class="goal-limit">45m / 1h</span>
+            <span class="goal-limit">30m / 1h 30m</span>
           </div>
           <div class="goal-progress">
-            <div class="progress-bar" style="width: 75%"></div>
+            <div class="progress-bar" style="width: 33%"></div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Productive / Educational</span>
+            <span class="goal-limit">1h 54m / 4h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 47%"></div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Development</span>
+            <span class="goal-limit">31m / 3h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 17%"></div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Games</span>
+            <span class="goal-limit">1h 52m / 2h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 93%"></div>
+          </div>
+        </div>
+        <div class="goal-item">
+          <div class="goal-info">
+            <span class="goal-category">Communication</span>
+            <span class="goal-limit">9m / 1h</span>
+          </div>
+          <div class="goal-progress">
+            <div class="progress-bar" style="width: 15%"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
+  
+  <!-- Built with Bolt Badge -->
+  <a href="https://bolt.new" target="_blank" class="bolt-badge">Built with ⚡ Bolt</a>
+  
   <script type="module" src="overall-view.js"></script>
   <script src="voiceReview.js"></script>
+  <script src="theme-toggle.js"></script>
 </body>
 </html>

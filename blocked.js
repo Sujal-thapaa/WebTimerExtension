@@ -40,6 +40,19 @@ function updateTimeRemaining() {
 updateTimeRemaining();
 setInterval(updateTimeRemaining, 1000);
 
+// Auto-unblock when Focus Mode ends
+if (urlParams.get('focus') === '1') {
+    const checkFocus = setInterval(() => {
+        chrome.storage.local.get('focusActive', ({ focusActive }) => {
+            if (!focusActive) {
+                clearInterval(checkFocus);
+                // redirect back to original site
+                window.location.href = `https://${blockedUrl}`;
+            }
+        });
+    }, 2000);
+}
+
 // Add event listener for the back button
 document.addEventListener('DOMContentLoaded', () => {
     const backButton = document.getElementById('backButton');
@@ -59,4 +72,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 200);
         });
     });
+});
+
+chrome.storage.local.set({ blockedSites: [] }).then(async () => {
+  const rules = await chrome.declarativeNetRequest.getDynamicRules();
+  const ids = rules.map(r => r.id);
+  chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
+  console.log('Cleared legacy manual blocks');
+});
+
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'FOCUS_ENDED') {
+        window.location.href = `https://${blockedUrl}`;
+    }
 });

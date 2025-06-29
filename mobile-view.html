@@ -1,251 +1,1131 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>WebTimeTracker – Mobile View</title>
   <meta charset="UTF-8" />
-  <link rel="stylesheet" href="popup.css">
-  <link rel="stylesheet" href="dashboard.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TimeSetu - Mobile Screen Time</title>
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="dashboard-responsive.css" />
   <script src="lib/chart.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
     :root {
-      --bg-primary: #1a1a1a;
-      --bg-secondary: #2d2d2d;
-      --card-bg: #2d2d2d;
-      --text-color: #ffffff;
-      --text-secondary: #a0a0a0;
-      --accent-color: #4a90e2;
-      --border-color: #404040;
+      --bg-primary: #0f0f23;
+      --bg-secondary: #1a1a2e;
+      --bg-tertiary: #16213e;
+      --card-bg: #1e1e3f;
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b8;
+      --accent-blue: #4a90e2;
+      --accent-green: #4caf50;
+      --accent-orange: #ff9800;
+      --accent-purple: #9c27b0;
+      --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body, html {
       height: 100%;
       margin: 0;
-      background: var(--bg-primary);
-      color: var(--text-color);
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      width: 100vw !important;
+      max-width: none !important;
     }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .mobile-header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .mobile-header h1 {
-      font-size: 1.8rem;
-      margin-bottom: 10px;
-    }
-    .mobile-header p {
-      color: var(--text-secondary);
+
+    /* Back Button Styling */
+    .back-button {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      box-shadow: var(--shadow);
+      text-decoration: none;
     }
-    .total-time {
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .back-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .container {
+      max-width: 1200px !important;
+      margin: 0 auto !important;
+      padding: 40px 24px !important;
+      width: 100% !important;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      text-align: center;
+      margin-bottom: 48px;
+      padding: 40px 0;
+    }
+
+    .hero-section h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin: 0;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin: 0;
+      font-weight: 400;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .stat-card {
       background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: box-shadow 0.2s ease;
+      will-change: box-shadow;
     }
-    .charts {
+
+    .stat-card:hover {
+      box-shadow: var(--shadow-hover);
+    }
+
+    .stat-icon {
+      font-size: 3rem;
+      opacity: 0.8;
+    }
+
+    .stat-content h3 {
+      margin: 0 0 8px 0;
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .total-time-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+    }
+
+    .total-time-card .stat-content h3,
+    .total-time-card .stat-value {
+      color: white;
+    }
+
+    .productivity-card {
+      background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+      border: none;
+      color: white;
+    }
+
+    .productivity-card .stat-content h3,
+    .productivity-card .stat-value {
+      color: white;
+    }
+
+    .apps-card {
+      background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+      border: none;
+      color: white;
+    }
+
+    .apps-card .stat-content h3,
+    .apps-card .stat-value {
+      color: white;
+    }
+
+    /* Charts Section */
+    .charts-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+
+    .chart-card {
       background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
     }
+
+    .chart-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .chart-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 0 0 24px 0;
+      color: var(--text-primary);
+    }
+
     .chart-container {
       height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Apps Section */
+    .apps-section {
+      margin-bottom: 48px;
+    }
+
+    .apps-card-full {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .apps-card-full:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .apps-card-full h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 0 0 24px 0;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .apps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .app-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+      will-change: background-color, border-color;
+    }
+
+    .app-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .app-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .app-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .app-name {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .app-time {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent-blue);
+      background: rgba(74, 144, 226, 0.1);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(74, 144, 226, 0.3);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      will-change: background-color, box-shadow;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
       width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
     }
-    .top-sites {
+
+    .modal-content {
       background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      margin: 5% auto;
+      padding: 32px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 600px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-hover);
     }
-    .site-item {
-      border-bottom: 1px solid var(--border-color);
-      padding: 12px 0;
+
+    .modal h3 {
+      margin-top: 0;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .site-item:last-child {
-      border-bottom: none;
+
+    .close {
+      color: var(--text-secondary);
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s ease;
     }
-    .goals-container {
+
+    .close:hover {
+      color: var(--text-primary);
+    }
+
+    /* Built with Bolt Badge */
+    .bolt-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #000000;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .bolt-badge:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      background: #1a1a1a;
+    }
+
+    /* Simple Theme Toggle - File Protocol Compatible */
+    .theme-toggle-container {
+      position: absolute;
+      top: 80px;
+      right: 24px;
+      z-index: 100;
+    }
+
+    .simple-theme-toggle {
+      background: #1e1e3f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 25px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .simple-theme-toggle:hover {
+      background: #2a2a4f;
+      transform: translateY(-1px);
+    }
+
+    .simple-theme-toggle:active {
+      transform: translateY(0);
+    }
+
+    /* Direct light mode styles for mobile */
+    body.light-theme {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 50%, #e8f0fe 100%) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .hero-section h1 {
+      background: linear-gradient(135deg, #4a90e2, #9c27b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    body.light-theme .hero-subtitle {
+      color: #666666 !important;
+    }
+
+    body.light-theme .stat-card {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .chart-card,
+    body.light-theme .apps-card-full {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .app-item {
+      background: rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .simple-theme-toggle {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.2) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .simple-theme-toggle:hover {
+      background: #f0f0f0 !important;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .back-button {
+        top: 16px;
+        left: 16px;
+        padding: 10px 16px;
+      }
+
+      .hero-section h1 {
+        font-size: 2.5rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .stat-card {
+        padding: 24px;
+        gap: 16px;
+      }
+
+      .charts-section {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .chart-card {
+        padding: 24px;
+      }
+
+      .apps-card-full {
+        padding: 24px;
+      }
+
+      .app-item {
+        padding: 16px 20px;
+      }
+
+      .app-name {
+        font-size: 1rem;
+      }
+
+      .app-time {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .action-btn {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+
+    /* Enhanced Modal Styles */
+    .modal-charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 24px 0;
+      min-height: 400px; /* Prevent layout shift */
+    }
+
+    .modal-content {
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .chart-container {
+      min-height: 350px;
+      max-height: 400px;
+      position: relative;
+    }
+
+    .chart-container canvas {
+      position: absolute !important;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .chart-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--text-secondary);
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .voice-review-card {
       background: var(--card-bg);
-      padding: 20px;
+      border: 1px solid var(--card-border);
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: var(--shadow);
     }
+
+    .voice-review-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      color: var(--accent-blue);
+    }
+
+    .voice-review-card p {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    /* Settings Styles */
+    .settings-section {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .settings-section h3 {
+      color: var(--accent-blue);
+      margin-bottom: 16px;
+      font-size: 1.2rem;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .setting-item {
+      padding: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    .setting-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .setting-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent-blue);
+    }
+
+    .setting-description {
+      margin: 8px 0 0 30px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    /* Category Management */
+    .category-management {
+      display: grid;
+      gap: 12px;
+    }
+
+    .category-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    .category-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+
+    .category-count {
+      margin-left: auto;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    /* Goals Styles */
+    .goals-overview {
+      margin-bottom: 32px;
+    }
+
+    .streak-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px;
+      background: linear-gradient(135deg, var(--accent-green) 0%, #45a049 100%);
+      border-radius: 12px;
+      color: white;
+    }
+
+    .streak-icon {
+      font-size: 3rem;
+    }
+
+    .streak-content h3 {
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
+      color: white;
+    }
+
+    .streak-number {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .streak-content p {
+      margin: 0;
+      opacity: 0.9;
+    }
+
+    .goals-section h3 {
+      color: var(--accent-blue);
+      margin-bottom: 20px;
+    }
+
+    .goal-items {
+      display: grid;
+      gap: 16px;
+    }
+
     .goal-item {
-      border-bottom: 1px solid var(--border-color);
-      padding: 12px 0;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
     }
-    .goal-item:last-child {
-      border-bottom: none;
-    }
-    .progress-bar {
-      background: var(--accent-color);
-    }
-    .sites-list {
-      width: 100%;
-    }
-    .site-item {
+
+    .goal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      width: 100%;
+      margin-bottom: 12px;
     }
-    .actions {
-      display: flex;
-      justify-content: space-around;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .action-button {
-      background: var(--card-bg);
-      color: var(--text-color);
-      border: none;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      flex: 1 1 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-    }
-    .button-icon { font-size: 1.2rem; }
 
-    /* Modal styles */
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.6);
-      justify-content: center;
+    .goal-name {
+      font-weight: 600;
+    }
+
+    .goal-time {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .goal-progress {
+      display: flex;
       align-items: center;
-      z-index: 999;
+      gap: 12px;
     }
-    .modal-content {
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 380px;
-      width: 90%;
-      color: var(--text-color);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
     }
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text-color);
-      font-size: 1.2rem;
-      cursor: pointer;
-      position: absolute;
-      top: 10px;
-      right: 14px;
+
+    .progress-bar div {
+      height: 100%;
+      background: var(--accent-blue);
+      transition: width 0.3s ease;
+    }
+
+    .progress-bar.progress-good div {
+      background: var(--accent-orange);
+    }
+
+    .progress-bar.progress-complete div {
+      background: var(--accent-green);
+    }
+
+    .goal-percentage {
+      font-size: 0.9rem;
+      font-weight: 600;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* Prevent layout shifts on modal opening */
+    .modal {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal.show {
+      opacity: 1;
+    }
+
+    /* Stabilize main content during modal operations */
+    .container {
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .stats-grid, .charts-section, .apps-section {
+      will-change: auto;
+      transform: translateZ(0);
+    }
+
+    @media (max-width: 768px) {
+      .modal-charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .streak-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+      }
+
+      .goal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Back Button -->
+  <a href="device-select.html" class="back-button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
+
+  <!-- Simple Theme Toggle -->
+  <div class="theme-toggle-container">
+    <button id="simpleThemeToggle" class="simple-theme-toggle" title="Toggle between light and dark mode">
+      <span id="themeIcon">🌙</span>
+      <span id="themeText">Dark</span>
+    </button>
+  </div>
+
   <div class="container">
-    <div class="mobile-header">
-      <h1>Mobile Screen Time</h1>
-      <p>Preview Mode - Dummy Data</p>
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <h1> Mobile Screen Time</h1>
+      <p class="hero-subtitle">Your mobile app usage insights and productivity tracking</p>
     </div>
 
-    <div class="total-time">
-      <h2>Total Time</h2>
-      <div class="time-value" id="totalTime">4h 59m</div>
-    </div>
-
-    <div class="charts">
-      <div class="chart-container">
-        <canvas id="categoryChart"></canvas>
-      </div>
-    </div>
-
-    <div class="top-sites">
-      <h2>Top Apps</h2>
-      <div class="sites-list" id="mobileSitesList">
-        <!-- Sites will be populated by JavaScript -->
-      </div>
-    </div>
-
-    <div class="goals-container">
-      <h2>Daily Goals</h2>
-      <div class="goals-list">
-        <div class="goal-item">
-          <div class="goal-info">
-            <span class="goal-category">Social Media</span>
-            <span class="goal-limit">2h / 1h</span>
-          </div>
-          <div class="goal-progress">
-            <div class="progress-bar" style="width: 200%"></div>
-          </div>
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card total-time-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-content">
+          <h3>Total Time</h3>
+          <div id="totalTime" class="stat-value">Loading...</div>
         </div>
-        <div class="goal-item">
-          <div class="goal-info">
-            <span class="goal-category">Entertainment</span>
-            <span class="goal-limit">45m / 1h</span>
-          </div>
-          <div class="goal-progress">
-            <div class="progress-bar" style="width: 75%"></div>
-          </div>
+      </div>
+      
+      <div class="stat-card productivity-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-content">
+          <h3>Productivity Score</h3>
+          <div class="stat-value">42%</div>
+        </div>
+      </div>
+      
+      <div class="stat-card apps-card">
+        <div class="stat-icon">📱</div>
+        <div class="stat-content">
+          <h3>Apps Used</h3>
+          <div class="stat-value">5</div>
         </div>
       </div>
     </div>
 
-    <!-- Actions section -->
-    <div class="actions">
-      <button id="goalsBtn" class="action-button">
-        <span class="button-icon">🎯</span>
-        Goals & Limits
-      </button>
-      <button id="settingsBtn" class="action-button">
-        <span class="button-icon">⚙️</span>
-        Settings
-      </button>
-      <button id="moreBtn" class="action-button">
-        <span class="button-icon">📊</span>
-        More
-      </button>
+    <!-- Charts Section -->
+    <div class="charts-section">
+      <div class="chart-card">
+        <h3 class="chart-title">📊 Category Breakdown</h3>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Apps Section -->
+    <div class="apps-section">
+      <div class="apps-card-full">
+        <h3>🚀 Top Mobile Apps</h3>
+        <div class="apps-list" id="mobileSitesList">
+          <!-- Apps will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button id="goalsBtn" class="action-btn">🎯 Goals</button>
+      <button id="settingsBtn" class="action-btn">⚙️ Settings</button>
+      <button id="moreBtn" class="action-btn">📊 More</button>
     </div>
   </div>
 
-  <!-- Dummy Modals -->
-  <div id="goalsModal" class="modal">
-    <div class="modal-content" style="position:relative;">
-      <button id="closeGoalsBtn" class="close-btn">&times;</button>
-      <h2>Goals & Limits</h2>
-      <p>Daily Social Media Limit: <strong>1h</strong></p>
-      <p>Daily Entertainment Limit: <strong>1h 30m</strong></p>
-    </div>
-  </div>
-  <div id="settingsModal" class="modal">
-    <div class="modal-content" style="position:relative;">
-      <button id="closeSettingsBtn" class="close-btn">&times;</button>
-      <h2>Settings (Preview)</h2>
-      <p>Theme: Dark</p>
-      <p>Notifications: Enabled</p>
-    </div>
-  </div>
+  <!-- More Modal -->
   <div id="moreModal" class="modal">
-    <div class="modal-content" style="position:relative;">
-      <button id="closeMoreBtn" class="close-btn">&times;</button>
-      <h2>More Insights</h2>
-      <p>Weekly Screen Time: <strong>34h 20m</strong></p>
-      <p>Most Used App: <strong>Instagram</strong></p>
+    <div class="modal-content">
+      <span class="close" id="closeMoreBtn">&times;</span>
+      <h2>📱 Mobile Weekly Summary & Analytics</h2>
+      
+      <div class="modal-charts-grid">
+        <div class="chart-container">
+          <h3 style="text-align: center; margin-bottom: 16px; color: var(--accent-blue);">Daily Mobile Usage</h3>
+          <div class="chart-loading" id="weeklyMobileLoading">Loading chart...</div>
+          <canvas id="weeklyMobileChart" style="display: none;"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3 style="text-align: center; margin-bottom: 16px; color: var(--accent-blue);">Top Mobile Apps</h3>
+          <div class="chart-loading" id="weeklyMobileAppsLoading">Loading chart...</div>
+          <canvas id="weeklyMobileAppsChart" style="display: none;"></canvas>
+        </div>
+      </div>
+      
+      <div id="voiceReviewCard" class="voice-review-card">
+        <h3>🔊 Mobile Weekly AI Review</h3>
+        <p id="voiceSummaryText">This week, you spent 18 hours on mobile apps. Your most productive sessions were with educational apps, totaling 3 hours. Social media usage was 8 hours, and entertainment apps took 7 hours. Great job maintaining a balanced mobile experience!</p>
+        <button id="replayVoiceBtn" class="action-btn">🔁 Replay Voice Summary</button>
+      </div>
+      
+      <div style="display: flex; gap: 16px; margin-top: 24px;">
+        <button id="exportMobileDataBtn" class="action-btn" style="flex: 1;">📤 Export Mobile Data</button>
+        <button class="action-btn" style="flex: 1;" onclick="window.open('public-stats.html?user=' + (localStorage.getItem('wtw_username') || 'guest'), '_blank')">🔗 Share Mobile Stats</button>
+      </div>
     </div>
   </div>
+
+  <!-- Enhanced Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeSettingsBtn">&times;</span>
+      <h2>⚙️ Mobile Settings & Preferences</h2>
+      
+      <div class="settings-section">
+        <h3>📱 App Tracking</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="autoSyncMobile" checked>
+              <span class="checkmark"></span>
+              Auto-sync mobile data
+            </label>
+            <p class="setting-description">Automatically sync your mobile app usage data</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="backgroundTracking" checked>
+              <span class="checkmark"></span>
+              Background tracking
+            </label>
+            <p class="setting-description">Track app usage even when TimeSetu isn't active</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔔 Notifications</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="dailyReminders" checked>
+              <span class="checkmark"></span>
+              Daily usage reminders
+            </label>
+            <p class="setting-description">Get notified about your daily mobile usage</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="goalAlerts">
+              <span class="checkmark"></span>
+              Goal achievement alerts
+            </label>
+            <p class="setting-description">Receive notifications when you reach your goals</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🎯 App Categories</h3>
+        <div class="category-management">
+          <div class="category-item">
+            <span class="category-color" style="background: #9C27B0;"></span>
+            <span>Productive Apps</span>
+            <span class="category-count">3 apps</span>
+          </div>
+          <div class="category-item">
+            <span class="category-color" style="background: #FF5722;"></span>
+            <span>Social Media</span>
+            <span class="category-count">5 apps</span>
+          </div>
+          <div class="category-item">
+            <span class="category-color" style="background: #FFD700;"></span>
+            <span>Entertainment</span>
+            <span class="category-count">4 apps</span>
+          </div>
+          <div class="category-item">
+            <span class="category-color" style="background: #2196F3;"></span>
+            <span>Games</span>
+            <span class="category-count">2 apps</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔒 Privacy & Data</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="anonymousData">
+              <span class="checkmark"></span>
+              Anonymous data collection
+            </label>
+            <p class="setting-description">Help improve TimeSetu with anonymous usage data</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="cloudBackup" checked>
+              <span class="checkmark"></span>
+              Cloud backup
+            </label>
+            <p class="setting-description">Backup your data to the cloud for sync across devices</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 16px; margin-top: 32px;">
+        <button id="saveMobileSettingsBtn" class="action-btn" style="flex: 1;">💾 Save Settings</button>
+        <button id="resetMobileSettingsBtn" class="action-btn" style="flex: 1; background: var(--accent-orange);">🔄 Reset to Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Goals Modal -->
+  <div id="goalsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeGoalsBtn">&times;</span>
+      <h2>🎯 Mobile Usage Goals</h2>
+      
+      <div class="goals-overview">
+        <div class="streak-card">
+          <div class="streak-icon">🔥</div>
+          <div class="streak-content">
+            <h3>Current Streak</h3>
+            <div class="streak-number">7 days</div>
+            <p>You've met your mobile goals for 7 consecutive days!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="goals-section">
+        <h3>Daily App Category Limits</h3>
+        <div class="goal-items">
+          <div class="goal-item">
+            <div class="goal-header">
+              <span class="goal-name">Social Media 📱</span>
+              <span class="goal-time">1h 37m / 2h</span>
+            </div>
+            <div class="goal-progress">
+              <div class="progress-bar progress-good">
+                <div style="width: 82%"></div>
+              </div>
+              <span class="goal-percentage">82%</span>
+            </div>
+          </div>
+          
+          <div class="goal-item">
+            <div class="goal-header">
+              <span class="goal-name">Entertainment 🎵</span>
+              <span class="goal-time">23m / 1h</span>
+            </div>
+            <div class="goal-progress">
+              <div class="progress-bar">
+                <div style="width: 38%"></div>
+              </div>
+              <span class="goal-percentage">38%</span>
+            </div>
+          </div>
+          
+          <div class="goal-item">
+            <div class="goal-header">
+              <span class="goal-name">Games 🎮</span>
+              <span class="goal-time">1h 52m / 2h</span>
+            </div>
+            <div class="goal-progress">
+              <div class="progress-bar progress-complete">
+                <div style="width: 93%"></div>
+              </div>
+              <span class="goal-percentage">93%</span>
+            </div>
+          </div>
+          
+          <div class="goal-item">
+            <div class="goal-header">
+              <span class="goal-name">Productive Apps 💼</span>
+              <span class="goal-time">7m / No limit</span>
+            </div>
+            <div class="goal-progress">
+              <div class="progress-bar" style="background: var(--accent-green);">
+                <div style="width: 100%"></div>
+              </div>
+              <span class="goal-percentage">Great!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 16px; margin-top: 24px;">
+        <button id="editMobileGoalsBtn" class="action-btn" style="flex: 1;">✏️ Edit Goals</button>
+        <button id="resetMobileGoalsBtn" class="action-btn" style="flex: 1; background: var(--accent-orange);">🔄 Reset Goals</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Built with Bolt Badge -->
+  <a href="https://bolt.new" target="_blank" class="bolt-badge">Built with ⚡ Bolt</a>
 
   <script type="module" src="mobile-view.js"></script>
+  <script src="theme-toggle.js"></script>
 </body>
-</html> 
+</html>

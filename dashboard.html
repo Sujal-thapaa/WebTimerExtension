@@ -1,41 +1,1540 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>WebTimeTracker – Dashboard</title>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TimeSetu - Browser View</title>
   <link rel="stylesheet" href="popup.css">
   <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="voiceReview.css">
+  <link rel="stylesheet" href="focus-block.css">
+  <link rel="stylesheet" href="dashboard-responsive.css">
   <script src="lib/chart.min.js"></script>
   <style>
-    /* Override container width for full page */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --bg-primary: #0f0f23;
+      --bg-secondary: #1a1a2e;
+      --bg-tertiary: #16213e;
+      --card-bg: #1e1e3f;
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b8;
+      --accent-color: #4a90e2;
+      --accent-green: #4caf50;
+      --accent-orange: #ff9800;
+      --accent-purple: #9c27b0;
+      --border-color: rgba(255, 255, 255, 0.15);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body, html {
       height: 100%;
       margin: 0;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      width: 100vw !important;
+      max-width: none !important;
     }
+
     .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
+      max-width: 1000px !important;
+      margin: 0 auto !important;
+      padding: 32px 24px !important;
+      width: 100% !important;
+    }
+
+    /* Browser Header */
+    .browser-header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding: 20px 0;
+    }
+
+    .browser-header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .browser-header p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin: 0;
+      font-weight: 400;
+    }
+
+    /* Back Button Styling */
+    .back-button {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .back-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Guide Button Styling */
+    .guide-button {
+      position: absolute;
+      top: 24px;
+      left: 200px;
+      background: var(--accent-green);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+
+    .guide-button:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .guide-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Language Selector Styling */
+    .flag-container {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 100;
+    }
+
+    .selected-flag {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .selected-flag:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .flag-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      min-width: 150px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Simple Theme Toggle - File Protocol Compatible */
+    .theme-toggle-container {
+      position: absolute;
+      top: 80px;
+      right: 24px;
+      z-index: 100;
+    }
+
+    .simple-theme-toggle {
+      background: #1e1e3f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 25px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .simple-theme-toggle:hover {
+      background: #2a2a4f;
+      transform: translateY(-1px);
+    }
+
+    .simple-theme-toggle:active {
+      transform: translateY(0);
+    }
+
+    /* Direct light mode styles without CSS variables */
+    body.light-theme {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 50%, #e8f0fe 100%) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .container {
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .browser-header h1 {
+      background: linear-gradient(135deg, #4a90e2, #9c27b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    body.light-theme .browser-header p {
+      color: #666666 !important;
+    }
+
+    body.light-theme .total-time-card,
+    body.light-theme .quick-stats-card,
+    body.light-theme .view-switcher,
+    body.light-theme .time-period {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .stat-value {
+      color: #4a90e2 !important;
+    }
+
+    body.light-theme .stat-label {
+      color: #666666 !important;
+    }
+
+    body.light-theme .selected-flag {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .simple-theme-toggle {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.2) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .simple-theme-toggle:hover {
+      background: #f0f0f0 !important;
+    }
+
+    body.light-theme .top-sites,
+    body.light-theme .chart-container {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .site-item {
+      background: rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .action-btn {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    /* Guide Modal Styles */
+    .guide-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+    }
+
+    .guide-modal-content {
+      background: var(--card-bg);
+      margin: 2% auto;
+      padding: 0;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .guide-header {
+      background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+      color: white;
+      padding: 24px 32px;
+      border-radius: 20px 20px 0 0;
+      position: relative;
+    }
+
+    .guide-header h2 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .guide-header p {
+      margin: 8px 0 0 0;
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .close-guide {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .close-guide:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    .guide-content {
+      padding: 32px;
+    }
+
+    .guide-section {
+      margin-bottom: 32px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .guide-section:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .guide-section h3 {
+      color: var(--accent-color);
+      font-size: 1.4rem;
+      margin: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .guide-section .icon {
+      font-size: 1.8rem;
+    }
+
+    .guide-section p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .guide-steps {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+
+    .guide-steps li {
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      background: rgba(74, 144, 226, 0.1);
+      border-left: 4px solid var(--accent-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+    }
+
+    .guide-steps li strong {
+      color: var(--accent-color);
+    }
+
+    .guide-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .feature-card .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .feature-card h4 {
+      color: var(--text-primary);
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* Light theme guide styles */
+    body.light-theme .guide-modal-content {
+      background: #ffffff !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .guide-section {
+      background: rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .guide-section:hover {
+      background: rgba(0, 0, 0, 0.06) !important;
+    }
+
+    body.light-theme .guide-section h3 {
+      color: #4a90e2 !important;
+    }
+
+    body.light-theme .guide-section p {
+      color: #666666 !important;
+    }
+
+    body.light-theme .guide-steps li {
+      background: rgba(74, 144, 226, 0.1) !important;
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .feature-card {
+      background: rgba(0, 0, 0, 0.05) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .feature-card h4 {
+      color: #1a1a2e !important;
+    }
+
+    body.light-theme .feature-card p {
+      color: #666666 !important;
+    }
+
+
+
+    /* Time Period Buttons */
+    .time-period {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      padding: 6px;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: var(--shadow);
+    }
+
+    .time-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .time-btn.active {
+      background: var(--accent-color);
+      color: var(--text-primary);
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+    }
+
+    /* Main Content - Compact Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* Total Time Card - Smaller and More Integrated */
+    .total-time-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .total-time-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .total-time-card h2 {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin: 0 0 12px 0;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #totalTime {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      margin: 8px 0;
+    }
+
+    /* Quick Stats Card */
+    .quick-stats-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .quick-stats-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .quick-stats-card h3 {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin: 0 0 16px 0;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--accent-color);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* View Switcher - Enhanced Design */
+    .view-switcher {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      padding: 6px;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .view-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      padding: 12px 24px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+      position: relative;
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .view-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .view-btn.active {
+      background: var(--accent-color);
+      color: var(--text-primary);
+      box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .view-btn.active:hover {
+      background: var(--accent-color);
+      box-shadow: 0 6px 16px rgba(74, 144, 226, 0.5);
+    }
+
+    /* Chart Container - Reduced Height */
+    .chart-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      height: 320px;
+      transition: all 0.3s ease;
+    }
+
+    .chart-container:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* Top Sites Section - More Compact */
+    .top-sites {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .top-sites:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .top-sites h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+      text-align: center;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .sites-list .site-item, .sites-list .category-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .sites-list .site-item:hover, .sites-list .category-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(6px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .site-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .site-logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .category-color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Actions Section - More Compact */
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .action-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+
+    .action-btn:hover {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(74, 144, 226, 0.3);
+    }
+
+    /* Focus Block Section - More Compact */
+    .focus-block-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .focus-block-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Footer - More Compact */
+    .main-footer {
+      text-align: center;
+      padding: 20px 0;
+      border-top: 1px solid var(--border-color);
+      margin-top: 32px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .back-button {
+        top: 16px;
+        left: 16px;
+        padding: 10px 16px;
+        font-size: 0.8rem;
+      }
+
+      .browser-header h1 {
+        font-size: 2.2rem;
+      }
+      
+      .container {
+        padding: 24px 16px !important;
+      }
+
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .actions {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .action-btn {
+        width: 100%;
+        max-width: 280px;
+      }
+
+      .chart-container {
+        height: 280px;
+        padding: 20px;
+      }
+
+      .total-time-card, .quick-stats-card, .top-sites, .focus-block-section {
+        padding: 20px;
+      }
+    }
+
+    /* Built with Bolt Badge */
+    .bolt-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #000000;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .bolt-badge:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      background: #1a1a1a;
     }
   </style>
 </head>
 <body>
-  <nav class="navbar">
-    <div class="nav-left">
-      <img src="icons/icon128.png" class="logo" alt="Logo" />
-      <span class="title">WebTimeTracker</span>
-    </div>
-    <div class="nav-right">
-      <button class="nav-btn active" id="navDashboard">Dashboard</button>
-      <button class="nav-btn" id="navSettings">Settings ⚙️</button>
-      <button class="nav-btn" id="navMore">More ��</button>
-    </div>
-  </nav>
+  <!-- Back Button -->
+  <a href="device-select.html" class="back-button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
+
+  <!-- Guide Button -->
+  <button id="guideBtn" class="guide-button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <circle cx="12" cy="17" r="1"/>
+    </svg>
+    Guide
+  </button>
+
+  <!-- Guide Button -->
+  <button id="guideBtn" class="guide-button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <circle cx="12" cy="17" r="1"/>
+    </svg>
+    Guide
+  </button>
+
   <div class="container">
-    <!-- Include the full popup markup by embedding -->
-    <!-- We'll fetch popup.html content via JS to avoid duplication -->
+    <div class="flag-container">
+      <div id="selectedFlag" class="selected-flag">
+        <img id="currentFlag" src="flags/us.png" alt="English" class="flag-icon">
+      </div>
+      <div id="flagDropdown" class="flag-dropdown">
+        <div class="flag-option" data-flag="us"><img src="flags/us.png" alt="English"><span>English</span></div>
+        <div class="flag-option" data-flag="cn"><img src="flags/cn.png" alt="中文"><span>中文</span></div>
+        <div class="flag-option" data-flag="in"><img src="flags/in.png" alt="हिन्दी"><span>हिन्दी</span></div>
+        <div class="flag-option" data-flag="jp"><img src="flags/jp.png" alt="日本語"><span>日本語</span></div>
+        <div class="flag-option" data-flag="fr"><img src="flags/fr.png" alt="Français"><span>Français</span></div>
+        <div class="flag-option" data-flag="es"><img src="flags/es.png" alt="Español"><span>Español</span></div>
+      </div>
+    </div>
+
+    <!-- Simple Theme Toggle -->
+    <div class="theme-toggle-container">
+        <button id="simpleThemeToggle" class="simple-theme-toggle" title="Toggle between light and dark mode">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">Dark</span>
+        </button>
+    </div>
+
+    <div class="browser-header">
+      <h1>🌐 Browser Screen Time</h1>
+      <p>Your detailed browsing time and website analytics</p>
+    </div>
+
+    <div class="time-period">
+      <button id="todayBtn" class="time-btn active">Today</button>
+      <button id="weekBtn" class="time-btn">This Week</button>
+    </div>
+
+    <div class="main-content">
+      <div class="total-time-card">
+        <h2>Total Time Today</h2>
+        <p id="totalTime">--:--:--</p>
+      </div>
+      <div class="quick-stats-card">
+        <h3>Quick Stats</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="sitesVisited">--</div>
+            <div class="stat-label">Sites</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="avgSession">--</div>
+            <div class="stat-label">Avg Session</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="topCategory">--</div>
+            <div class="stat-label">Top Category</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="productivity">--%</div>
+            <div class="stat-label">Productive</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-switcher">
+      <button id="categoryViewBtn" class="view-btn active">
+        <span>📊</span>
+        By Category
+      </button>
+      <button id="websiteViewBtn" class="view-btn">
+        <span>🌐</span>
+        By Website
+      </button>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+    </div>
+
+    <section class="top-sites">
+      <h2>Top Sites</h2>
+      <div id="topSitesList" class="sites-list"></div>
+    </section>
+
+    <section class="actions">
+      <button id="goalsBtn" class="action-btn">🎯 Goals</button>
+      <button id="settingsBtn" class="action-btn">⚙️ Settings</button>
+      <button id="moreBtn" class="action-btn">📊 More</button>
+    </section>
+
+    <!-- Focus Mode Block List Section (Collapsible) -->
+    <details class="focus-block-section" id="focusBlockDropdown">
+      <summary>
+        <span>Focus Mode Block List</span>
+        <!-- Toggle Switch -->
+        <label class="focus-switch">
+          <input type="checkbox" id="focusModeToggle">
+          <span class="slider"></span>
+        </label>
+      </summary>
+
+      <p>Automatically block these sites during Focus Mode:</p>
+      <div id="focusBlockedSitesList" class="blocked-sites-list"></div>
+      <div class="block-input">
+        <input type="text" id="focusSiteToBlock" placeholder="e.g., facebook.com">
+        <button id="addFocusBlockBtn">➕</button>
+      </div>
+      <div class="focus-timer">
+        <input type="number" id="focusDuration" placeholder="Minutes (optional)">
+        <button id="startFocusBtn">Start Focus</button>
+      </div>
+      <p id="focusCountdown" class="note"></p>
+      <p class="note">These sites will only be blocked when Focus Mode is active.</p>
+    </details>
+
+         <footer class="main-footer">
+      <a href="https://bolt.new" target="_blank" class="bolt-badge-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18" height="18" style="margin-right: 8px;">
+          <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+        </svg>
+        <span>Built with <strong>Bolt</strong></span>
+      </a>
+    </footer>
   </div>
 
-  <script src="dashboard.js"></script>
+  <!-- Modals (restored with full content) -->
+  <div id="moreModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeMoreBtn">&times;</span>
+      <h2>📊 Weekly Summary & Analytics</h2>
+      
+      <div class="modal-charts-grid">
+        <div class="chart-container">
+          <h3 style="text-align: center; margin-bottom: 16px; color: var(--accent-color);">Daily Usage Trend</h3>
+          <canvas id="weeklyChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3 style="text-align: center; margin-bottom: 16px; color: var(--accent-color);">Top Websites</h3>
+          <canvas id="weeklyWebsiteChart"></canvas>
+        </div>
+      </div>
+      
+      <div id="voiceReviewCard" class="voice-review-card">
+        <h3>🔊 Weekly AI Review</h3>
+        <p id="voiceSummaryText">This week, you spent 14 hours on your devices. 5 hours were productive, 4 hours on entertainment, and 5 hours on social media. Great work on hitting your daily goals 4 out of 7 days!</p>
+        <button id="replayVoiceBtn" class="action-btn">🔁 Replay Voice Summary</button>
+      </div>
+      
+      <div style="display: flex; gap: 16px; margin-top: 24px;">
+        <button id="exportDataBtn" class="action-btn" style="flex: 1;">📤 Export Data</button>
+        <button class="action-btn" style="flex: 1;" onclick="window.open('public-stats.html?user=' + (localStorage.getItem('wtw_username') || 'guest'), '_blank')">🔗 Share Stats</button>
+      </div>
+    </div>
+  </div>
+  <div id="goalsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeGoalsBtn">&times;</span>
+      <h2>Your Goals</h2>
+      <div class="streak-info"></div>
+      <div class="goals-container"></div>
+      <button id="editGoalsBtn" class="action-btn">Edit Goals</button>
+    </div>
+  </div>
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeSettingsBtn">&times;</span>
+      <h2>🌐 Browser Settings & Preferences</h2>
+      
+      <div class="settings-section">
+        <h3>🔍 Website Tracking</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="autoTrackWebsites" checked>
+              <span class="checkmark"></span>
+              Auto-track website usage
+            </label>
+            <p class="setting-description">Automatically monitor which websites you visit and for how long</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="trackIncognito">
+              <span class="checkmark"></span>
+              Track incognito browsing
+            </label>
+            <p class="setting-description">Include incognito/private browsing sessions in your statistics</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="trackPageTitles" checked>
+              <span class="checkmark"></span>
+              Track page titles
+            </label>
+            <p class="setting-description">Record specific page titles for better categorization</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🎯 Productivity Features</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="focusModeAlerts" checked>
+              <span class="checkmark"></span>
+              Focus mode alerts
+            </label>
+            <p class="setting-description">Get notifications when visiting blocked sites during focus mode</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="productivityScoring" checked>
+              <span class="checkmark"></span>
+              Productivity scoring
+            </label>
+            <p class="setting-description">Calculate and display your daily productivity percentage</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="timeWarnings">
+              <span class="checkmark"></span>
+              Time limit warnings
+            </label>
+            <p class="setting-description">Alert when spending too much time on specific websites</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🏷️ Website Categories</h3>
+        <div class="category-management">
+          <div class="category-item">
+            <span class="category-color" style="background: #4CAF50;"></span>
+            <span>Productive</span>
+            <span class="category-count">25 sites</span>
+          </div>
+          <div class="category-item">
+            <span class="category-color" style="background: #FF5722;"></span>
+            <span>Social Media</span>
+            <span class="category-count">8 sites</span>
+          </div>
+          <div class="category-item">
+            <span class="category-color" style="background: #FFD700;"></span>
+            <span>Entertainment</span>
+            <span class="category-count">15 sites</span>
+          </div>
+          <div class="category-item">
+            <span class="category-color" style="background: #2196F3;"></span>
+            <span>News & Information</span>
+            <span class="category-count">12 sites</span>
+          </div>
+        </div>
+        <div id="categoriesList" style="margin-top: 16px;"></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔔 Notifications</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="dailySummary" checked>
+              <span class="checkmark"></span>
+              Daily summary notifications
+            </label>
+            <p class="setting-description">Receive end-of-day browsing summaries</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="goalAchievements">
+              <span class="checkmark"></span>
+              Goal achievement alerts
+            </label>
+            <p class="setting-description">Get notified when you reach your browsing goals</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="weeklyReports" checked>
+              <span class="checkmark"></span>
+              Weekly reports
+            </label>
+            <p class="setting-description">Receive comprehensive weekly browsing reports</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔒 Privacy & Data</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="localDataOnly" checked>
+              <span class="checkmark"></span>
+              Keep data local only
+            </label>
+            <p class="setting-description">Store all browsing data locally on your device</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="anonymousUsage">
+              <span class="checkmark"></span>
+              Anonymous usage analytics
+            </label>
+            <p class="setting-description">Help improve TimeSetu with anonymous usage data</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="dataRetention" checked>
+              <span class="checkmark"></span>
+              30-day data retention
+            </label>
+            <p class="setting-description">Automatically delete browsing data older than 30 days</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 16px; margin-top: 32px;">
+        <button id="saveBrowserSettingsBtn" class="action-btn" style="flex: 1;">💾 Save Settings</button>
+        <button id="resetBrowserSettingsBtn" class="action-btn" style="flex: 1; background: var(--accent-orange);">🔄 Reset to Defaults</button>
+      </div>
+    </div>
+  </div>
+  <div id="editGoalsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeEditGoalsBtn">&times;</span>
+      <h2>Edit Goals</h2>
+      <form id="categoryGoals"></form>
+      <button id="saveGoalsBtn" class="action-btn">Save Goals</button>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div id="guideModal" class="guide-modal">
+    <div class="guide-modal-content">
+      <div class="guide-header">
+        <h2>🚀 TimeSetu Guide</h2>
+        <p>Master your digital habits with these powerful features</p>
+        <button class="close-guide" id="closeGuide">&times;</button>
+      </div>
+      
+      <div class="guide-content">
+        <div class="guide-section">
+          <h3><span class="icon">📊</span>Understanding Your Dashboard</h3>
+          <p>Your TimeSetu dashboard provides comprehensive insights into your browsing habits:</p>
+          <ul class="guide-steps">
+            <li><strong>Total Time:</strong> See your daily or weekly browsing time at a glance</li>
+            <li><strong>Quick Stats:</strong> Monitor sites visited, average session length, and productivity</li>
+            <li><strong>Visual Charts:</strong> Switch between category and website views for detailed analysis</li>
+            <li><strong>Top Sites:</strong> Identify which websites consume most of your time</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">🎯</span>Setting and Tracking Goals</h3>
+          <p>Take control of your digital habits by setting meaningful goals:</p>
+          <ul class="guide-steps">
+            <li><strong>Click "Goals":</strong> Access your personal goal-setting dashboard</li>
+            <li><strong>Set Category Limits:</strong> Define time limits for different website categories</li>
+            <li><strong>Track Progress:</strong> Monitor your daily and weekly progress toward goals</li>
+            <li><strong>Build Streaks:</strong> Maintain consistent habits with streak tracking</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">🔒</span>Focus Mode & Website Blocking</h3>
+          <p>Eliminate distractions during important work sessions:</p>
+          <ul class="guide-steps">
+            <li><strong>Add Blocked Sites:</strong> Enter websites you want to block (e.g., facebook.com)</li>
+            <li><strong>Enable Focus Mode:</strong> Toggle the switch to activate blocking</li>
+            <li><strong>Set Timer:</strong> Optional - set a specific duration for your focus session</li>
+            <li><strong>Stay Focused:</strong> Blocked sites will show a reminder to stay on task</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">⚙️</span>Customizing Your Experience</h3>
+          <p>Personalize TimeSetu to match your workflow:</p>
+          <div class="guide-features">
+            <div class="feature-card">
+              <span class="icon">🏷️</span>
+              <h4>Categories</h4>
+              <p>Organize websites into custom categories for better tracking</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🔔</span>
+              <h4>Notifications</h4>
+              <p>Set up alerts for time limits and daily summaries</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🌙</span>
+              <h4>Themes</h4>
+              <p>Switch between light and dark modes for comfortable viewing</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🌍</span>
+              <h4>Languages</h4>
+              <p>Use TimeSetu in your preferred language</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">📈</span>Advanced Analytics</h3>
+          <p>Dive deeper into your browsing patterns with advanced features:</p>
+          <ul class="guide-steps">
+            <li><strong>Weekly Reports:</strong> Click "More" to access detailed weekly analytics</li>
+            <li><strong>AI Voice Review:</strong> Get personalized insights about your digital habits</li>
+            <li><strong>Export Data:</strong> Download your data for external analysis</li>
+            <li><strong>Share Stats:</strong> Create shareable links to show your progress</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">💡</span>Pro Tips for Success</h3>
+          <p>Maximize your productivity with these expert recommendations:</p>
+          <ul class="guide-steps">
+            <li><strong>Start Small:</strong> Begin with realistic goals and gradually increase them</li>
+            <li><strong>Review Weekly:</strong> Check your weekly report every Sunday to plan ahead</li>
+            <li><strong>Use Focus Mode:</strong> Block distracting sites during work or study sessions</li>
+            <li><strong>Track Patterns:</strong> Notice which times of day you're most productive</li>
+            <li><strong>Celebrate Progress:</strong> Acknowledge when you meet your goals</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div id="guideModal" class="guide-modal">
+    <div class="guide-modal-content">
+      <div class="guide-header">
+        <h2>🚀 TimeSetu Guide</h2>
+        <p>Master your digital habits with these powerful features</p>
+        <button class="close-guide" id="closeGuide">&times;</button>
+      </div>
+      
+      <div class="guide-content">
+        <div class="guide-section">
+          <h3><span class="icon">📊</span>Understanding Your Dashboard</h3>
+          <p>Your TimeSetu dashboard provides comprehensive insights into your browsing habits:</p>
+          <ul class="guide-steps">
+            <li><strong>Total Time:</strong> See your daily or weekly browsing time at a glance</li>
+            <li><strong>Quick Stats:</strong> Monitor sites visited, average session length, and productivity</li>
+            <li><strong>Visual Charts:</strong> Switch between category and website views for detailed analysis</li>
+            <li><strong>Top Sites:</strong> Identify which websites consume most of your time</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">🎯</span>Setting and Tracking Goals</h3>
+          <p>Take control of your digital habits by setting meaningful goals:</p>
+          <ul class="guide-steps">
+            <li><strong>Click "Goals":</strong> Access your personal goal-setting dashboard</li>
+            <li><strong>Set Category Limits:</strong> Define time limits for different website categories</li>
+            <li><strong>Track Progress:</strong> Monitor your daily and weekly progress toward goals</li>
+            <li><strong>Build Streaks:</strong> Maintain consistent habits with streak tracking</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">🔒</span>Focus Mode & Website Blocking</h3>
+          <p>Eliminate distractions during important work sessions:</p>
+          <ul class="guide-steps">
+            <li><strong>Add Blocked Sites:</strong> Enter websites you want to block (e.g., facebook.com)</li>
+            <li><strong>Enable Focus Mode:</strong> Toggle the switch to activate blocking</li>
+            <li><strong>Set Timer:</strong> Optional - set a specific duration for your focus session</li>
+            <li><strong>Stay Focused:</strong> Blocked sites will show a reminder to stay on task</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">⚙️</span>Customizing Your Experience</h3>
+          <p>Personalize TimeSetu to match your workflow:</p>
+          <div class="guide-features">
+            <div class="feature-card">
+              <span class="icon">🏷️</span>
+              <h4>Categories</h4>
+              <p>Organize websites into custom categories for better tracking</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🔔</span>
+              <h4>Notifications</h4>
+              <p>Set up alerts for time limits and daily summaries</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🌙</span>
+              <h4>Themes</h4>
+              <p>Switch between light and dark modes for comfortable viewing</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🌍</span>
+              <h4>Languages</h4>
+              <p>Use TimeSetu in your preferred language</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">📈</span>Advanced Analytics</h3>
+          <p>Dive deeper into your browsing patterns with advanced features:</p>
+          <ul class="guide-steps">
+            <li><strong>Weekly Reports:</strong> Click "More" to access detailed weekly analytics</li>
+            <li><strong>AI Voice Review:</strong> Get personalized insights about your digital habits</li>
+            <li><strong>Export Data:</strong> Download your data for external analysis</li>
+            <li><strong>Share Stats:</strong> Create shareable links to show your progress</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">💡</span>Pro Tips for Success</h3>
+          <p>Maximize your productivity with these expert recommendations:</p>
+          <ul class="guide-steps">
+            <li><strong>Start Small:</strong> Begin with realistic goals and gradually increase them</li>
+            <li><strong>Review Weekly:</strong> Check your weekly report every Sunday to plan ahead</li>
+            <li><strong>Use Focus Mode:</strong> Block distracting sites during work or study sessions</li>
+            <li><strong>Track Patterns:</strong> Notice which times of day you're most productive</li>
+            <li><strong>Celebrate Progress:</strong> Acknowledge when you meet your goals</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div id="guideModal" class="guide-modal">
+    <div class="guide-modal-content">
+      <div class="guide-header">
+        <h2>🚀 TimeSetu Guide</h2>
+        <p>Master your digital habits with these powerful features</p>
+        <button class="close-guide" id="closeGuide">&times;</button>
+      </div>
+      
+      <div class="guide-content">
+        <div class="guide-section">
+          <h3><span class="icon">📊</span>Understanding Your Dashboard</h3>
+          <p>Your TimeSetu dashboard provides comprehensive insights into your browsing habits:</p>
+          <ul class="guide-steps">
+            <li><strong>Total Time:</strong> See your daily or weekly browsing time at a glance</li>
+            <li><strong>Quick Stats:</strong> Monitor sites visited, average session length, and productivity</li>
+            <li><strong>Visual Charts:</strong> Switch between category and website views for detailed analysis</li>
+            <li><strong>Top Sites:</strong> Identify which websites consume most of your time</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">🎯</span>Setting and Tracking Goals</h3>
+          <p>Take control of your digital habits by setting meaningful goals:</p>
+          <ul class="guide-steps">
+            <li><strong>Click "Goals":</strong> Access your personal goal-setting dashboard</li>
+            <li><strong>Set Category Limits:</strong> Define time limits for different website categories</li>
+            <li><strong>Track Progress:</strong> Monitor your daily and weekly progress toward goals</li>
+            <li><strong>Build Streaks:</strong> Maintain consistent habits with streak tracking</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">🔒</span>Focus Mode & Website Blocking</h3>
+          <p>Eliminate distractions during important work sessions:</p>
+          <ul class="guide-steps">
+            <li><strong>Add Blocked Sites:</strong> Enter websites you want to block (e.g., facebook.com)</li>
+            <li><strong>Enable Focus Mode:</strong> Toggle the switch to activate blocking</li>
+            <li><strong>Set Timer:</strong> Optional - set a specific duration for your focus session</li>
+            <li><strong>Stay Focused:</strong> Blocked sites will show a reminder to stay on task</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">⚙️</span>Customizing Your Experience</h3>
+          <p>Personalize TimeSetu to match your workflow:</p>
+          <div class="guide-features">
+            <div class="feature-card">
+              <span class="icon">🏷️</span>
+              <h4>Categories</h4>
+              <p>Organize websites into custom categories for better tracking</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🔔</span>
+              <h4>Notifications</h4>
+              <p>Set up alerts for time limits and daily summaries</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🌙</span>
+              <h4>Themes</h4>
+              <p>Switch between light and dark modes for comfortable viewing</p>
+            </div>
+            <div class="feature-card">
+              <span class="icon">🌍</span>
+              <h4>Languages</h4>
+              <p>Use TimeSetu in your preferred language</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">📈</span>Advanced Analytics</h3>
+          <p>Dive deeper into your browsing patterns with advanced features:</p>
+          <ul class="guide-steps">
+            <li><strong>Weekly Reports:</strong> Click "More" to access detailed weekly analytics</li>
+            <li><strong>AI Voice Review:</strong> Get personalized insights about your digital habits</li>
+            <li><strong>Export Data:</strong> Download your data for external analysis</li>
+            <li><strong>Share Stats:</strong> Create shareable links to show your progress</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="icon">💡</span>Pro Tips for Success</h3>
+          <p>Maximize your productivity with these expert recommendations:</p>
+          <ul class="guide-steps">
+            <li><strong>Start Small:</strong> Begin with realistic goals and gradually increase them</li>
+            <li><strong>Review Weekly:</strong> Check your weekly report every Sunday to plan ahead</li>
+            <li><strong>Use Focus Mode:</strong> Block distracting sites during work or study sessions</li>
+            <li><strong>Track Patterns:</strong> Notice which times of day you're most productive</li>
+            <li><strong>Celebrate Progress:</strong> Acknowledge when you meet your goals</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Built with Bolt Badge -->
+  <a href="https://bolt.new" target="_blank" class="bolt-badge">Built with ⚡ Bolt</a>
+
+  <script src="popup.js"></script>
+  <script src="voiceReview.js"></script>
+  <script src="focus-block.js"></script>
+  <script src="theme-toggle.js"></script>
+
 </body>
 </html> 

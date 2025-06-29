@@ -3,13 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TimeSetu</title>
+    <title>TimeSetu - Demo Dashboard</title>
     <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="voiceReview.css">
     <link rel="stylesheet" href="focus-block.css">
     <script src="lib/chart.min.js"></script>
+    <style>
+        /* Demo-specific styles */
+        .demo-banner {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .demo-banner .close-btn {
+            float: right;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+        .demo-controls {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .demo-controls h3 {
+            margin-top: 0;
+            color: #4caf50;
+        }
+        .demo-btn {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+        .demo-btn.active {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+        }
+        .feature-highlight {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .feature-card h4 {
+            color: #4caf50;
+            margin-top: 0;
+        }
+        .bolt-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+        .bolt-badge a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 <body>
+    <div class="demo-banner" id="demoBanner">
+        🚀 <strong>TimeSetu Demo Mode</strong> - This is a fully functional demo showing all features
+        <button class="close-btn" onclick="document.getElementById('demoBanner').style.display='none'">&times;</button>
+    </div>
+
     <div class="container">
         <header class="main-header">
             <h1>TimeSetu</h1>
@@ -31,6 +129,16 @@
                 <button id="weekBtn" class="time-btn">This Week</button>
             </div>
         </header>
+
+        <div class="demo-controls">
+            <h3>🎮 Demo Controls</h3>
+            <p>Simulate different browsing scenarios to see TimeSetu in action:</p>
+            <button class="demo-btn active" onclick="loadDemoData('productive')">📚 Productive Day</button>
+            <button class="demo-btn" onclick="loadDemoData('social')">📱 Social Media Day</button>
+            <button class="demo-btn" onclick="loadDemoData('mixed')">🔄 Mixed Usage</button>
+            <button class="demo-btn" onclick="loadDemoData('gaming')">🎮 Gaming Day</button>
+            <button class="demo-btn" onclick="loadDemoData('work')">💼 Work Day</button>
+        </div>
 
         <section class="main-content">
             <div class="total-time-card">
@@ -59,17 +167,15 @@
             <button id="moreBtn" class="action-btn">📊 More</button>
         </section>
 
-        <!-- Focus Mode Block List Section (Collapsible) -->
+        <!-- Focus Mode Block List Section -->
         <details class="focus-block-section" id="focusBlockDropdown">
             <summary>
                 <span>Focus Mode Block List</span>
-                <!-- Toggle Switch -->
                 <label class="focus-switch">
                     <input type="checkbox" id="focusModeToggle">
                     <span class="slider"></span>
                 </label>
             </summary>
-
             <p>Automatically block these sites during Focus Mode:</p>
             <div id="focusBlockedSitesList" class="blocked-sites-list"></div>
             <div class="block-input">
@@ -84,6 +190,36 @@
             <p class="note">These sites will only be blocked when Focus Mode is active.</p>
         </details>
 
+        <div class="feature-highlight">
+            <h2>🌟 TimeSetu Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🔍 Real-time Tracking</h4>
+                    <p>Monitor browsing habits with precision across all devices</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Smart Analytics</h4>
+                    <p>Get detailed insights into your digital behavior patterns</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎯 Goal Setting</h4>
+                    <p>Set productivity targets and track your progress</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔒 Focus Mode</h4>
+                    <p>Block distracting sites when you need to concentrate</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🗣️ Voice AI Reviews</h4>
+                    <p>Get weekly voice summaries of your digital habits</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📱 Cross-Platform</h4>
+                    <p>Chrome extension + Web dashboard + Mobile app</p>
+                </div>
+            </div>
+        </div>
+
         <footer class="main-footer">
             <button id="dashboardBtn" class="footer-btn">Full Dashboard</button>
             <a href="https://bolt.new" target="_blank" class="bolt-badge-logo">
@@ -95,7 +231,7 @@
         </footer>
     </div>
 
-    <!-- Modals (restored with full content) -->
+    <!-- Modals -->
     <div id="moreModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeMoreBtn">&times;</span>
@@ -112,9 +248,9 @@
                 <button id="replayVoiceBtn" class="action-btn" style="width:100%;margin-top:8px;">Replay 🔁</button>
             </div>
             <button id="exportDataBtn" class="action-btn">Export Data</button>
-            <!-- Other content for 'More' modal -->
         </div>
     </div>
+
     <div id="goalsModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeGoalsBtn">&times;</span>
@@ -124,6 +260,7 @@
             <button id="editGoalsBtn" class="action-btn">Edit Goals</button>
         </div>
     </div>
+
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeSettingsBtn">&times;</span>
@@ -133,6 +270,7 @@
             <button id="saveSettingsBtn" class="action-btn">Save Settings</button>
         </div>
     </div>
+
     <div id="editGoalsModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeEditGoalsBtn">&times;</span>
@@ -142,8 +280,20 @@
         </div>
     </div>
 
+    <div class="bolt-badge">
+        <a href="https://bolt.new" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+                <path d="M13 2L3 14h7l-1 8L21 10h-7l1-8z"/>
+            </svg>
+            Built with Bolt
+        </a>
+    </div>
+
+    <script src="lib/chart.min.js"></script>
+    <script src="chrome-compat-demo.js"></script>
+    <script src="demo-data.js"></script>
     <script src="popup.js"></script>
     <script src="voiceReview.js"></script>
     <script src="focus-block.js"></script>
 </body>
-</html>
+</html> 

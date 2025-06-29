@@ -92,6 +92,15 @@ function handleMidnightReset() {
     productive: false,
     goals: new Set()
   };
+  
+  // Clear notification flags for the new day
+  chrome.storage.local.get(null, (items) => {
+    const keysToRemove = Object.keys(items).filter(key => key.startsWith('notification_'));
+    if (keysToRemove.length > 0) {
+      chrome.storage.local.remove(keysToRemove);
+    }
+  });
+  
   // Optionally stop tracking at midnight for clean stats:
   stopTracking();
 }
@@ -151,10 +160,38 @@ async function ensureCategoriesUpToDate() {
   await chrome.storage.local.set({ categories: merged });
 }
 
+// --- GOAL MIGRATION ---
+async function migrateGoalsToNewFormat() {
+  const { goals = {} } = await chrome.storage.local.get('goals');
+  let needsMigration = false;
+  const newGoals = { ...goals };
+
+  // Check for old goal key formats and migrate them
+  const oldToNewMapping = {
+    'productiveHours': 'productiveeducationalHours',
+    'socialMediaHours': 'socialmediaHours',
+    'otherHours': 'otheruncategorizedHours'
+  };
+
+  Object.keys(oldToNewMapping).forEach(oldKey => {
+    if (goals[oldKey] !== undefined) {
+      newGoals[oldToNewMapping[oldKey]] = goals[oldKey];
+      delete newGoals[oldKey];
+      needsMigration = true;
+    }
+  });
+
+  if (needsMigration) {
+    await chrome.storage.local.set({ goals: newGoals });
+    console.log('Goals migrated to new format:', newGoals);
+  }
+}
+
 // --- INITIALIZATION ---
 async function initialize() {
     try {
         await ensureCategoriesUpToDate();
+        await migrateGoalsToNewFormat();
         await cleanupExpiredBlocks();
         await setupBlockingRules();
         scheduleMidnightReset();
@@ -176,7 +213,18 @@ chrome.runtime.onInstalled.addListener(() => {
             await chrome.storage.local.set({ blockedSites: [] });
         }
         if (!goals) {
-            await chrome.storage.local.set({ goals: { productiveHours: 4, entertainmentHours: 2, streak: 0 } });
+            // Set initial goals using the correct goal key format
+            const initialGoals = {
+                streak: 0,
+                productiveeducationalHours: 4,  // Productive / Educational
+                entertainmentHours: 2,
+                newsHours: 1,
+                socialmediaHours: 1,
+                gamesHours: 1,
+                shoppingHours: 0.5,
+                otheruncategorizedHours: 0
+            };
+            await chrome.storage.local.set({ goals: initialGoals });
         }
         initialize();
     });
@@ -323,20 +371,32 @@ async function categorizeWebsite(domain) {
 
 async function checkNotifications(category, timeSpent) {
   const { notifications } = await chrome.storage.local.get({ notifications: true });
-  if (category === 'Social Media' && timeSpent > 1800000 && !notificationsSent.socialMedia) {
+  
+  // Check if we've already sent a notification for this category today
+  const today = getTodayString();
+  const notificationKey = `notification_${category}_${today}`;
+  const { [notificationKey]: alreadyNotified } = await chrome.storage.local.get(notificationKey);
+  
+  if (category === 'Social Media' && timeSpent > 1800000 && !alreadyNotified) {
     chrome.notifications.create({
-      type: 'basic', iconUrl: 'icons/icon128.png',
-      title: '⚠️ Social Media Alert', message: `Over 30 min spent on social media!`
+      type: 'basic', 
+      iconUrl: 'icons/icon128.png',
+      title: '⚠️ Social Media Alert', 
+      message: `Over 30 min spent on social media!`
     });
-    notificationsSent.socialMedia = true;
+    // Mark as notified for today
+    await chrome.storage.local.set({ [notificationKey]: true });
   }
 
-  if (category === 'Productive / Educational' && timeSpent > 3600000 && !notificationsSent.productive) {
+  if (category === 'Productive / Educational' && timeSpent > 3600000 && !alreadyNotified) {
     chrome.notifications.create({
-      type: 'basic', iconUrl: 'icons/icon128.png',
-      title: '🎉 Productivity Milestone!', message: `1 hour spent productively!`
+      type: 'basic', 
+      iconUrl: 'icons/icon128.png',
+      title: '🎉 Productivity Milestone!', 
+      message: `1 hour spent productively!`
     });
-    notificationsSent.productive = true;
+    // Mark as notified for today
+    await chrome.storage.local.set({ [notificationKey]: true });
   }
 }
 
@@ -360,7 +420,36 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (tab && tab.url) await startTracking(tab);
 });
 
+// === FOCUS MODE ENFORCEMENT ===
+// Checks if Focus Mode is active and the current domain is in focusBlockList.
+// If so, redirects the given tab to the extension's blocked page and returns true to indicate a redirect occurred.
+async function enforceFocusBlock(url, tabId) {
+  try {
+    const domain = getDomainFromUrl(url);
+    if (!domain) return false;
+
+    const { focusActive = false, focusBlockList = [] } = await chrome.storage.local.get([
+      'focusActive',
+      'focusBlockList'
+    ]);
+
+    if (focusActive && Array.isArray(focusBlockList) && focusBlockList.includes(domain)) {
+      const redirectUrl = chrome.runtime.getURL(`blocked.html?focus=1&url=${encodeURIComponent(domain)}&expires=${Date.now() + 86400000}`);
+      await chrome.tabs.update(tabId, { url: redirectUrl });
+      return true;
+    }
+  } catch (err) {
+    console.error('Error enforcing Focus Mode block:', err);
+  }
+  return false;
+}
+
 async function startTracking(tab) {
+  // Focus Mode handling: redirect early if needed
+  if (await enforceFocusBlock(tab.url, tab.id)) {
+    return; // Do not start tracking on blocked sites during Focus Mode
+  }
+
   currentTab = tab;
   trackingStartTime = Date.now();
   isTracking = true;
@@ -465,4 +554,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 return true; // Indicates an asynchronous response.
         }
     }
+});
+
+// Listener to react immediately when the user toggles Focus Mode from the popup
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.focusActive) {
+    const focusActive = changes.focusActive.newValue;
+    if (focusActive) {
+      // Iterate through all tabs and enforce the Focus Mode block list right away
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach((tab) => {
+          if (tab.id && tab.url) {
+            enforceFocusBlock(tab.url, tab.id);
+          }
+        });
+      });
+    }
+  }
+});
+
+// Auto turn off Focus Mode when alarm fires
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'focusModeOff') {
+    await chrome.storage.local.set({ focusActive: false });
+    await chrome.storage.local.remove('focusExpiresAt');
+
+    // Proactively notify all tabs so blocked pages can auto-close without polling every 2s
+    chrome.tabs.query({}, tabs => {
+      tabs.forEach(t => {
+        chrome.tabs.sendMessage(t.id, { type: 'FOCUS_ENDED' }).catch(() => {});
+      });
+    });
+    chrome.alarms.clear('focusModeOff');
+  }
 });

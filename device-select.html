@@ -3,131 +3,434 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebTimeWise - Select Device</title>
+    <title>TimeSetu - Select Device</title>
     <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="dashboard-responsive.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
         :root {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2d2d2d;
-            --text-color: #ffffff;
-            --text-secondary: #b3b3b3;
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --card-bg: #1e1e3f;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
             --accent-color: #4a90e2;
-            --card-bg: #2d2d2d;
-            --card-border: #404040;
+            --accent-green: #4caf50;
+            --accent-orange: #ff9800;
+            --accent-purple: #9c27b0;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
 
         body {
-            background-color: var(--bg-primary);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
-            padding: 20px;
-            min-width: 400px;
+            padding: 40px 24px;
+            width: 100vw !important;
+            min-height: 100vh;
+            box-sizing: border-box;
+            position: relative;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Language Selector Styling */
+        .flag-container {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 100;
+        }
+
+        .selected-flag {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-flag:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .flag-icon {
+            width: 20px;
+            height: 15px;
+            border-radius: 2px;
+        }
+
+        .flag-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            min-width: 150px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            display: none;
+            z-index: 1000;
+        }
+
+        .flag-dropdown.show {
+            display: block;
+        }
+
+        .flag-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .flag-option:last-child {
+            border-bottom: none;
+        }
+
+        .flag-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .flag-option img {
+            width: 20px;
+            height: 15px;
+            border-radius: 2px;
+        }
+
+        .flag-option span {
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 48px;
         }
 
         .header h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header p {
             color: var(--text-secondary);
-            margin: 0;
+            margin-top: 8px;
+            font-size: 1rem;
         }
 
         .device-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+            gap: 28px;
         }
 
         .device-card {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 32px 24px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border 0.25s ease;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
         }
 
         .device-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .device-card.active {
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-color);
         }
 
         .device-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
+            font-size: 40px;
+            margin-bottom: 16px;
         }
 
         .device-title {
-            font-size: 18px;
+            font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
 
         .device-description {
             color: var(--text-secondary);
             font-size: 14px;
             margin: 0;
+            text-align:center;
         }
 
         .overall-card {
             grid-column: 1 / -1;
-            background: linear-gradient(135deg, var(--accent-color), #6aa8ff);
+            background: linear-gradient(135deg, #6aa8ff, var(--accent-color));
             color: white;
         }
 
         .overall-card .device-description {
             color: rgba(255, 255, 255, 0.8);
         }
+
+        /* Simple Theme Toggle - File Protocol Compatible */
+        .theme-toggle-container {
+            position: absolute;
+            top: 80px;
+            right: 24px;
+            z-index: 100;
+        }
+
+        .simple-theme-toggle {
+            background: #1e1e3f;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .simple-theme-toggle:hover {
+            background: #2a2a4f;
+            transform: translateY(-1px);
+        }
+
+        .simple-theme-toggle:active {
+            transform: translateY(0);
+        }
+
+        /* Direct light mode styles without CSS variables */
+        body.light-theme {
+            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 50%, #e8f0fe 100%) !important;
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .container {
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .header h1 {
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .header p {
+            color: #666666 !important;
+        }
+
+        body.light-theme .device-card {
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .device-title {
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .device-description {
+            color: #666666 !important;
+        }
+
+        body.light-theme .overall-card {
+            background: linear-gradient(135deg, #4a90e2, #6aa8ff) !important;
+            color: white !important;
+        }
+
+        body.light-theme .overall-card .device-description {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        body.light-theme .selected-flag {
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .simple-theme-toggle {
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.2) !important;
+            color: #1a1a2e !important;
+        }
+
+        body.light-theme .simple-theme-toggle:hover {
+            background: #f0f0f0 !important;
+        }
+
+        /* Built with Bolt Badge */
+        .bolt-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #000000;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .bolt-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            background: #1a1a1a;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .flag-container {
+                top: 16px;
+                right: 16px;
+            }
+            
+            body {
+                padding: 24px 16px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .device-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .overall-card {
+                grid-column: 1;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Language Selector -->
+    <div class="flag-container">
+        <div id="selectedFlag" class="selected-flag">
+            <img id="currentFlag" src="flags/us.png" alt="English" class="flag-icon">
+            <span id="currentLanguage">English</span>
+        </div>
+        <div id="flagDropdown" class="flag-dropdown">
+            <div class="flag-option" data-flag="us" data-lang="en">
+                <img src="flags/us.png" alt="English">
+                <span>English</span>
+            </div>
+            <div class="flag-option" data-flag="cn" data-lang="zh">
+                <img src="flags/cn.png" alt="中文">
+                <span>中文</span>
+            </div>
+            <div class="flag-option" data-flag="in" data-lang="hi">
+                <img src="flags/in.png" alt="हिन्दी">
+                <span>हिन्दी</span>
+            </div>
+            <div class="flag-option" data-flag="jp" data-lang="ja">
+                <img src="flags/jp.png" alt="日本語">
+                <span>日本語</span>
+            </div>
+            <div class="flag-option" data-flag="fr" data-lang="fr">
+                <img src="flags/fr.png" alt="Français">
+                <span>Français</span>
+            </div>
+            <div class="flag-option" data-flag="es" data-lang="es">
+                <img src="flags/es.png" alt="Español">
+                <span>Español</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Button -->
+    <div class="guide-button-container">
+        <button id="guideBtn" class="guide-button" title="Take a guided tour of the home page">
+            🔍 Guide
+        </button>
+    </div>
+
+    <!-- Simple Theme Toggle -->
+    <div class="theme-toggle-container">
+        <button id="simpleThemeToggle" class="simple-theme-toggle" title="Toggle between light and dark mode">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">Dark</span>
+        </button>
+    </div>
+
     <div class="container">
         <div class="header">
-            <h1>Select Device</h1>
-            <p>Choose a device to view its screen time data</p>
+            <h1 data-i18n="selectDevice">Select Device</h1>
+            <p data-i18n="selectDeviceDesc">Choose a device to view its screen time data</p>
         </div>
 
         <div class="device-grid">
             <div class="device-card overall-card" data-device="overall">
                 <div class="device-icon">📊</div>
-                <div class="device-title">Overall View</div>
-                <p class="device-description">Combined view of all your devices</p>
+                <div class="device-title" data-i18n="overallView">Overall View</div>
+                <p class="device-description" data-i18n="overallViewDesc">Combined view of all your devices</p>
             </div>
             <div class="device-card" data-device="browser">
                 <div class="device-icon">🌐</div>
-                <div class="device-title">Browser</div>
-                <p class="device-description">View your browser activity</p>
+                <div class="device-title" data-i18n="browser">Browser</div>
+                <p class="device-description" data-i18n="browserDesc">View your browser activity</p>
             </div>
             <div class="device-card" data-device="mobile">
                 <div class="device-icon">📱</div>
-                <div class="device-title">Mobile</div>
-                <p class="device-description">View your mobile app usage</p>
+                <div class="device-title" data-i18n="mobile">Mobile</div>
+                <p class="device-description" data-i18n="mobileDesc">View your mobile app usage</p>
             </div>
             <div class="device-card" data-device="laptop">
                 <div class="device-icon">💻</div>
-                <div class="device-title">Laptop</div>
-                <p class="device-description">View your laptop app usage</p>
+                <div class="device-title" data-i18n="laptop">Laptop</div>
+                <p class="device-description" data-i18n="laptopDesc">View your laptop app usage</p>
             </div>
             <div class="device-card" data-device="share">
                 <div class="device-icon">📤</div>
-                <div class="device-title">Share Stats</div>
-                <p class="device-description">Create a public weekly summary</p>
+                <div class="device-title" data-i18n="shareStats">Share Stats</div>
+                <p class="device-description" data-i18n="shareStatsDesc">Create a public weekly summary</p>
             </div>
         </div>
     </div>
+    
+    <!-- Built with Bolt Badge -->
+    <a href="https://bolt.new" target="_blank" class="bolt-badge">Built with ⚡ Bolt</a>
+    
     <script src="device-select.js"></script>
+    <script src="theme-toggle.js"></script>
 </body>
 </html> 

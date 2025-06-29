@@ -3,33 +3,129 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WebTimeWise - Public Stats</title>
+  <title>TimeSetu - Public Stats</title>
   <link rel="stylesheet" href="popup.css" />
-  <style>
-    body { background:#1a1a1a; color:#fff; font-family: Arial, sans-serif; margin:0; }
-    .container { max-width:700px; margin:40px auto; padding:0 16px; }
-    h1 { font-size:1.4rem; text-align:center; margin-bottom:24px; }
-    #summaryText { text-align:center; margin:16px 0; line-height:1.5; }
-    #badge { text-align:center; font-size:1.2rem; margin-top:12px; }
-    #copyBtn { display:block; width:100%; background:#4a90e2; border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; margin-top:20px; }
-    #copyBtn:hover { background:#6aa8ff; }
-    .chart-wrapper { background:#2d2d2d; padding:16px; border-radius:12px; }
-  </style>
+  <link rel="stylesheet" href="public-stats.css" />
   <script src="lib/chart.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1 id="pageHeading">📊 Weekly Public Summary</h1>
+  <!-- Back Button -->
+  <a href="device-select.html" class="back-button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
 
-    <div class="chart-wrapper">
-      <canvas id="categoryChart"></canvas>
-    </div>
-
-    <p id="summaryText">Loading summary...</p>
-    <div id="badge"></div>
-    <button id="copyBtn">🔗 Copy Public Link</button>
+  <!-- Simple Theme Toggle -->
+  <div class="theme-toggle-container">
+    <button id="simpleThemeToggle" class="simple-theme-toggle" title="Toggle between light and dark mode">
+      <span id="themeIcon">🌙</span>
+      <span id="themeText">Dark</span>
+    </button>
   </div>
 
+  <div class="container">
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <h1 id="pageHeading">📊 Your Weekly Public Summary</h1>
+      <p class="hero-subtitle">Your weekly productivity insights at a glance</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card total-time-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-content">
+          <h3>Total Screen Time</h3>
+          <div id="totalTimeDisplay" class="stat-value">Loading...</div>
+        </div>
+      </div>
+      
+      <div class="stat-card productivity-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-content">
+          <h3>Productivity Score</h3>
+          <div id="productivityDisplay" class="stat-value">Loading...</div>
+        </div>
+      </div>
+      
+      <div class="stat-card websites-card">
+        <div class="stat-icon">🌐</div>
+        <div class="stat-content">
+          <h3>Top Websites</h3>
+          <div id="topWebsitesDisplay" class="stat-value">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+      <div class="chart-card">
+        <h3 class="chart-title">Daily Screen Time</h3>
+        <div class="chart-container">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="chart-card">
+        <h3 class="chart-title">Category Breakdown</h3>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="summary-section">
+      <div class="summary-card">
+        <h3>Weekly Summary</h3>
+        <p id="summaryText">Loading summary...</p>
+        <div id="badge" class="achievement-badge"></div>
+      </div>
+    </div>
+
+    <!-- Share Section -->
+    <div class="share-section">
+      <button id="shareBtn" class="share-main-btn">
+        <span class="share-icon">📤</span>
+        Share My Week
+      </button>
+      
+      <div id="shareOptions" class="share-options" style="display:none;">
+        <button data-net="linkedin" class="share-option linkedin">
+          <span class="share-platform-icon">💼</span>
+          LinkedIn
+        </button>
+        <button data-net="facebook" class="share-option facebook">
+          <span class="share-platform-icon">📘</span>
+          Facebook
+        </button>
+        <button data-net="twitter" class="share-option twitter">
+          <span class="share-platform-icon">🐦</span>
+          Twitter
+        </button>
+        <button data-net="whatsapp" class="share-option whatsapp">
+          <span class="share-platform-icon">💬</span>
+          WhatsApp
+        </button>
+        <button data-net="instagram" class="share-option instagram">
+          <span class="share-platform-icon">📷</span>
+          Instagram
+        </button>
+      </div>
+      
+      <button id="copyBtn" class="copy-link-btn">
+        <span class="copy-icon">🔗</span>
+        Copy Public Link
+      </button>
+    </div>
+  </div>
+
+  <!-- Built with Bolt Badge -->
+  <a href="https://bolt.new" target="_blank" class="bolt-badge">Built with ⚡ Bolt</a>
+
   <script type="module" src="public-stats.js"></script>
+  <script src="theme-toggle.js"></script>
 </body>
 </html> 

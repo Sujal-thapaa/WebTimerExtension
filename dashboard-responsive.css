@@ -1,0 +1,42 @@
+/* Responsive enhancements for device-select and view pages */
+
+/* Override popup.css styles for full-screen pages */
+body {
+  width: 100vw !important;
+  max-width: none !important;
+  min-height: 100vh !important;
+}
+
+.container {
+  max-width: 1200px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 40px 24px !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+  .device-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+  }
+  .device-card {
+    background: var(--card-bg, #2d2d2d);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  .device-card:hover {
+    transform: translateY(-4px);
+  }
+  .chart-container, .chart-wrapper {
+    height: 400px !important;
+  }
+  .sites-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+} 

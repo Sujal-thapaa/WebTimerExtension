@@ -1,0 +1,163 @@
+/* Focus Mode Block List Styles */
+
+.focus-block-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.focus-block-section h2 {
+  margin-bottom: 4px;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+}
+
+.focus-block-section p.note {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.focus-block-section .block-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.focus-block-section .block-input input {
+  flex: 1;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.focus-block-section .block-input button {
+  background-color: var(--accent-color);
+  border: none;
+  color: var(--text-color);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.focus-block-section .block-input button:hover {
+  background-color: var(--accent-color-hover, #4444ff);
+}
+
+/* Re-use existing blocked site item styles */
+.focus-block-section .blocked-site-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.focus-block-section .remove-focus-block-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.2s ease;
+}
+
+.focus-block-section .remove-focus-block-btn:hover {
+  color: var(--accent-color);
+}
+
+/* Dropdown (details) styling */
+.focus-block-section[open] summary {
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+.focus-block-section summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: var(--accent-color);
+  margin-bottom: 8px;
+}
+
+/* Remove default disclosure triangle */
+.focus-block-section summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Focus Mode toggle switch */
+.focus-switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+}
+
+.focus-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.focus-switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.focus-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.focus-switch input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+.focus-switch input:checked + .slider:before {
+  transform: translateX(18px);
+}
+
+/* Focus timer input */
+.focus-timer {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.focus-timer button {
+  background-color: var(--accent-color);
+  border: none;
+  color: var(--text-color);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.focus-timer button:hover {
+  background-color: var(--accent-color-hover, #4444ff);
+}
+
+#focusCountdown {
+  margin-top: 6px;
+} 
