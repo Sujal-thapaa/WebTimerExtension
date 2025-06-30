@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Website Goals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Website Goals Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Website Goals Functionality</h3>
+        <button onclick="testAddWebsiteGoal()">Add Website Goal (youtube.com, 2 hours)</button>
+        <button onclick="testLoadWebsiteGoals()">Load Website Goals</button>
+        <button onclick="testSaveGoals()">Save Goals</button>
+        <button onclick="testUpdateGoalsDisplay()">Update Goals Display</button>
+        <div id="results" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Helper Functions</h3>
+        <button onclick="testHelperFunctions()">Test Helper Functions</button>
+        <div id="helper-results" class="result"></div>
+    </div>
+
+    <script>
+        // Mock Chrome API for testing
+        if (typeof chrome === 'undefined') {
+            window.chrome = {
+                storage: {
+                    local: {
+                        get: async (keys) => {
+                            console.log('Mock chrome.storage.local.get called with:', keys);
+                            return {
+                                goals: {
+                                    website_youtubecomHours: 2,
+                                    website_facebookcomHours: 1
+                                },
+                                timeData: {
+                                    '2025-01-20': {
+                                        sites: {
+                                            'youtube.com': 3600000, // 1 hour
+                                            'facebook.com': 1800000 // 30 minutes
+                                        },
+                                        categories: {
+                                            'Entertainment': 3600000,
+                                            'Social Media': 1800000
+                                        }
+                                    }
+                                },
+                                categories: {
+                                    'Entertainment': { description: 'Fun stuff', examples: ['youtube.com'] },
+                                    'Social Media': { description: 'Social stuff', examples: ['facebook.com'] }
+                                }
+                            };
+                        },
+                        set: async (data) => {
+                            console.log('Mock chrome.storage.local.set called with:', data);
+                            return Promise.resolve();
+                        }
+                    }
+                }
+            };
+        }
+
+        // Helper functions from popup.js
+        function getWebsiteGoalKey(website) {
+            return 'website_' + website.toLowerCase().replace(/[^a-z0-9]/gi, '') + 'Hours';
+        }
+
+        function cleanWebsiteDomain(website) {
+            let clean = website.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+            clean = clean.replace(/\/$/, '');
+            return clean;
+        }
+
+        function formatTime(milliseconds) {
+            const hours = Math.floor(milliseconds / 3600000);
+            const minutes = Math.floor((milliseconds % 3600000) / 60000);
+            const seconds = Math.floor((milliseconds % 60000) / 1000);
+            return `${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        function getTodayString() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        async function testAddWebsiteGoal() {
+            const results = document.getElementById('results');
+            try {
+                const website = cleanWebsiteDomain('youtube.com');
+                const goalKey = getWebsiteGoalKey(website);
+                
+                results.innerHTML = `
+                    <strong>Test Add Website Goal:</strong><br>
+                    Website: ${website}<br>
+                    Goal Key: ${goalKey}<br>
+                    Status: Success
+                `;
+            } catch (error) {
+                results.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function testLoadWebsiteGoals() {
+            const results = document.getElementById('results');
+            try {
+                const { goals = {} } = await chrome.storage.local.get('goals');
+                const websiteGoals = [];
+                
+                Object.keys(goals).forEach(goalKey => {
+                    if (goalKey.startsWith('website_') && goalKey.endsWith('Hours')) {
+                        const website = goalKey.replace('website_', '').replace('Hours', '');
+                        const hours = goals[goalKey];
+                        if (hours > 0) {
+                            websiteGoals.push({ website, hours });
+                        }
+                    }
+                });
+                
+                results.innerHTML = `
+                    <strong>Test Load Website Goals:</strong><br>
+                    Found ${websiteGoals.length} website goals:<br>
+                    ${websiteGoals.map(g => `${g.website}: ${g.hours}h`).join('<br>')}
+                `;
+            } catch (error) {
+                results.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function testSaveGoals() {
+            const results = document.getElementById('results');
+            try {
+                const newGoals = { streak: 0 };
+                newGoals[getWebsiteGoalKey('youtube.com')] = 2;
+                newGoals[getWebsiteGoalKey('facebook.com')] = 1;
+                
+                await chrome.storage.local.set({ goals: newGoals });
+                
+                results.innerHTML = `
+                    <strong>Test Save Goals:</strong><br>
+                    Saved goals: ${JSON.stringify(newGoals, null, 2)}
+                `;
+            } catch (error) {
+                results.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function testUpdateGoalsDisplay() {
+            const results = document.getElementById('results');
+            try {
+                const { timeData, goals = {} } = await chrome.storage.local.get(['timeData', 'goals']);
+                const today = getTodayString();
+                const todayData = timeData[today] || { sites: {}, categories: {} };
+                
+                const websiteGoals = [];
+                Object.keys(goals).forEach(goalKey => {
+                    if (goalKey.startsWith('website_') && goalKey.endsWith('Hours')) {
+                        const website = goalKey.replace('website_', '').replace('Hours', '');
+                        const goalHours = goals[goalKey];
+                        
+                        if (typeof goalHours === 'number' && goalHours > 0) {
+                            const timeSpent = todayData.sites[website] || 0;
+                            const goalMilliseconds = goalHours * 3600000;
+                            const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
+                            
+                            websiteGoals.push({
+                                website,
+                                timeSpent: formatTime(timeSpent),
+                                goalHours,
+                                progress: Math.round(progress)
+                            });
+                        }
+                    }
+                });
+                
+                results.innerHTML = `
+                    <strong>Test Update Goals Display:</strong><br>
+                    ${websiteGoals.map(g => 
+                        `${g.website}: ${g.timeSpent} / ${g.goalHours}h (${g.progress}%)`
+                    ).join('<br>')}
+                `;
+            } catch (error) {
+                results.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function testHelperFunctions() {
+            const results = document.getElementById('helper-results');
+            try {
+                const tests = [
+                    { name: 'getWebsiteGoalKey', result: getWebsiteGoalKey('youtube.com') },
+                    { name: 'cleanWebsiteDomain', result: cleanWebsiteDomain('https://www.youtube.com/') },
+                    { name: 'formatTime', result: formatTime(3600000) },
+                    { name: 'getTodayString', result: getTodayString() }
+                ];
+                
+                results.innerHTML = `
+                    <strong>Helper Function Tests:</strong><br>
+                    ${tests.map(t => `${t.name}: ${t.result}`).join('<br>')}
+                `;
+            } catch (error) {
+                results.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html> 

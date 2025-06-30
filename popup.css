@@ -781,3 +781,179 @@ body {
     font-size: 0.9rem;
     line-height: 1.4;
 }
+
+.category-goal-name {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Goals Toggle Styles */
+.goals-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: var(--bg-secondary);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.toggle-btn:hover:not(.active) {
+    background: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Goals Section Styles */
+.goals-section {
+    margin-bottom: 20px;
+}
+
+.goals-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+/* Website Goals Styles */
+.website-goals-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.website-goal-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.website-goal-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.website-goal-name {
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.website-goal-input {
+    width: 80px;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.remove-website-goal {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s ease;
+}
+
+.remove-website-goal:hover {
+    background: #c0392b;
+}
+
+.add-website-goal {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+.add-website-goal input[type="text"] {
+    flex: 2;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.add-website-goal input[type="number"] {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.add-website-goal button {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.add-website-goal button:hover {
+    background: var(--accent-hover);
+}
+
+.add-website-goal button:disabled {
+    background: var(--border-color);
+    cursor: not-allowed;
+}
+
+/* Website goal display in goals modal */
+.website-goal-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.website-goal-display .goal-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.website-goal-display .goal-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.website-goal-display .goal-time {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}

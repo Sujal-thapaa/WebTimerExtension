@@ -24,6 +24,30 @@ const CATEGORY_COLORS = {
 function getGoalKey(category) {
   return category.toLowerCase().replace(/[^a-z0-9]/gi, '') + 'Hours';
 }
+
+// Helper function for website goals
+function getWebsiteGoalKey(website) {
+  const clean = cleanWebsiteDomain(website);
+  return 'website_' + clean.replace(/[^a-z0-9]/gi, '') + 'Hours';
+}
+
+// Helper function to get the original domain name for a website goal
+function getWebsiteGoalName(goalKey) {
+  const websiteKey = goalKey.replace('website_', '').replace('Hours', '');
+  // Since we're storing the cleaned domain in the key, we need to reconstruct it
+  // For now, we'll use the key as-is, but in a future version we should store the original domain
+  return websiteKey;
+}
+
+// Helper function to clean website domain
+function cleanWebsiteDomain(website) {
+  // Remove protocol and www if present
+  let clean = website.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+  // Remove trailing slash
+  clean = clean.replace(/\/$/, '');
+  return clean;
+}
+
 // ---
 
 // Helper function to get clean domain name without subdomain and TLD
@@ -85,6 +109,44 @@ async function updateAllGoals(data, goals) {
             <span class="goal-percentage">${Math.round(progress)}%</span>
           </div>`;
         goalsContainer.appendChild(goalDiv);
+      }
+    });
+
+    // Process website goals
+    Object.keys(goals).forEach(goalKey => {
+      if (goalKey.startsWith('website_') && goalKey.endsWith('Hours')) {
+        const website = getWebsiteGoalName(goalKey);
+        const cleanDomain = cleanWebsiteDomain(website);
+        const goalHours = goals[goalKey];
+        
+        if (typeof goalHours === 'number' && goalHours > 0) {
+          const timeSpent = data.sites[cleanDomain] || 0;
+          const goalMilliseconds = goalHours * 3600000;
+          const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
+          
+          console.log(`Displaying website goal progress for ${website}:`, {
+            timeSpent: timeSpent / 3600000, // hours
+            goalHours,
+            progress,
+            goalKey,
+            cleanDomain
+          });
+
+          const goalDiv = document.createElement('div');
+          goalDiv.className = 'goal-item website-goal-display';
+          goalDiv.innerHTML = `
+            <div class="goal-header">
+              <span class="goal-name">🌐 ${website} ${progress >= 100 ? '🎉' : ''}</span>
+              <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
+            </div>
+            <div class="goal-progress">
+              <div class="progress-bar ${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}">
+                <div style="width: ${progress}%"></div>
+              </div>
+              <span class="goal-percentage">${Math.round(progress)}%</span>
+            </div>`;
+          goalsContainer.appendChild(goalDiv);
+        }
       }
     });
 
@@ -178,7 +240,17 @@ function initializeElements() {
     goalsContainer: document.querySelector('.goals-container'),
     streakInfo: document.querySelector('.streak-info'),
     categoryGoals: document.getElementById('categoryGoals'),
-    categoriesList: document.getElementById('categoriesList')
+    categoriesList: document.getElementById('categoriesList'),
+    
+    // Website Goals Elements
+    categoryGoalsBtn: document.getElementById('categoryGoalsBtn'),
+    websiteGoalsBtn: document.getElementById('websiteGoalsBtn'),
+    categoryGoalsSection: document.getElementById('categoryGoalsSection'),
+    websiteGoalsSection: document.getElementById('websiteGoalsSection'),
+    websiteGoalsList: document.getElementById('websiteGoalsList'),
+    newWebsiteGoal: document.getElementById('newWebsiteGoal'),
+    newWebsiteHours: document.getElementById('newWebsiteHours'),
+    addWebsiteGoalBtn: document.getElementById('addWebsiteGoalBtn')
   };
 
   // Log any missing elements
@@ -196,12 +268,7 @@ function setupAutoRefresh() {
   refreshInterval = setInterval(async () => {
     await loadData(currentTimeframe);
     await updateBlockedSitesList(); // Refresh blocked sites list
-    
-    // Only update goals display if the goals modal is not open
-    const goalsModal = document.getElementById('goalsModal');
-    if (goalsModal && goalsModal.style.display !== 'block') {
-      await updateGoalsDisplay();
-    }
+    await updateGoalsDisplay(); // Always update goals display for real-time progress
   }, 1000);
 }
 
@@ -278,11 +345,8 @@ function updateUI(data, goals) {
   updateTotalTime(data);
   updateQuickStats(data);
   
-  // Only update goals if the goals modal is not open
-  const goalsModal = document.getElementById('goalsModal');
-  if (!goalsModal || goalsModal.style.display !== 'block') {
-    updateAllGoals(data, goals);
-  }
+  // Always update goals for real-time progress, regardless of modal state
+  updateAllGoals(data, goals);
 
   if (currentView === 'category') {
     updateCategoryChart(data);
@@ -914,6 +978,52 @@ function setupEventListeners() {
       chrome.tabs.create({ url: 'device-select.html' });
     });
 
+    // Website Goals Toggle
+    if (elements.categoryGoalsBtn && elements.websiteGoalsBtn) {
+      elements.categoryGoalsBtn.addEventListener('click', () => {
+        elements.categoryGoalsBtn.classList.add('active');
+        elements.websiteGoalsBtn.classList.remove('active');
+        elements.categoryGoalsSection.style.display = 'block';
+        elements.websiteGoalsSection.style.display = 'none';
+      });
+
+      elements.websiteGoalsBtn.addEventListener('click', () => {
+        elements.websiteGoalsBtn.classList.add('active');
+        elements.categoryGoalsBtn.classList.remove('active');
+        elements.categoryGoalsSection.style.display = 'none';
+        elements.websiteGoalsSection.style.display = 'block';
+        loadWebsiteGoalsEditor();
+      });
+    }
+
+    // Add Website Goal
+    if (elements.addWebsiteGoalBtn) {
+      elements.addWebsiteGoalBtn.addEventListener('click', addWebsiteGoal);
+    }
+
+    // Allow Enter key to add website goal
+    if (elements.newWebsiteGoal) {
+      elements.newWebsiteGoal.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addWebsiteGoal();
+        }
+      });
+    }
+
+    if (elements.newWebsiteHours) {
+      elements.newWebsiteHours.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addWebsiteGoal();
+        }
+      });
+    }
+
+    // Save Website Goals button
+    const saveWebsiteGoalsBtn = document.getElementById('saveWebsiteGoalsBtn');
+    if (saveWebsiteGoalsBtn) {
+      saveWebsiteGoalsBtn.addEventListener('click', saveWebsiteGoals);
+    }
+
     console.log('Event listeners set up successfully');
   } catch (error) {
     console.error('Error setting up event listeners:', error);
@@ -930,6 +1040,12 @@ async function updateGoalsDisplay() {
     const { timeData, goals = {}, categories = {}, blockedSites = [] } = await chrome.storage.local.get(['timeData', 'goals', 'categories', 'blockedSites']);
     const today = getTodayString();
     const todayData = timeData[today] || { categories: {} };
+
+    console.log('=== UPDATE GOALS DISPLAY DEBUG ===');
+    console.log('Today:', today);
+    console.log('Today\'s data:', todayData);
+    console.log('All goals:', goals);
+    console.log('Categories:', Object.keys(categories));
 
     // Store scroll position before updating content
     const modalContent = elements.goalsModal.querySelector('.modal-content');
@@ -968,6 +1084,52 @@ async function updateGoalsDisplay() {
             <span class="goal-percentage">${Math.round(progress)}%</span>
           </div>`;
         elements.goalsContainer.appendChild(goalDiv);
+      }
+    });
+
+    // Process website goals
+    console.log('=== PROCESSING WEBSITE GOALS ===');
+    Object.keys(goals).forEach(goalKey => {
+      if (goalKey.startsWith('website_') && goalKey.endsWith('Hours')) {
+        const website = getWebsiteGoalName(goalKey);
+        const cleanDomain = cleanWebsiteDomain(website);
+        const goalHours = goals[goalKey];
+        
+        console.log(`Processing website goal: ${goalKey}`, {
+          website,
+          cleanDomain,
+          goalHours,
+          timeSpent: todayData.sites[cleanDomain] || 0
+        });
+        
+        if (typeof goalHours === 'number' && goalHours > 0) {
+          const timeSpent = todayData.sites[cleanDomain] || 0;
+          const goalMilliseconds = goalHours * 3600000;
+          const progress = Math.min((timeSpent / goalMilliseconds) * 100, 100);
+          
+          console.log(`Displaying website goal progress for ${website}:`, {
+            timeSpent: timeSpent / 3600000, // hours
+            goalHours,
+            progress,
+            goalKey,
+            cleanDomain
+          });
+
+          const goalDiv = document.createElement('div');
+          goalDiv.className = 'goal-item website-goal-display';
+          goalDiv.innerHTML = `
+            <div class="goal-header">
+              <span class="goal-name">🌐 ${website} ${progress >= 100 ? '🎉' : ''}</span>
+              <span class="goal-time">${formatTime(timeSpent)} / ${goalHours}h</span>
+            </div>
+            <div class="goal-progress">
+              <div class="progress-bar ${progress >= 100 ? 'progress-complete' : progress >= 50 ? 'progress-good' : ''}">
+                <div style="width: ${progress}%"></div>
+              </div>
+              <span class="goal-percentage">${Math.round(progress)}%</span>
+            </div>`;
+          goalsContainer.appendChild(goalDiv);
+        }
       }
     });
 
@@ -1110,6 +1272,33 @@ async function saveGoals() {
         hasChanges = true;
       }
       newGoals[goalKey] = newValue;
+    });
+
+    // Get all website goal inputs
+    document.querySelectorAll('.website-goal-input').forEach(input => {
+      const website = input.getAttribute('data-website');
+      if (!website) return;
+
+      const newValue = parseFloat(input.value) || 0;
+      const goalKey = getWebsiteGoalKey(website);
+
+      // Only update if the value has changed
+      if (currentGoals[goalKey] !== newValue) {
+        hasChanges = true;
+      }
+      newGoals[goalKey] = newValue;
+    });
+
+    // Remove website goals that are no longer in the list
+    Object.keys(currentGoals).forEach(goalKey => {
+      if (goalKey.startsWith('website_') && goalKey.endsWith('Hours')) {
+        const website = goalKey.replace('website_', '').replace('Hours', '');
+        const stillExists = document.querySelector(`[data-website="${website}"]`);
+        if (!stillExists) {
+          hasChanges = true;
+          // Don't add to newGoals, effectively removing it
+        }
+      }
     });
 
     // Preserve existing streak
@@ -2344,3 +2533,228 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Error initializing popup:', error);
   }
 });
+
+// Website Goals Toggle
+if (elements.categoryGoalsBtn && elements.websiteGoalsBtn) {
+  elements.categoryGoalsBtn.addEventListener('click', () => {
+    elements.categoryGoalsBtn.classList.add('active');
+    elements.websiteGoalsBtn.classList.remove('active');
+    elements.categoryGoalsSection.style.display = 'block';
+    elements.websiteGoalsSection.style.display = 'none';
+  });
+
+  elements.websiteGoalsBtn.addEventListener('click', () => {
+    elements.websiteGoalsBtn.classList.add('active');
+    elements.categoryGoalsBtn.classList.remove('active');
+    elements.categoryGoalsSection.style.display = 'none';
+    elements.websiteGoalsSection.style.display = 'block';
+    loadWebsiteGoalsEditor();
+  });
+}
+
+// Add Website Goal
+if (elements.addWebsiteGoalBtn) {
+  elements.addWebsiteGoalBtn.addEventListener('click', addWebsiteGoal);
+}
+
+// Allow Enter key to add website goal
+if (elements.newWebsiteGoal) {
+  elements.newWebsiteGoal.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      addWebsiteGoal();
+    }
+  });
+}
+
+if (elements.newWebsiteHours) {
+  elements.newWebsiteHours.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      addWebsiteGoal();
+    }
+  });
+}
+
+// Website Goals Functions
+async function loadWebsiteGoalsEditor() {
+  try {
+    const websiteGoalsList = document.getElementById('websiteGoalsList');
+    if (!websiteGoalsList) {
+      console.error('Website goals list container not found');
+      return;
+    }
+
+    const { goals = {} } = await chrome.storage.local.get('goals');
+    websiteGoalsList.innerHTML = '';
+
+    // Find all website goals
+    const websiteGoals = [];
+    Object.keys(goals).forEach(goalKey => {
+      if (goalKey.startsWith('website_') && goalKey.endsWith('Hours')) {
+        const website = goalKey.replace('website_', '').replace('Hours', '');
+        const hours = goals[goalKey];
+        if (hours > 0) {
+          websiteGoals.push({ website, hours });
+        }
+      }
+    });
+
+    // Display existing website goals
+    websiteGoals.forEach(({ website, hours }) => {
+      const goalItem = document.createElement('div');
+      goalItem.className = 'website-goal-item';
+      goalItem.innerHTML = `
+        <div class="website-goal-info">
+          <span class="website-goal-name">${website}</span>
+          <input type="number" 
+                 class="website-goal-input" 
+                 data-website="${website}"
+                 value="${hours}"
+                 min="0" 
+                 max="24" 
+                 step="0.5">
+          <span class="goal-unit">hours</span>
+        </div>
+        <button class="remove-website-goal" data-website="${website}">Remove</button>
+      `;
+      websiteGoalsList.appendChild(goalItem);
+    });
+
+    // Add event listeners for remove buttons
+    websiteGoalsList.querySelectorAll('.remove-website-goal').forEach(btn => {
+      btn.addEventListener('click', () => removeWebsiteGoal(btn.dataset.website));
+    });
+
+  } catch (error) {
+    console.error('Error loading website goals editor:', error);
+    showToast('Error loading website goals editor', 'error');
+  }
+}
+
+async function addWebsiteGoal() {
+  try {
+    const websiteInput = document.getElementById('newWebsiteGoal');
+    const hoursInput = document.getElementById('newWebsiteHours');
+    
+    if (!websiteInput || !hoursInput) {
+      console.error('Website goal input elements not found');
+      return;
+    }
+
+    const website = cleanWebsiteDomain(websiteInput.value.trim());
+    const hours = parseFloat(hoursInput.value);
+
+    // Validation
+    if (!website) {
+      showToast('Please enter a website name', 'warning');
+      return;
+    }
+
+    if (isNaN(hours) || hours <= 0 || hours > 24) {
+      showToast('Please enter a valid number of hours (0-24)', 'warning');
+      return;
+    }
+
+    // Check if website goal already exists
+    const { goals = {} } = await chrome.storage.local.get('goals');
+    const goalKey = getWebsiteGoalKey(website);
+    
+    if (goals[goalKey] && goals[goalKey] > 0) {
+      showToast('Website goal already exists', 'warning');
+      return;
+    }
+
+    // Save the website goal to storage
+    goals[goalKey] = hours;
+    await chrome.storage.local.set({ goals });
+
+    // Add the website goal to the list
+    const websiteGoalsList = document.getElementById('websiteGoalsList');
+    const goalItem = document.createElement('div');
+    goalItem.className = 'website-goal-item';
+    goalItem.innerHTML = `
+      <div class="website-goal-info">
+        <span class="website-goal-name">${website}</span>
+        <input type="number" 
+               class="website-goal-input" 
+               data-website="${website}"
+               value="${hours}"
+               min="0" 
+               max="24" 
+               step="0.5">
+        <span class="goal-unit">hours</span>
+      </div>
+      <button class="remove-website-goal" data-website="${website}">Remove</button>
+    `;
+    websiteGoalsList.appendChild(goalItem);
+
+    // Add event listener for remove button
+    const removeBtn = goalItem.querySelector('.remove-website-goal');
+    removeBtn.addEventListener('click', () => removeWebsiteGoal(website));
+
+    // Clear inputs
+    websiteInput.value = '';
+    hoursInput.value = '';
+
+    showToast(`Added goal for ${website}`, 'success');
+
+  } catch (error) {
+    console.error('Error adding website goal:', error);
+    showToast('Error adding website goal', 'error');
+  }
+}
+
+async function removeWebsiteGoal(website) {
+  try {
+    // Remove from storage
+    const { goals = {} } = await chrome.storage.local.get('goals');
+    const goalKey = getWebsiteGoalKey(website);
+    delete goals[goalKey];
+    await chrome.storage.local.set({ goals });
+
+    // Remove from DOM
+    const websiteGoalsList = document.getElementById('websiteGoalsList');
+    const goalItem = websiteGoalsList.querySelector(`[data-website="${website}"]`).closest('.website-goal-item');
+    if (goalItem) {
+      goalItem.remove();
+    }
+
+    showToast(`Removed goal for ${website}`, 'success');
+
+  } catch (error) {
+    console.error('Error removing website goal:', error);
+    showToast('Error removing website goal', 'error');
+  }
+}
+
+async function saveWebsiteGoals() {
+  try {
+    const { goals = {} } = await chrome.storage.local.get('goals');
+    let hasChanges = false;
+
+    // Get all website goal inputs and save them
+    document.querySelectorAll('.website-goal-input').forEach(input => {
+      const website = input.getAttribute('data-website');
+      if (!website) return;
+
+      const newValue = parseFloat(input.value) || 0;
+      const goalKey = getWebsiteGoalKey(website);
+
+      // Only update if the value has changed
+      if (goals[goalKey] !== newValue) {
+        hasChanges = true;
+      }
+      goals[goalKey] = newValue;
+    });
+
+    if (hasChanges) {
+      await chrome.storage.local.set({ goals });
+      showToast('Website goals saved successfully', 'success');
+    } else {
+      showToast('No changes to save', 'info');
+    }
+
+  } catch (error) {
+    console.error('Error saving website goals:', error);
+    showToast('Error saving website goals', 'error');
+  }
+}

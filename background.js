@@ -196,6 +196,7 @@ async function initialize() {
         await setupBlockingRules();
         scheduleMidnightReset();
         setupBlockCleanupAlarm();
+        cleanupNotificationFlags();
         console.log("WebTimeTracker background initialized successfully.");
     } catch (error) {
         console.error("Error during background script initialization:", error);
@@ -320,13 +321,15 @@ async function updateTime(url, timeSpent) {
   const { timeData = {} } = await chrome.storage.local.get('timeData');
   if (!timeData[today]) timeData[today] = { sites: {}, categories: {} };
 
-  timeData[today].sites[domain] = (timeData[today].sites[domain] || 0) + timeSpent;
+  const cleanDomain = cleanWebsiteDomain(domain);
+  timeData[today].sites[cleanDomain] = (timeData[today].sites[cleanDomain] || 0) + timeSpent;
 
   timeData[today].categories[category] = (timeData[today].categories[category] || 0) + timeSpent;
   await chrome.storage.local.set({ timeData });
 
   await checkNotifications(category, timeData[today].categories[category]);
   await checkGoalCompletion(category, timeData[today].categories[category]);
+  await checkWebsiteGoalNotifications(cleanDomain, timeData[today].sites[cleanDomain]);
 }
 
 // --- MAIN CATEGORIZATION LOGIC ---
@@ -372,12 +375,21 @@ async function categorizeWebsite(domain) {
 async function checkNotifications(category, timeSpent) {
   const { notifications } = await chrome.storage.local.get({ notifications: true });
   
+  if (!notifications) return;
+  
   // Check if we've already sent a notification for this category today
   const today = getTodayString();
   const notificationKey = `notification_${category}_${today}`;
   const { [notificationKey]: alreadyNotified } = await chrome.storage.local.get(notificationKey);
   
+  console.log(`Checking notifications for ${category}:`, {
+    timeSpent: timeSpent / 3600000, // hours
+    alreadyNotified,
+    notificationKey
+  });
+  
   if (category === 'Social Media' && timeSpent > 1800000 && !alreadyNotified) {
+    console.log('Sending Social Media notification');
     chrome.notifications.create({
       type: 'basic', 
       iconUrl: 'icons/icon128.png',
@@ -386,9 +398,11 @@ async function checkNotifications(category, timeSpent) {
     });
     // Mark as notified for today
     await chrome.storage.local.set({ [notificationKey]: true });
+    console.log('Marked Social Media notification as sent for today');
   }
 
   if (category === 'Productive / Educational' && timeSpent > 3600000 && !alreadyNotified) {
+    console.log('Sending Productivity notification');
     chrome.notifications.create({
       type: 'basic', 
       iconUrl: 'icons/icon128.png',
@@ -397,6 +411,75 @@ async function checkNotifications(category, timeSpent) {
     });
     // Mark as notified for today
     await chrome.storage.local.set({ [notificationKey]: true });
+    console.log('Marked Productivity notification as sent for today');
+  }
+}
+
+async function checkWebsiteGoalNotifications(domain, timeSpent) {
+  const { notifications, goals = {} } = await chrome.storage.local.get({ notifications: true, goals: {} });
+  
+  if (!notifications) {
+    console.log('Notifications disabled, skipping website goal check');
+    return;
+  }
+  
+  // Check if there's a goal set for this website
+  const cleanDomain = cleanWebsiteDomain(domain);
+  const goalKey = `website_${cleanDomain.toLowerCase().replace(/[^a-z0-9]/gi, '')}Hours`;
+  const goalHours = goals[goalKey];
+  
+  console.log(`Checking website goal notifications for ${domain}:`, {
+    cleanDomain,
+    goalKey,
+    goalHours,
+    timeSpent: timeSpent / 3600000, // hours
+    availableGoals: Object.keys(goals).filter(k => k.startsWith('website_'))
+  });
+  
+  if (typeof goalHours === 'number' && goalHours > 0) {
+    const goalMilliseconds = goalHours * 3600000;
+    const progress = (timeSpent / goalMilliseconds) * 100;
+    
+    // Check if we've already sent a notification for this website today
+    const today = getTodayString();
+    const notificationKey = `notification_website_${cleanDomain}_${today}`;
+    const { [notificationKey]: alreadyNotified } = await chrome.storage.local.get(notificationKey);
+    
+    console.log(`Website goal progress for ${cleanDomain}:`, {
+      progress: Math.round(progress),
+      goalHours,
+      alreadyNotified,
+      notificationKey
+    });
+    
+    // Send notification when goal is reached (100%)
+    if (progress >= 100 && !alreadyNotified) {
+      console.log(`Sending website goal achieved notification for ${cleanDomain}`);
+      chrome.notifications.create({
+        type: 'basic', 
+        iconUrl: 'icons/icon128.png',
+        title: '🎯 Website Goal Achieved!', 
+        message: `You've reached your daily goal for ${cleanDomain}!`
+      });
+      // Mark as notified for today
+      await chrome.storage.local.set({ [notificationKey]: true });
+      console.log(`Marked website goal notification as sent for ${cleanDomain}`);
+    }
+    // Send warning notification when approaching goal (80%)
+    else if (progress >= 80 && progress < 100 && !alreadyNotified) {
+      console.log(`Sending website goal warning notification for ${cleanDomain}`);
+      chrome.notifications.create({
+        type: 'basic', 
+        iconUrl: 'icons/icon128.png',
+        title: '⚠️ Website Goal Warning', 
+        message: `You're approaching your daily goal for ${cleanDomain} (${Math.round(progress)}%)`
+      });
+      // Mark as notified for today
+      await chrome.storage.local.set({ [notificationKey]: true });
+      console.log(`Marked website goal warning notification as sent for ${cleanDomain}`);
+    }
+  } else {
+    console.log(`No goal found for ${cleanDomain} (key: ${goalKey})`);
   }
 }
 
@@ -586,5 +669,90 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       });
     });
     chrome.alarms.clear('focusModeOff');
+  }
+});
+
+function cleanWebsiteDomain(domain) {
+  return domain.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+}
+
+// Function to clean up old notification flags
+async function cleanupNotificationFlags() {
+  try {
+    const today = getTodayString();
+    const { timeData = {} } = await chrome.storage.local.get('timeData');
+    
+    // Get all notification keys
+    const allData = await chrome.storage.local.get(null);
+    const notificationKeys = Object.keys(allData).filter(key => key.startsWith('notification_'));
+    
+    // Remove notification flags from previous days
+    const keysToRemove = {};
+    notificationKeys.forEach(key => {
+      if (!key.includes(today)) {
+        keysToRemove[key] = null;
+      }
+    });
+    
+    if (Object.keys(keysToRemove).length > 0) {
+      await chrome.storage.local.remove(Object.keys(keysToRemove));
+      console.log('Cleaned up old notification flags:', Object.keys(keysToRemove));
+    }
+  } catch (error) {
+    console.error('Error cleaning up notification flags:', error);
+  }
+}
+
+// Call cleanup on initialization
+cleanupNotificationFlags();
+
+// Function to manually test website goal notifications
+async function testWebsiteGoalNotification(domain) {
+  try {
+    const { goals = {} } = await chrome.storage.local.get('goals');
+    const cleanDomain = cleanWebsiteDomain(domain);
+    const goalKey = `website_${cleanDomain.toLowerCase().replace(/[^a-z0-9]/gi, '')}Hours`;
+    const goalHours = goals[goalKey];
+    
+    console.log(`Testing website goal notification for ${domain}:`, {
+      cleanDomain,
+      goalKey,
+      goalHours,
+      availableGoals: Object.keys(goals).filter(k => k.startsWith('website_'))
+    });
+    
+    if (typeof goalHours === 'number' && goalHours > 0) {
+      // Simulate reaching the goal
+      const goalMilliseconds = goalHours * 3600000;
+      await checkWebsiteGoalNotifications(cleanDomain, goalMilliseconds);
+    } else {
+      console.log(`No goal found for ${domain}`);
+    }
+  } catch (error) {
+    console.error('Error testing website goal notification:', error);
+  }
+}
+
+// Message listener for popup communication
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'addBlock') {
+    addBlockedSite(request.url, request.duration)
+      .then(() => sendResponse({ success: true }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+  
+  if (request.action === 'clearNotificationFlags') {
+    cleanupNotificationFlags()
+      .then(() => sendResponse({ success: true }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+  
+  if (request.action === 'testWebsiteGoalNotification') {
+    testWebsiteGoalNotification(request.domain)
+      .then(() => sendResponse({ success: true }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
   }
 });
