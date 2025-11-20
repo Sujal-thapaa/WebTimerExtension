@@ -227,14 +227,8 @@ function initializeElements() {
     editGoalsBtn: document.getElementById('editGoalsBtn'),
     saveGoalsBtn: document.getElementById('saveGoalsBtn'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-    saveBrowserSettingsBtn: document.getElementById('saveBrowserSettingsBtn'),
-    resetBrowserSettingsBtn: document.getElementById('resetBrowserSettingsBtn'),
-    
-    // Blocking elements
-    siteToBlock: document.getElementById('siteToBlock'),
-    blockDuration: document.getElementById('blockDuration'),
-    addBlockBtn: document.getElementById('addBlockBtn'),
-    blockedSitesList: document.getElementById('blockedSitesList'),
+    // Note: saveBrowserSettingsBtn, resetBrowserSettingsBtn, siteToBlock, blockDuration, 
+    // addBlockBtn, and blockedSitesList are not in the current HTML - removed to avoid errors
     
     // Containers
     goalsContainer: document.querySelector('.goals-container'),
@@ -635,6 +629,12 @@ async function addBlockedSite() {
   const siteInput = document.getElementById('siteToBlock');
   const durationInput = document.getElementById('blockDuration');
   
+  // Check if elements exist (they may not be in current HTML)
+  if (!siteInput || !durationInput) {
+    console.warn('Blocking elements not found in HTML - this feature may have been replaced by Focus Mode');
+    return;
+  }
+  
   const site = siteInput.value.trim();
   const duration = parseInt(durationInput.value);
   
@@ -693,6 +693,7 @@ async function removeBlockedSite(url) {
 
 async function updateBlockedSitesList() {
   const blockedSitesList = document.getElementById('blockedSitesList');
+  // Element may not exist if this feature was replaced by Focus Mode
   if (!blockedSitesList) return;
 
   const { blockedSites = [] } = await chrome.storage.local.get('blockedSites');
@@ -779,27 +780,8 @@ function setupEventListeners() {
       });
     }
 
-    // Website blocking
-    if (elements.addBlockBtn) {
-      elements.addBlockBtn.addEventListener('click', addBlockedSite);
-    }
-
-    // Allow Enter key to add block
-    if (elements.siteToBlock) {
-      elements.siteToBlock.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          addBlockedSite();
-        }
-      });
-    }
-
-    if (elements.blockDuration) {
-      elements.blockDuration.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          addBlockedSite();
-        }
-      });
-    }
+    // Website blocking elements removed - functionality replaced by Focus Mode
+    // Focus Mode blocking is handled in focus-block.js
 
     // More button and modal
     const moreBtn = document.getElementById('moreBtn');
@@ -903,13 +885,8 @@ function setupEventListeners() {
     }
 
     // Enhanced Browser Settings
-    if (elements.saveBrowserSettingsBtn) {
-      elements.saveBrowserSettingsBtn.addEventListener('click', saveBrowserSettings);
-    }
-    
-    if (elements.resetBrowserSettingsBtn) {
-      elements.resetBrowserSettingsBtn.addEventListener('click', resetBrowserSettings);
-    }
+    // Note: saveBrowserSettingsBtn and resetBrowserSettingsBtn are not in current HTML
+    // These functions may be called from other places if needed, but buttons don't exist
 
     // Theme mode buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {

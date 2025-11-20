@@ -14,7 +14,9 @@
   "host_permissions": [
     "<all_urls>",
     "https://*.youtube.com/*",
-    "https://openrouter.ai/api/v1/chat/completions"
+    "https://*.facebook.com/*",
+    "https://openrouter.ai/api/v1/chat/completions",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -25,7 +27,8 @@
         "<all_urls>"
       ],
       "exclude_matches": [
-        "*://*.youtube.com/*"
+        "*://*.youtube.com/*",
+        "*://*.facebook.com/*"
       ],
       "js": [
         "content.js"
@@ -35,6 +38,11 @@
     {
       "matches": ["https://www.youtube.com/watch*"],
       "js": ["youtube-classifier.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.facebook.com/*"],
+      "js": ["facebook-classifier.js"],
       "run_at": "document_idle"
     }
   ],

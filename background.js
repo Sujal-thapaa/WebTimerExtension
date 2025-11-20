@@ -2,7 +2,7 @@
 const CATEGORY_KEYWORDS = {
   'Productive / Educational': {
     keywords: ['learn','study','tutorial','education','research','wiki','docs','coding','productivity','project','note'],
-    domains: ['wikipedia.org','khanacademy.org','coursera.org','udemy.com','edx.org','leetcode.com','notion.so','trello.com','slack.com','linkedin.com','docs.google.com','chat.openai.com']
+    domains: ['wikipedia.org','khanacademy.org','pw.live','physicswallah.com','coursera.org','udemy.com','edx.org','leetcode.com','notion.so','trello.com','slack.com','linkedin.com','docs.google.com','chat.openai.com']
   },
   'Entertainment': {
     keywords: ['video','music','movie','entertainment','fun','stream','watch'],
@@ -33,7 +33,7 @@ const CATEGORY_KEYWORDS = {
 const DEFAULT_CATEGORIES = {
   'Productive / Educational': {
     description: 'Websites that promote learning, work, coding, and personal growth',
-    examples: ['wikipedia.org','khanacademy.org','coursera.org','udemy.com','edx.org','leetcode.com','notion.so','trello.com','slack.com','linkedin.com/learning','docs.google.com','chat.openai.com']
+    examples: ['wikipedia.org','khanacademy.org','pw.live','physicswallah.com','coursera.org','udemy.com','edx.org','leetcode.com','notion.so','trello.com','slack.com','linkedin.com/learning','docs.google.com','chat.openai.com']
   },
   'Entertainment': {
     description: 'Time-pass, media consumption, and fun-focused websites',
@@ -336,6 +336,8 @@ async function updateTime(url, timeSpent) {
 async function getCategoryForUrl(url) {
   const domain = getDomainFromUrl(url);
   if (!domain) return 'Other / Uncategorized';
+  
+  console.log(`TimeSetu: Categorizing URL: ${url}, Domain: ${domain}`);
 
   // 1. Special check for YouTube AI Classification
   if (url.includes('youtube.com/watch')) {
@@ -352,16 +354,48 @@ async function getCategoryForUrl(url) {
     }
   }
 
-  // 2. Fallback to keyword/domain-based classification
+  // 2. Special check for Facebook AI Classification
+  if (url.includes('facebook.com')) {
+    const { facebookClassification } = await chrome.storage.local.get('facebookClassification');
+    const validCategories = ['Productive', 'Entertainment', 'News', 'Social Media', 'Other'];
+    
+    // Use the AI category if it's valid and available
+    if (facebookClassification?.category && validCategories.includes(facebookClassification.category)) {
+      // The AI returns 'Productive', but our category is 'Productive / Educational'
+      if (facebookClassification.category === 'Productive') {
+        return 'Productive / Educational';
+      }
+      // Facebook classification already includes 'Social Media' which matches our category
+      return facebookClassification.category;
+    }
+  }
+
+  // 3. Fallback to keyword/domain-based classification
   const { categories: userCategories } = await chrome.storage.local.get('categories');
   const allCategories = { ...DEFAULT_CATEGORIES, ...userCategories };
 
+  // Try to match domain with examples (handles subdomains)
   for (const [category, data] of Object.entries(allCategories)) {
-    if (data.examples?.some(d => domain.includes(d))) {
+    if (data.examples?.some(d => {
+      // Check if domain matches exactly or is a subdomain
+      return domain === d || domain.endsWith('.' + d) || domain.includes(d);
+    })) {
+      console.log(`TimeSetu: Matched domain "${domain}" to category "${category}"`);
       return category;
     }
   }
 
+  // Also check CATEGORY_KEYWORDS for domain matching (backward compatibility)
+  for (const [category, data] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (data.domains?.some(d => {
+      return domain === d || domain.endsWith('.' + d) || domain.includes(d);
+    })) {
+      console.log(`TimeSetu: Matched domain "${domain}" to category "${category}" via CATEGORY_KEYWORDS`);
+      return category;
+    }
+  }
+
+  console.log(`TimeSetu: No category match found for domain "${domain}", defaulting to Other / Uncategorized`);
   return 'Other / Uncategorized';
 }
 

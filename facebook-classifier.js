@@ -1,6 +1,6 @@
-// TimeSetu :: YouTube Video Classifier
+// TimeSetu :: Facebook Content Classifier
 
-console.log("TimeSetu: YouTube Classifier content script loaded.");
+console.log("TimeSetu: Facebook Classifier content script loaded.");
 
 const API_KEY = "AIzaSyCmR5kLpMtNFzl5gx0c20L8JvCOxG28_Ko";
 // Try different model endpoints - will fallback if one fails
@@ -16,63 +16,108 @@ let currentApiUrlIndex = 0;
 
 let lastProcessedUrl = '';
 
-async function classifyVideoTitle() {
+async function classifyFacebookContent() {
     const currentUrl = window.location.href;
     if (currentUrl === lastProcessedUrl) {
-        return; // Avoid re-processing the same video URL
+        return; // Avoid re-processing the same URL
     }
 
     // Clear stale classification if navigating to a different page
-    await chrome.storage.local.remove('youtubeClassification');
+    await chrome.storage.local.remove('facebookClassification');
 
-    // Ensure the main elements are present (wait for up to 5 s)
-    const titleElement = await waitForElement([
-        '#title yt-formatted-string',
-        'h1.title',
-        'h1.ytd-watch-metadata',
-        'h1.ytd-video-primary-info-renderer'
-    ]);
+    // Wait a bit for Facebook's dynamic content to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Extract content from Facebook page
+    let postText = '';
+    let pageName = '';
+    let videoTitle = '';
+    let contentType = 'post'; // post, video, reel, story
+
+    // Try to detect what type of content we're viewing
+    const urlPath = window.location.pathname;
     
-    if (!titleElement || !titleElement.innerText) {
-        console.log("TimeSetu: Could not find video title element. Clearing classification.");
-        await chrome.storage.local.remove('youtubeClassification');
+    // Check for video content
+    if (urlPath.includes('/videos/') || urlPath.includes('/watch/')) {
+        contentType = 'video';
+        videoTitle = queryText([
+            '[data-pagelet="VideoPage"] h1',
+            'h1[dir="auto"]',
+            '[role="main"] h1',
+            'span[dir="auto"]'
+        ]);
+    }
+    // Check for reels
+    else if (urlPath.includes('/reel/') || urlPath.includes('/reels/')) {
+        contentType = 'reel';
+        videoTitle = queryText([
+            '[data-pagelet="VideoPage"] h1',
+            'h1[dir="auto"]',
+            '[role="main"] h1'
+        ]);
+    }
+    // Check for stories
+    else if (urlPath.includes('/stories/')) {
+        contentType = 'story';
+    }
+
+    // Extract post text (works for regular posts, videos, and reels)
+    postText = queryText([
+        '[data-ad-preview="message"]',
+        '[data-testid="post_message"]',
+        'div[data-ad-comet-preview="message"]',
+        'div[dir="auto"][data-testid]',
+        'span[dir="auto"]',
+        'div.userContent'
+    ]);
+
+    // Extract page/author name
+    pageName = queryText([
+        'h2[dir="auto"] a',
+        'strong[dir="auto"] a',
+        'a[role="link"][tabindex="0"] strong',
+        '[data-pagelet="ProfileTimeline"] h1',
+        'span[dir="auto"] strong'
+    ]);
+
+    // Fallback: try to get from meta tags
+    if (!postText && !videoTitle) {
+        const metaDesc = document.querySelector("meta[property='og:description']");
+        if (metaDesc) postText = metaDesc.content.trim();
+    }
+
+    if (!pageName) {
+        const metaTitle = document.querySelector("meta[property='og:title']");
+        if (metaTitle) {
+            const titleParts = metaTitle.content.split(' - ');
+            pageName = titleParts[0] || titleParts[titleParts.length - 1];
+        }
+    }
+
+    // Limit text length
+    postText = (postText || '').slice(0, 300);
+    videoTitle = (videoTitle || '').slice(0, 200);
+
+    const contentText = postText || videoTitle || '';
+    
+    if (!contentText && !pageName) {
+        console.log("TimeSetu: Could not find Facebook content to classify.");
+        await chrome.storage.local.remove('facebookClassification');
         return;
     }
 
-    let videoTitle = queryText([
-        '#title yt-formatted-string',
-        'h1.title',
-        'h1.ytd-watch-metadata',
-        'h1.ytd-video-primary-info-renderer'
-    ]);
-    // Fallback to document.title minus " - YouTube"
-    if (!videoTitle) {
-        videoTitle = document.title.replace(/ - YouTube$/i, '').trim();
-    }
+    // Create a content identifier for caching
+    const contentId = `${contentType}-${contentText.substring(0, 50)}-${pageName}`;
 
-    // Optional cache: if stored classification already matches this title, skip re-querying
-    const { youtubeClassification: cached } = await chrome.storage.local.get('youtubeClassification');
-    if (cached?.title === videoTitle && cached?.category) {
-        console.log('TimeSetu: Using cached classification:', cached.category);
+    // Optional cache: if stored classification already matches this content, skip re-querying
+    const { facebookClassification: cached } = await chrome.storage.local.get('facebookClassification');
+    if (cached?.contentId === contentId && cached?.category) {
+        console.log('TimeSetu: Using cached Facebook classification:', cached.category);
         lastProcessedUrl = currentUrl;
         return;
     }
 
-    // Get channel name and first 200 chars of description
-    const channelName = queryText([
-        '#text-container.ytd-channel-name',
-        '#owner-name a',
-        '#channel-name #text'
-    ]);
-
-    let descriptionText = queryText(['#description', '#description yt-formatted-string']);
-    if (!descriptionText) {
-        const metaDesc = document.querySelector("meta[name='description']");
-        if (metaDesc) descriptionText = metaDesc.content.trim();
-    }
-    descriptionText = descriptionText.slice(0, 200);
-
-    console.log(`TimeSetu: Classifying video -> Title: "${videoTitle}", Channel: "${channelName}"`);
+    console.log(`TimeSetu: Classifying Facebook content -> Type: "${contentType}", Page: "${pageName}", Text: "${contentText.substring(0, 100)}"`);
 
     // Check if API is temporarily disabled due to failures
     const { apiDisabled, apiDisabledUntil, apiFailureCount } = await chrome.storage.local.get(['apiDisabled', 'apiDisabledUntil', 'apiFailureCount']);
@@ -88,11 +133,12 @@ async function classifyVideoTitle() {
         } else {
             console.log('TimeSetu: API disabled or too many failures. Using fallback categorization immediately.');
             // Use keyword-based fallback
-            const fallbackCategory = getFallbackCategory(videoTitle, channelName, descriptionText);
+            const fallbackCategory = getFallbackCategory(contentText, pageName, contentType);
             console.log(`TimeSetu: Fallback category: ${fallbackCategory}`);
             await chrome.storage.local.set({ 
-                youtubeClassification: { 
-                    title: videoTitle, 
+                facebookClassification: { 
+                    contentId: contentId,
+                    contentType: contentType,
                     category: fallbackCategory,
                     source: 'fallback'
                 } 
@@ -103,22 +149,23 @@ async function classifyVideoTitle() {
     }
 
     try {
-        console.log("TimeSetu: Sending metadata to Google Gemini for classification...");
+        console.log("TimeSetu: Sending Facebook content to Google Gemini for classification...");
         
-        const prompt = `You must classify this YouTube video into EXACTLY one category. Choose from: Productive, Entertainment, News, or Other.
+        const prompt = `You must classify this Facebook content into EXACTLY one category. Choose from: Productive, Entertainment, News, Social Media, or Other.
 
 Category Definitions:
-- Productive: Educational videos, tutorials, courses, coding lessons, learning content, productivity tips, how-to guides, documentaries about learning
-- Entertainment: Music videos, comedy, vlogs, gaming videos, movie trailers, TV shows, fun/leisure content, memes
-- News: News reports, current events, political news, breaking news, journalism, news analysis, world events
-- Other: Everything that doesn't clearly fit Productive, Entertainment, or News
+- Productive: Educational posts, tutorials, courses, learning content, productivity tips, how-to guides, professional content, business advice
+- Entertainment: Funny posts, memes, jokes, entertainment videos, comedy, fun content, viral videos, reels for fun
+- News: News articles, current events, political posts, breaking news, journalism, news updates, world events
+- Social Media: Personal updates, social interactions, friend posts, family updates, social connections, general social content
+- Other: Everything that doesn't clearly fit Productive, Entertainment, News, or Social Media
 
-CRITICAL: You must respond with ONLY one word: either "Productive", "Entertainment", "News", or "Other". Do not include any other text, explanations, or punctuation.
+CRITICAL: You must respond with ONLY one word: either "Productive", "Entertainment", "News", "Social Media", or "Other". Do not include any other text, explanations, or punctuation.
 
-Video Information:
-Title: "${videoTitle}"
-Channel: "${channelName}"
-Description: "${descriptionText}"
+Content Information:
+Content Type: ${contentType}
+Page/Author: "${pageName}"
+Content Text: "${contentText}"
 
 Your response (one word only):`;
 
@@ -201,16 +248,20 @@ Your response (one word only):`;
             matchedCategory = 'News';
         } else if (firstWord === 'entertainment' || firstWord === 'entertain') {
             matchedCategory = 'Entertainment';
+        } else if (firstWord === 'social' || category.includes('social media')) {
+            matchedCategory = 'Social Media';
         } else if (firstWord === 'other') {
             matchedCategory = 'Other';
         } else {
-            // Fallback to keyword matching in the full response (but prioritize Productive and News over Entertainment)
+            // Fallback to keyword matching in the full response
             if (category.includes('productive') || category.includes('education') || category.includes('tutorial') || category.includes('learn') || category.includes('course')) {
                 matchedCategory = 'Productive';
             } else if (category.includes('news') && !category.includes('entertainment')) {
                 matchedCategory = 'News';
             } else if (category.includes('entertain')) {
                 matchedCategory = 'Entertainment';
+            } else if (category.includes('social')) {
+                matchedCategory = 'Social Media';
             } else {
                 matchedCategory = 'Other';
             }
@@ -218,7 +269,7 @@ Your response (one word only):`;
         
         category = matchedCategory;
 
-        const allowed = ['Productive', 'Entertainment', 'News', 'Other'];
+        const allowed = ['Productive', 'Entertainment', 'News', 'Social Media', 'Other'];
         if (!allowed.includes(category)) {
             console.warn('TimeSetu: Invalid category returned, defaulting to Other. Raw value:', rawCategory, 'Processed:', category);
             category = 'Other';
@@ -227,11 +278,18 @@ Your response (one word only):`;
         console.log(`TimeSetu: Final classification result: ${category} (from raw: "${rawCategory}")`);
 
         // Store the result & cache
-        await chrome.storage.local.set({ youtubeClassification: { title: videoTitle, category: category } });
+        await chrome.storage.local.set({ 
+            facebookClassification: { 
+                contentId: contentId,
+                contentType: contentType,
+                category: category,
+                source: 'api'
+            } 
+        });
         lastProcessedUrl = currentUrl; // Mark success so we don't reprocess until URL changes
 
     } catch (error) {
-        console.error('TimeSetu: Error during video classification:', error);
+        console.error('TimeSetu: Error during Facebook content classification:', error);
         console.error('TimeSetu: Error stack:', error.stack);
         
         // Track API failures to avoid wasting quota
@@ -250,15 +308,16 @@ Your response (one word only):`;
         
         // ALWAYS use fallback categorization when API fails
         console.log('TimeSetu: API failed, using fallback keyword-based categorization');
-        const fallbackCategory = getFallbackCategory(videoTitle, channelName, descriptionText);
+        const fallbackCategory = getFallbackCategory(contentText, pageName, contentType);
         console.log(`TimeSetu: Fallback category determined: ${fallbackCategory}`);
         
         // Store the fallback category so it can be used
         await chrome.storage.local.set({ 
-            youtubeClassification: { 
-                title: videoTitle, 
+            facebookClassification: { 
+                contentId: contentId,
+                contentType: contentType,
                 category: fallbackCategory,
-                source: 'fallback' // Mark that this came from fallback, not API
+                source: 'fallback'
             } 
         });
         
@@ -267,10 +326,10 @@ Your response (one word only):`;
 }
 
 // Fallback categorization using keywords when API is unavailable
-function getFallbackCategory(title, channel, description) {
-    if (!title) return 'Other';
+function getFallbackCategory(contentText, pageName, contentType) {
+    if (!contentText && !pageName) return 'Social Media'; // Default for Facebook
     
-    const text = `${title} ${channel || ''} ${description || ''}`.toLowerCase();
+    const text = `${contentText} ${pageName || ''}`.toLowerCase();
     console.log('TimeSetu: Analyzing text for fallback category:', text.substring(0, 100));
     
     // Productive keywords - expanded list
@@ -279,7 +338,8 @@ function getFallbackCategory(title, channel, description) {
         'coding', 'programming', 'lesson', 'lessons', 'study', 'studying', 'academic',
         'documentary', 'explained', 'explain', 'guide', 'training', 'workshop',
         'masterclass', 'lecture', 'university', 'college', 'school', 'skill',
-        'productivity', 'productivity tips', 'tips', 'advice', 'learn', 'learning'
+        'productivity', 'productivity tips', 'tips', 'advice', 'business', 'professional',
+        'career', 'job', 'work', 'entrepreneur', 'startup'
     ];
     
     // News keywords
@@ -295,69 +355,62 @@ function getFallbackCategory(title, channel, description) {
         'music', 'song', 'songs', 'comedy', 'funny', 'vlog', 'vlogs', 'gaming',
         'gameplay', 'movie', 'movies', 'trailer', 'trailers', 'entertainment',
         'meme', 'memes', 'dance', 'dancing', 'prank', 'pranks', 'reaction',
-        'reactions', 'challenge', 'challenges', 'fun', 'funny video', 'comedy video'
+        'reactions', 'challenge', 'challenges', 'fun', 'funny video', 'comedy video',
+        'viral', 'trending', 'laugh', 'lol', 'haha'
     ];
     
-    // Check in order: Productive, News, Entertainment
+    // Social Media keywords (for personal/social content)
+    const socialKeywords = [
+        'birthday', 'congratulations', 'anniversary', 'wedding', 'graduation',
+        'family', 'friends', 'vacation', 'trip', 'party', 'celebration',
+        'update', 'status', 'check in', 'feeling', 'thinking', 'proud'
+    ];
+    
+    // Check in order: Productive, News, Entertainment, Social Media
     // Count matches to be more accurate
     const productiveMatches = productiveKeywords.filter(keyword => text.includes(keyword)).length;
     const newsMatches = newsKeywords.filter(keyword => text.includes(keyword)).length;
     const entertainmentMatches = entertainmentKeywords.filter(keyword => text.includes(keyword)).length;
+    const socialMatches = socialKeywords.filter(keyword => text.includes(keyword)).length;
     
-    console.log(`TimeSetu: Keyword matches - Productive: ${productiveMatches}, News: ${newsMatches}, Entertainment: ${entertainmentMatches}`);
+    console.log(`TimeSetu: Keyword matches - Productive: ${productiveMatches}, News: ${newsMatches}, Entertainment: ${entertainmentMatches}, Social: ${socialMatches}`);
     
     // Return category with most matches, or default priority order
-    if (productiveMatches > 0 && productiveMatches >= newsMatches && productiveMatches >= entertainmentMatches) {
+    if (productiveMatches > 0 && productiveMatches >= newsMatches && productiveMatches >= entertainmentMatches && productiveMatches >= socialMatches) {
         return 'Productive';
     }
-    if (newsMatches > 0 && newsMatches >= entertainmentMatches) {
+    if (newsMatches > 0 && newsMatches >= entertainmentMatches && newsMatches >= socialMatches) {
         return 'News';
     }
-    if (entertainmentMatches > 0) {
+    if (entertainmentMatches > 0 && entertainmentMatches >= socialMatches) {
         return 'Entertainment';
     }
+    if (socialMatches > 0) {
+        return 'Social Media';
+    }
     
-    // Default to Other if no keywords match
-    return 'Other';
+    // Default to Social Media for Facebook (most common)
+    return 'Social Media';
 }
 
 // Helper to retrieve text from first matching selector in list
 function queryText(selectors) {
     for (const sel of selectors) {
         const el = document.querySelector(sel);
-        if (el && el.textContent.trim()) return el.textContent.trim();
+        if (el && el.textContent && el.textContent.trim()) {
+            return el.textContent.trim();
+        }
     }
     return '';
-}
-
-// Update waitForElement to accept array of selectors and resolve when any matches
-function waitForElement(selectors, timeout = 7000) {
-    if (typeof selectors === 'string') selectors = [selectors];
-    return new Promise(resolve => {
-        const interval = 100;
-        const endTime = Date.now() + timeout;
-        const check = () => {
-            for (const sel of selectors) {
-                const element = document.querySelector(sel);
-                if (element) {
-                    return resolve(element);
-                }
-            }
-            if (Date.now() < endTime) {
-                setTimeout(check, interval);
-            } else {
-                resolve(null);
-            }
-        };
-        check();
-    });
 }
 
 // === URL watcher using setInterval ===
 function startUrlWatcher() {
     let previousUrl = location.href;
-    if (location.pathname === '/watch') {
-        classifyVideoTitle(); // Initial check
+    
+    // Check if we're on a Facebook page that should be classified
+    if (isFacebookContentPage()) {
+        classifyFacebookContent(); // Initial check
     }
 
     setInterval(() => {
@@ -365,15 +418,34 @@ function startUrlWatcher() {
         if (currentUrl !== previousUrl) {
             previousUrl = currentUrl;
 
-            if (location.pathname === '/watch') {
-                classifyVideoTitle();
+            if (isFacebookContentPage()) {
+                classifyFacebookContent();
             } else {
-                // Navigated away from a video – clear stored classification
+                // Navigated away from content page – clear stored classification
                 lastProcessedUrl = '';
-                chrome.storage.local.remove('youtubeClassification');
+                chrome.storage.local.remove('facebookClassification');
             }
         }
-    }, 1000);
+    }, 2000); // Check every 2 seconds (Facebook loads content dynamically)
+}
+
+// Check if current page is a Facebook content page worth classifying
+function isFacebookContentPage() {
+    const url = window.location.href;
+    const path = window.location.pathname;
+    
+    // Classify posts, videos, reels, stories, and profile pages
+    return url.includes('facebook.com') && (
+        path.includes('/videos/') ||
+        path.includes('/watch/') ||
+        path.includes('/reel/') ||
+        path.includes('/reels/') ||
+        path.includes('/stories/') ||
+        path.match(/^\/[^\/]+\/posts\/\d+/) || // Post URLs like /username/posts/123
+        path.match(/^\/[^\/]+\/photos\/\d+/) || // Photo posts
+        path.includes('/permalink/') ||
+        (path === '/' || path === '/home.php') // Main feed
+    );
 }
 
 // Wait for full page load before starting the watcher
@@ -383,4 +455,26 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     document.addEventListener('DOMContentLoaded', startUrlWatcher);
 }
 
-// --- end youtube-classifier.js --- 
+// Also watch for Facebook's dynamic content loading
+function setupMutationObserver() {
+    if (!document.body) {
+        setTimeout(setupMutationObserver, 500);
+        return;
+    }
+    
+    const observer = new MutationObserver(() => {
+        if (isFacebookContentPage() && location.href !== lastProcessedUrl) {
+            setTimeout(() => classifyFacebookContent(), 1000);
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+setupMutationObserver();
+
+// --- end facebook-classifier.js ---
+
