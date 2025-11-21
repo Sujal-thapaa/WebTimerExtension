@@ -883,7 +883,7 @@ function setupEventListeners() {
       });
 
       elements.saveSettingsBtn.addEventListener('click', saveSettings);
-      
+
       // Add handler for "Save All Settings" button (includes YouTube blocking)
       const saveBrowserSettingsBtn = document.getElementById('saveBrowserSettingsBtn');
       if (saveBrowserSettingsBtn) {

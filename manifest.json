@@ -36,7 +36,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.youtube.com/watch*"],
+      "matches": ["https://www.youtube.com/*"],
       "js": ["youtube-classifier.js"],
       "run_at": "document_idle"
     },
