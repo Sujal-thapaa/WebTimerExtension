@@ -50,10 +50,15 @@ async function classifyVideoTitle() {
         videoTitle = document.title.replace(/ - YouTube$/i, '').trim();
     }
 
-    // Optional cache: if stored classification already matches this title, skip re-querying
-    const { youtubeClassification: cached } = await chrome.storage.local.get('youtubeClassification');
+    // Check if this video is already classified and if it's blocked
+    const { youtubeClassification: cached, blockedYouTubeCategories = [] } = await chrome.storage.local.get(['youtubeClassification', 'blockedYouTubeCategories']);
     if (cached?.title === videoTitle && cached?.category) {
         console.log('TimeSetu: Using cached classification:', cached.category);
+        // Still check if it's blocked even if cached
+        if (blockedYouTubeCategories.includes(cached.category)) {
+            console.log(`TimeSetu: Cached video category "${cached.category}" is blocked. Hiding video.`);
+            hideCurrentVideo();
+        }
         lastProcessedUrl = currentUrl;
         return;
     }
@@ -105,15 +110,16 @@ async function classifyVideoTitle() {
     try {
         console.log("TimeSetu: Sending metadata to Google Gemini for classification...");
         
-        const prompt = `You must classify this YouTube video into EXACTLY one category. Choose from: Productive, Entertainment, News, or Other.
+        const prompt = `You must classify this YouTube video into EXACTLY one category. Choose from: Productive, Entertainment, News, Games, or Other.
 
 Category Definitions:
 - Productive: Educational videos, tutorials, courses, coding lessons, learning content, productivity tips, how-to guides, documentaries about learning
-- Entertainment: Music videos, comedy, vlogs, gaming videos, movie trailers, TV shows, fun/leisure content, memes
+- Entertainment: Music videos, comedy, vlogs, movie trailers, TV shows, fun/leisure content, memes (NOT gaming videos)
 - News: News reports, current events, political news, breaking news, journalism, news analysis, world events
-- Other: Everything that doesn't clearly fit Productive, Entertainment, or News
+- Games: Gaming videos, gameplay, game reviews, game walkthroughs, esports, gaming streams, game-related content
+- Other: Everything that doesn't clearly fit Productive, Entertainment, News, or Games
 
-CRITICAL: You must respond with ONLY one word: either "Productive", "Entertainment", "News", or "Other". Do not include any other text, explanations, or punctuation.
+CRITICAL: You must respond with ONLY one word: either "Productive", "Entertainment", "News", "Games", or "Other". Do not include any other text, explanations, or punctuation.
 
 Video Information:
 Title: "${videoTitle}"
@@ -130,18 +136,18 @@ Your response (one word only):`;
             try {
                 console.log(`TimeSetu: Trying API endpoint ${i + 1}/${API_MODELS.length}`);
                 response = await fetch(API_MODELS[i], {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
                         contents: [{
                             parts: [{
                                 text: prompt
                             }]
                         }]
-                    })
-                });
+            })
+        });
 
                 if (response.ok) {
                     currentApiUrlIndex = i; // Remember which endpoint worked
@@ -199,16 +205,20 @@ Your response (one word only):`;
             matchedCategory = 'Productive';
         } else if (firstWord === 'news') {
             matchedCategory = 'News';
+        } else if (firstWord === 'games' || firstWord === 'gaming' || firstWord === 'game') {
+            matchedCategory = 'Games';
         } else if (firstWord === 'entertainment' || firstWord === 'entertain') {
             matchedCategory = 'Entertainment';
         } else if (firstWord === 'other') {
             matchedCategory = 'Other';
         } else {
-            // Fallback to keyword matching in the full response (but prioritize Productive and News over Entertainment)
+            // Fallback to keyword matching in the full response (prioritize Productive, News, Games, then Entertainment)
             if (category.includes('productive') || category.includes('education') || category.includes('tutorial') || category.includes('learn') || category.includes('course')) {
                 matchedCategory = 'Productive';
             } else if (category.includes('news') && !category.includes('entertainment')) {
                 matchedCategory = 'News';
+            } else if (category.includes('game') && !category.includes('entertainment')) {
+                matchedCategory = 'Games';
             } else if (category.includes('entertain')) {
                 matchedCategory = 'Entertainment';
             } else {
@@ -218,13 +228,24 @@ Your response (one word only):`;
         
         category = matchedCategory;
 
-        const allowed = ['Productive', 'Entertainment', 'News', 'Other'];
+        const allowed = ['Productive', 'Entertainment', 'News', 'Games', 'Other'];
         if (!allowed.includes(category)) {
             console.warn('TimeSetu: Invalid category returned, defaulting to Other. Raw value:', rawCategory, 'Processed:', category);
             category = 'Other';
         }
 
         console.log(`TimeSetu: Final classification result: ${category} (from raw: "${rawCategory}")`);
+
+        // Check if this category is blocked
+        const { blockedYouTubeCategories = [] } = await chrome.storage.local.get('blockedYouTubeCategories');
+        console.log('TimeSetu: Checking if category is blocked. Category:', category, 'Blocked categories:', blockedYouTubeCategories);
+        
+        if (blockedYouTubeCategories.includes(category)) {
+            console.log(`TimeSetu: Video category "${category}" is blocked. Hiding video.`);
+            hideCurrentVideo();
+        } else {
+            console.log(`TimeSetu: Category "${category}" is not blocked.`);
+        }
 
         // Store the result & cache
         await chrome.storage.local.set({ youtubeClassification: { title: videoTitle, category: category } });
@@ -253,6 +274,17 @@ Your response (one word only):`;
         const fallbackCategory = getFallbackCategory(videoTitle, channelName, descriptionText);
         console.log(`TimeSetu: Fallback category determined: ${fallbackCategory}`);
         
+        // Check if this category is blocked
+        const { blockedYouTubeCategories = [] } = await chrome.storage.local.get('blockedYouTubeCategories');
+        console.log('TimeSetu: Checking if fallback category is blocked. Category:', fallbackCategory, 'Blocked categories:', blockedYouTubeCategories);
+        
+        if (blockedYouTubeCategories.includes(fallbackCategory)) {
+            console.log(`TimeSetu: Video category "${fallbackCategory}" is blocked. Hiding video.`);
+            hideCurrentVideo();
+        } else {
+            console.log(`TimeSetu: Fallback category "${fallbackCategory}" is not blocked.`);
+        }
+        
         // Store the fallback category so it can be used
         await chrome.storage.local.set({ 
             youtubeClassification: { 
@@ -264,6 +296,93 @@ Your response (one word only):`;
         
         lastProcessedUrl = currentUrl; // Mark as processed so we don't retry immediately
     }
+}
+
+// Function to hide the current video if it's blocked
+function hideCurrentVideo() {
+    console.log('TimeSetu: hideCurrentVideo() called - blocking video');
+    
+    // Remove any existing overlay first
+    const existingOverlay = document.getElementById('timesetu-block-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    // Hide the video player - try multiple selectors
+    const playerSelectors = ['#movie_player', '#player', 'ytd-player', '#player-container', '#player-container-inner'];
+    playerSelectors.forEach(selector => {
+        const player = document.querySelector(selector);
+        if (player) {
+            player.style.display = 'none';
+            console.log(`TimeSetu: Hid player element: ${selector}`);
+        }
+    });
+    
+    // Hide the main content area
+    const mainContent = document.querySelector('#primary, #primary-inner, ytd-watch-flexy');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
+    // Create a blocking overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'timesetu-block-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        text-align: center;
+        padding: 40px;
+    `;
+    
+    overlay.innerHTML = `
+        <div style="font-size: 4rem; margin-bottom: 20px;">🚫</div>
+        <h1 style="font-size: 2rem; margin: 0 0 16px 0; color: #ff6b6b;">Content Blocked</h1>
+        <p style="font-size: 1.1rem; color: #a0a0b8; max-width: 500px; margin: 0 0 24px 0;">
+            This video category has been blocked in your TimeSetu settings.
+        </p>
+        <button id="timesetu-go-back" style="
+            background: #4a90e2;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        ">Go Back</button>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Add click handler for go back button
+    overlay.querySelector('#timesetu-go-back').addEventListener('click', () => {
+        window.history.back();
+    });
+    
+    // Also hide related videos and comments
+    const relatedSection = document.querySelector('#secondary, #related, #comments');
+    if (relatedSection) {
+        relatedSection.style.display = 'none';
+    }
+    
+    // Prevent video from playing by stopping any media
+    const videos = document.querySelectorAll('video');
+    videos.forEach(video => {
+        video.pause();
+        video.style.display = 'none';
+    });
 }
 
 // Fallback categorization using keywords when API is unavailable
@@ -282,36 +401,53 @@ function getFallbackCategory(title, channel, description) {
         'productivity', 'productivity tips', 'tips', 'advice', 'learn', 'learning'
     ];
     
-    // News keywords
+    // News keywords - expanded list for better detection
     const newsKeywords = [
         'news', 'breaking', 'report', 'reports', 'update', 'updates', 'politics',
         'political', 'election', 'elections', 'journalism', 'journalist', 'headline',
         'breaking news', 'current events', 'world news', 'latest news', 'news update',
-        'news report', 'live news', 'news channel', 'cnn', 'bbc', 'reuters'
+        'news report', 'live news', 'news channel', 'cnn', 'bbc', 'reuters', 'fox news',
+        'al jazeera', 'sky news', 'news today', 'news now', 'news live', 'news break',
+        'news flash', 'news alert', 'news coverage', 'news analysis', 'newsroom',
+        'press conference', 'news conference', 'breaking story', 'news story',
+        'news headline', 'top news', 'news briefing', 'news bulletin', 'news anchor',
+        'news broadcast', 'news segment', 'news update', 'news today', 'news hour'
     ];
     
-    // Entertainment keywords - expanded but specific
+    // Entertainment keywords - expanded but specific (excluding gaming)
     const entertainmentKeywords = [
-        'music', 'song', 'songs', 'comedy', 'funny', 'vlog', 'vlogs', 'gaming',
-        'gameplay', 'movie', 'movies', 'trailer', 'trailers', 'entertainment',
+        'music', 'song', 'songs', 'comedy', 'funny', 'vlog', 'vlogs',
+        'movie', 'movies', 'trailer', 'trailers', 'entertainment',
         'meme', 'memes', 'dance', 'dancing', 'prank', 'pranks', 'reaction',
         'reactions', 'challenge', 'challenges', 'fun', 'funny video', 'comedy video'
     ];
     
-    // Check in order: Productive, News, Entertainment
+    // Games keywords
+    const gamesKeywords = [
+        'gaming', 'gameplay', 'game', 'games', 'playthrough', 'walkthrough',
+        'gamer', 'esports', 'twitch', 'stream', 'livestream', 'speedrun',
+        'minecraft', 'fortnite', 'valorant', 'league of legends', 'csgo', 'cs:go'
+    ];
+    
+    // Check in order: Productive, News, Games, Entertainment
     // Count matches to be more accurate
     const productiveMatches = productiveKeywords.filter(keyword => text.includes(keyword)).length;
     const newsMatches = newsKeywords.filter(keyword => text.includes(keyword)).length;
+    const gamesMatches = gamesKeywords.filter(keyword => text.includes(keyword)).length;
     const entertainmentMatches = entertainmentKeywords.filter(keyword => text.includes(keyword)).length;
     
-    console.log(`TimeSetu: Keyword matches - Productive: ${productiveMatches}, News: ${newsMatches}, Entertainment: ${entertainmentMatches}`);
+    console.log(`TimeSetu: Keyword matches - Productive: ${productiveMatches}, News: ${newsMatches}, Games: ${gamesMatches}, Entertainment: ${entertainmentMatches}`);
     
     // Return category with most matches, or default priority order
-    if (productiveMatches > 0 && productiveMatches >= newsMatches && productiveMatches >= entertainmentMatches) {
+    // News gets higher priority if it has any matches (since it's often time-sensitive)
+    if (newsMatches > 0 && newsMatches >= productiveMatches && newsMatches >= gamesMatches && newsMatches >= entertainmentMatches) {
+        return 'News';
+    }
+    if (productiveMatches > 0 && productiveMatches >= gamesMatches && productiveMatches >= entertainmentMatches) {
         return 'Productive';
     }
-    if (newsMatches > 0 && newsMatches >= entertainmentMatches) {
-        return 'News';
+    if (gamesMatches > 0 && gamesMatches >= entertainmentMatches) {
+        return 'Games';
     }
     if (entertainmentMatches > 0) {
         return 'Entertainment';
@@ -353,11 +489,122 @@ function waitForElement(selectors, timeout = 7000) {
     });
 }
 
+// Function to check and hide blocked videos in feed/search results
+async function checkAndHideBlockedVideos() {
+    const { blockedYouTubeCategories = [] } = await chrome.storage.local.get('blockedYouTubeCategories');
+    console.log('TimeSetu: Checking videos for blocked categories:', blockedYouTubeCategories);
+    
+    if (blockedYouTubeCategories.length === 0) {
+        // If no categories are blocked, show all videos
+        document.querySelectorAll('[data-timesetu-blocked="true"]').forEach(el => {
+            el.style.display = '';
+            el.removeAttribute('data-timesetu-blocked');
+        });
+        return;
+    }
+    
+    // Get all video elements on the page - use more comprehensive selectors
+    const videoElements = document.querySelectorAll(
+        'ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, ' +
+        'ytd-rich-item-renderer, ytd-playlist-video-renderer, ytd-video-meta-block'
+    );
+    console.log('TimeSetu: Found', videoElements.length, 'video elements to check');
+    
+    // Process videos synchronously to avoid race conditions
+    for (const element of videoElements) {
+        // Skip if already processed and blocked
+        if (element.dataset.timesetuBlocked === 'true') continue;
+        
+        // Try multiple selectors for title - be more aggressive
+        let titleElement = element.querySelector('#video-title, a#video-title, ytd-video-meta-block #video-title, h3 a, #video-title-link, [id*="video-title"]');
+        if (!titleElement) {
+            const parent = element.closest('ytd-video-renderer, ytd-grid-video-renderer, ytd-rich-item-renderer');
+            if (parent) {
+                titleElement = parent.querySelector('#video-title, a#video-title, h3 a, #video-title-link, [id*="video-title"]');
+            }
+        }
+        // Last resort: try to find any link with /watch in it
+        if (!titleElement) {
+            const watchLink = element.querySelector('a[href*="/watch"]');
+            if (watchLink) {
+                titleElement = watchLink;
+            }
+        }
+        
+        if (!titleElement) continue;
+        
+        const videoTitle = titleElement.textContent?.trim() || titleElement.innerText?.trim() || titleElement.getAttribute('title') || titleElement.getAttribute('aria-label') || '';
+        if (!videoTitle || videoTitle.length < 3) continue;
+        
+        // Get channel name for better classification
+        const channelElement = element.querySelector('#channel-name a, #channel-info a, ytd-channel-name a, #channel-name, #text-container a') ||
+                              element.closest('ytd-video-renderer, ytd-grid-video-renderer')?.querySelector('#channel-name a, #channel-info a');
+        const channelName = channelElement ? (channelElement.textContent?.trim() || channelElement.innerText?.trim() || '') : '';
+        
+        // Use fallback categorization for quick check
+        const fallbackCategory = getFallbackCategory(videoTitle, channelName, '');
+        
+        // Also check cached classification if available
+        const { youtubeClassification } = await chrome.storage.local.get('youtubeClassification');
+        let finalCategory = fallbackCategory;
+        
+        // Prefer cached classification if it exists and matches this video
+        if (youtubeClassification && youtubeClassification.title === videoTitle && youtubeClassification.category) {
+            finalCategory = youtubeClassification.category;
+            console.log(`TimeSetu: Using cached category "${finalCategory}" for "${videoTitle.substring(0, 50)}"`);
+        } else {
+            console.log(`TimeSetu: Using fallback category "${fallbackCategory}" for "${videoTitle.substring(0, 50)}"`);
+        }
+        
+        console.log(`TimeSetu: Video "${videoTitle.substring(0, 50)}" -> Category: ${finalCategory}, Blocked: ${blockedYouTubeCategories.includes(finalCategory)}`);
+        
+        // Check if this category is blocked
+        if (blockedYouTubeCategories.includes(finalCategory)) {
+            element.style.display = 'none';
+            element.dataset.timesetuBlocked = 'true';
+            // Also hide parent containers
+            const parent = element.closest('ytd-video-renderer, ytd-grid-video-renderer, ytd-rich-item-renderer');
+            if (parent) {
+                parent.style.display = 'none';
+                parent.dataset.timesetuBlocked = 'true';
+            }
+            console.log(`TimeSetu: ✅ HIDING blocked video: "${videoTitle}" (Category: ${finalCategory})`);
+        } else {
+            // Make sure it's visible if not blocked
+            element.style.display = '';
+            element.dataset.timesetuBlocked = 'false';
+        }
+    }
+}
+
+// Listen for messages to update blocked categories
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'updateBlockedCategories') {
+        console.log('TimeSetu: Received updateBlockedCategories message:', message.blockedCategories);
+        // Immediately check and hide blocked videos in feed
+        checkAndHideBlockedVideos();
+        // Also check current video if on watch page
+        if (location.pathname === '/watch') {
+            console.log('TimeSetu: Re-checking current video after category update');
+            // Force re-check by clearing cache
+            lastProcessedUrl = '';
+            chrome.storage.local.remove('youtubeClassification').then(() => {
+                classifyVideoTitle();
+            });
+        }
+        sendResponse({ success: true });
+    }
+    return true; // Keep message channel open for async response
+});
+
 // === URL watcher using setInterval ===
 function startUrlWatcher() {
     let previousUrl = location.href;
     if (location.pathname === '/watch') {
         classifyVideoTitle(); // Initial check
+    } else {
+        // Check feed/search results for blocked videos
+        checkAndHideBlockedVideos();
     }
 
     setInterval(() => {
@@ -371,9 +618,34 @@ function startUrlWatcher() {
                 // Navigated away from a video – clear stored classification
                 lastProcessedUrl = '';
                 chrome.storage.local.remove('youtubeClassification');
+                // Check feed/search results for blocked videos
+                setTimeout(() => checkAndHideBlockedVideos(), 1000);
             }
         }
     }, 1000);
+    
+    // Also watch for dynamic content loading (YouTube's infinite scroll)
+    const observer = new MutationObserver(() => {
+        if (location.pathname !== '/watch') {
+            // Debounce to avoid too many calls
+            clearTimeout(window.timesetuBlockCheckTimeout);
+            window.timesetuBlockCheckTimeout = setTimeout(() => {
+                checkAndHideBlockedVideos();
+            }, 300);
+        }
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    // Also run periodically to catch any videos that might have been missed
+    setInterval(() => {
+        if (location.pathname !== '/watch') {
+            checkAndHideBlockedVideos();
+        }
+    }, 2000); // Check every 2 seconds
 }
 
 // Wait for full page load before starting the watcher

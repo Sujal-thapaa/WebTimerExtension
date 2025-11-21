@@ -176,4 +176,197 @@ document.addEventListener('DOMContentLoaded', () => {
     const cleaned = domain.replace(/^www\./, '');
     return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).split('.')[0];
   }
+
+  // ===== YouTube Category Blocking =====
+  let categoryCheckboxes = [];
+  let blockedCategoriesList = null;
+
+  // Initialize category blocking - wait for elements to be available
+  function initializeCategoryBlocking() {
+    categoryCheckboxes = Array.from(document.querySelectorAll('.category-block-checkbox'));
+    blockedCategoriesList = document.getElementById('blockedCategoriesList');
+
+    if (categoryCheckboxes.length === 0) {
+      console.log('TimeSetu: Category checkboxes not found yet, will retry...');
+      // Retry after a short delay (for dynamically loaded content)
+      setTimeout(initializeCategoryBlocking, 500);
+      return;
+    }
+
+    console.log('TimeSetu: Found', categoryCheckboxes.length, 'category checkboxes');
+
+    // Load blocked categories on page load
+    loadBlockedCategories();
+
+    // Handle category checkbox changes
+    categoryCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', async (e) => {
+        console.log('TimeSetu: Category checkbox changed:', checkbox.dataset.category, checkbox.checked);
+        await saveBlockedCategories();
+        await updateBlockedCategoriesList();
+        // Notify YouTube tabs to update blocking
+        notifyYouTubeTabs();
+      });
+    });
+  }
+
+  // Start initialization - try multiple times for dynamically loaded content
+  initializeCategoryBlocking();
+  
+  // Also try after a delay (for dashboard that loads content dynamically)
+  setTimeout(() => {
+    if (categoryCheckboxes.length === 0) {
+      console.log('TimeSetu: Retrying category blocking initialization after delay...');
+      initializeCategoryBlocking();
+    }
+  }, 1000);
+
+  // Also listen for when the details element is opened (in case content is lazy-loaded)
+  const categoryBlockDropdown = document.getElementById('youtubeCategoryBlockDropdown');
+  if (categoryBlockDropdown) {
+    categoryBlockDropdown.addEventListener('toggle', () => {
+      if (categoryBlockDropdown.open) {
+        setTimeout(() => {
+          if (categoryCheckboxes.length === 0) {
+            console.log('TimeSetu: Category block dropdown opened, reinitializing...');
+            initializeCategoryBlocking();
+          }
+        }, 200);
+      }
+    });
+  }
+
+  // Also listen for DOM mutations (for dynamically loaded content)
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => {
+      if (categoryCheckboxes.length === 0) {
+        const found = document.querySelectorAll('.category-block-checkbox');
+        if (found.length > 0) {
+          console.log('TimeSetu: Found category checkboxes via mutation observer');
+          initializeCategoryBlocking();
+        }
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  async function loadBlockedCategories() {
+    if (categoryCheckboxes.length === 0) {
+      console.warn('TimeSetu: Cannot load blocked categories - checkboxes not found');
+      return;
+    }
+
+    const { blockedYouTubeCategories = [] } = await chrome.storage.local.get('blockedYouTubeCategories');
+    console.log('TimeSetu: Loading blocked categories:', blockedYouTubeCategories);
+
+    categoryCheckboxes.forEach(checkbox => {
+      const category = checkbox.dataset.category;
+      checkbox.checked = blockedYouTubeCategories.includes(category);
+      console.log('TimeSetu: Set checkbox for', category, 'to', checkbox.checked);
+    });
+
+    await updateBlockedCategoriesList();
+  }
+
+  async function saveBlockedCategories() {
+    if (categoryCheckboxes.length === 0) {
+      console.warn('TimeSetu: Cannot save blocked categories - checkboxes not found');
+      return;
+    }
+
+    const blockedCategories = [];
+    
+    categoryCheckboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        blockedCategories.push(checkbox.dataset.category);
+      }
+    });
+
+    await chrome.storage.local.set({ blockedYouTubeCategories: blockedCategories });
+    console.log('TimeSetu: Saved blocked YouTube categories:', blockedCategories);
+  }
+
+  async function updateBlockedCategoriesList() {
+    if (!blockedCategoriesList) return;
+    
+    const { blockedYouTubeCategories = [] } = await chrome.storage.local.get('blockedYouTubeCategories');
+    
+    if (blockedYouTubeCategories.length === 0) {
+      blockedCategoriesList.innerHTML = '<div class="no-sites" style="text-align: center; color: var(--text-secondary); padding: 12px;">No categories blocked</div>';
+      return;
+    }
+
+    blockedCategoriesList.innerHTML = '';
+    
+    blockedYouTubeCategories.forEach(category => {
+      const item = document.createElement('div');
+      item.className = 'blocked-site-item';
+      item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255, 255, 255, 0.1);';
+      
+      const categoryEmoji = {
+        'Productive': '📚',
+        'Entertainment': '🎬',
+        'News': '📰',
+        'Games': '🎮'
+      }[category] || '🚫';
+
+      item.innerHTML = `
+        <div class="site-info" style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.2rem;">${categoryEmoji}</span>
+          <span class="site-name" style="color: var(--text-primary); font-weight: 500;">${category}</span>
+        </div>
+        <button class="remove-category-block-btn" data-category="${category}" style="background: rgba(255, 0, 0, 0.2); border: none; color: #ff6b6b; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Remove</button>
+      `;
+      blockedCategoriesList.appendChild(item);
+    });
+
+    // Handle remove button clicks
+    blockedCategoriesList.querySelectorAll('.remove-category-block-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const category = e.target.dataset.category;
+        const checkbox = document.querySelector(`[data-category="${category}"]`);
+        if (checkbox) {
+          checkbox.checked = false;
+          await saveBlockedCategories();
+          await updateBlockedCategoriesList();
+          notifyYouTubeTabs();
+        }
+      });
+    });
+  }
+
+  function notifyYouTubeTabs() {
+    if (categoryCheckboxes.length === 0) {
+      // Get blocked categories from storage instead
+      chrome.storage.local.get('blockedYouTubeCategories', ({ blockedYouTubeCategories = [] }) => {
+        chrome.tabs.query({ url: '*://*.youtube.com/*' }, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { 
+              action: 'updateBlockedCategories',
+              blockedCategories: blockedYouTubeCategories
+            }).catch(() => {}); // Ignore errors if content script not ready
+          });
+        });
+      });
+      return;
+    }
+
+    const blockedCategories = categoryCheckboxes
+      .filter(cb => cb.checked)
+      .map(cb => cb.dataset.category);
+
+    chrome.tabs.query({ url: '*://*.youtube.com/*' }, (tabs) => {
+      console.log('TimeSetu: Notifying', tabs.length, 'YouTube tabs about blocked categories:', blockedCategories);
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { 
+          action: 'updateBlockedCategories',
+          blockedCategories: blockedCategories
+        }).catch(() => {}); // Ignore errors if content script not ready
+      });
+    });
+  }
 }); 

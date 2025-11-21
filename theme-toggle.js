@@ -388,18 +388,6 @@ window.onload = function() {
                 border-color: #fecaca !important;
             }
             
-            /* Built with Bolt Badge - Keep Dark for Contrast */
-            body.light-theme .bolt-badge {
-                background: #1a202c !important;
-                color: #ffffff !important;
-                border: 1px solid #374151 !important;
-            }
-            
-            body.light-theme .bolt-badge:hover {
-                background: #374151 !important;
-                transform: translateY(-2px) !important;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-            }
         `;
         document.head.appendChild(lightThemeStyles);
     }

@@ -862,10 +862,11 @@ function setupEventListeners() {
 
     // Settings
     if (elements.settingsBtn && elements.settingsModal && elements.closeSettingsBtn && elements.saveSettingsBtn) {
-      elements.settingsBtn.addEventListener('click', () => {
+      elements.settingsBtn.addEventListener('click', async () => {
         elements.settingsModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
         loadSettings();
+        await loadBrowserSettings(); // Also load browser settings including YouTube category blocks
       });
 
       elements.closeSettingsBtn.addEventListener('click', () => {
@@ -882,11 +883,19 @@ function setupEventListeners() {
       });
 
       elements.saveSettingsBtn.addEventListener('click', saveSettings);
+      
+      // Add handler for "Save All Settings" button (includes YouTube blocking)
+      const saveBrowserSettingsBtn = document.getElementById('saveBrowserSettingsBtn');
+      if (saveBrowserSettingsBtn) {
+        saveBrowserSettingsBtn.addEventListener('click', async () => {
+          await saveBrowserSettings();
+          await saveSettings(); // Also save category settings
+        });
+      }
     }
 
     // Enhanced Browser Settings
-    // Note: saveBrowserSettingsBtn and resetBrowserSettingsBtn are not in current HTML
-    // These functions may be called from other places if needed, but buttons don't exist
+    // Note: resetBrowserSettingsBtn is not in current HTML
 
     // Theme mode buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -1618,21 +1627,47 @@ async function exportData() {
 async function saveBrowserSettings() {
   try {
     const settings = {
-      autoTrackWebsites: document.getElementById('autoTrackWebsites').checked,
-      trackIncognito: document.getElementById('trackIncognito').checked,
-      trackPageTitles: document.getElementById('trackPageTitles').checked,
-      focusModeAlerts: document.getElementById('focusModeAlerts').checked,
-      productivityScoring: document.getElementById('productivityScoring').checked,
-      timeWarnings: document.getElementById('timeWarnings').checked,
-      dailySummary: document.getElementById('dailySummary').checked,
-      goalAchievements: document.getElementById('goalAchievements').checked,
-      weeklyReports: document.getElementById('weeklyReports').checked,
-      localDataOnly: document.getElementById('localDataOnly').checked,
-      anonymousUsage: document.getElementById('anonymousUsage').checked,
-      dataRetention: document.getElementById('dataRetention').checked
+      autoTrackWebsites: document.getElementById('autoTrackWebsites')?.checked ?? true,
+      trackIncognito: document.getElementById('trackIncognito')?.checked ?? false,
+      trackPageTitles: document.getElementById('trackPageTitles')?.checked ?? true,
+      focusModeAlerts: document.getElementById('focusModeAlerts')?.checked ?? true,
+      productivityScoring: document.getElementById('productivityScoring')?.checked ?? true,
+      timeWarnings: document.getElementById('timeWarnings')?.checked ?? false,
+      dailySummary: document.getElementById('dailySummary')?.checked ?? true,
+      goalAchievements: document.getElementById('goalAchievements')?.checked ?? false,
+      weeklyReports: document.getElementById('weeklyReports')?.checked ?? true,
+      localDataOnly: document.getElementById('localDataOnly')?.checked ?? true,
+      anonymousUsage: document.getElementById('anonymousUsage')?.checked ?? false,
+      dataRetention: document.getElementById('dataRetention')?.checked ?? true
     };
     
-    await chrome.storage.local.set({ browserSettings: settings });
+    // Save YouTube category blocking settings
+    const blockedYouTubeCategories = [];
+    if (document.getElementById('blockYouTubeNews')?.checked) {
+      blockedYouTubeCategories.push('News');
+    }
+    if (document.getElementById('blockYouTubeEntertainment')?.checked) {
+      blockedYouTubeCategories.push('Entertainment');
+    }
+    if (document.getElementById('blockYouTubeProductive')?.checked) {
+      blockedYouTubeCategories.push('Productive');
+    }
+    
+    await chrome.storage.local.set({ 
+      browserSettings: settings,
+      blockedYouTubeCategories: blockedYouTubeCategories
+    });
+    
+    // Notify YouTube tabs to update blocking
+    chrome.tabs.query({ url: '*://*.youtube.com/*' }, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { 
+          action: 'updateBlockedCategories',
+          blockedCategories: blockedYouTubeCategories 
+        }).catch(() => {}); // Ignore errors if content script not ready
+      });
+    });
+    
     showToast('Browser settings saved successfully!', 'success');
     document.getElementById('settingsModal').style.display = 'none';
   } catch (error) {
@@ -1671,12 +1706,19 @@ async function resetBrowserSettings() {
 // Load saved browser settings
 async function loadBrowserSettings() {
   try {
-    const { browserSettings } = await chrome.storage.local.get('browserSettings');
+    const { browserSettings, blockedYouTubeCategories = [] } = await chrome.storage.local.get(['browserSettings', 'blockedYouTubeCategories']);
     if (browserSettings) {
       Object.keys(browserSettings).forEach(key => {
         const element = document.getElementById(key);
         if (element) element.checked = browserSettings[key];
       });
+    }
+    
+    // Load YouTube category blocking settings
+    if (blockedYouTubeCategories) {
+      document.getElementById('blockYouTubeNews').checked = blockedYouTubeCategories.includes('News');
+      document.getElementById('blockYouTubeEntertainment').checked = blockedYouTubeCategories.includes('Entertainment');
+      document.getElementById('blockYouTubeProductive').checked = blockedYouTubeCategories.includes('Productive');
     }
   } catch (error) {
     console.error('Error loading browser settings:', error);
