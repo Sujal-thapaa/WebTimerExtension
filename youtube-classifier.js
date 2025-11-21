@@ -2,17 +2,19 @@
 
 console.log("TimeSetu: YouTube Classifier content script loaded.");
 
-const API_KEY = "AIzaSyCmR5kLpMtNFzl5gx0c20L8JvCOxG28_Ko";
-// Try different model endpoints - will fallback if one fails
-// Common Gemini API model names: gemini-1.5-flash, gemini-1.5-pro, gemini-pro
-const API_MODELS = [
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`,
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${API_KEY}`,
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`
-];
-let currentApiUrlIndex = 0;
+// Base URL for local AI backend (Node/Express server that calls Gemini)
+// You can change the port here if you run the backend on a different port.
+const DEFAULT_BACKEND_URL = 'http://localhost:4000';
+
+async function getBackendUrl() {
+    try {
+        const { backendUrl } = await chrome.storage.local.get('backendUrl');
+        return backendUrl || DEFAULT_BACKEND_URL;
+    } catch (e) {
+        console.warn('TimeSetu: Error reading backendUrl from storage, using default:', e);
+        return DEFAULT_BACKEND_URL;
+    }
+}
 
 let lastProcessedUrl = '';
 
@@ -79,162 +81,33 @@ async function classifyVideoTitle() {
 
     console.log(`TimeSetu: Classifying video -> Title: "${videoTitle}", Channel: "${channelName}"`);
 
-    // Check if API is temporarily disabled due to failures
-    const { apiDisabled, apiDisabledUntil, apiFailureCount } = await chrome.storage.local.get(['apiDisabled', 'apiDisabledUntil', 'apiFailureCount']);
-    
-    // If API is disabled or has failed 5+ times, skip API and use fallback immediately
-    const shouldSkipApi = (apiDisabled && apiDisabledUntil && Date.now() < apiDisabledUntil) || (apiFailureCount >= 5);
-    
-    if (shouldSkipApi) {
-        if (apiDisabled && apiDisabledUntil && Date.now() >= apiDisabledUntil) {
-            // Re-enable API after the timeout period
-            await chrome.storage.local.remove(['apiDisabled', 'apiDisabledUntil', 'apiFailureCount']);
-            console.log('TimeSetu: API re-enabled after timeout period.');
-        } else {
-            console.log('TimeSetu: API disabled or too many failures. Using fallback categorization immediately.');
-            // Use keyword-based fallback
-            const fallbackCategory = getFallbackCategory(videoTitle, channelName, descriptionText);
-            console.log(`TimeSetu: Fallback category: ${fallbackCategory}`);
-            await chrome.storage.local.set({ 
-                youtubeClassification: { 
-                    title: videoTitle, 
-                    category: fallbackCategory,
-                    source: 'fallback'
-                } 
-            });
-            lastProcessedUrl = currentUrl;
-            return;
-        }
-    }
-
     try {
-        console.log("TimeSetu: Sending metadata to Google Gemini for classification...");
-        
-        const prompt = `You must classify this YouTube video into EXACTLY one category. Choose from: Productive, Entertainment, News, Games, or Other.
+        console.log("TimeSetu: Sending metadata to local AI backend for classification...");
 
-Category Definitions:
-- Productive: Educational videos, tutorials, courses, coding lessons, learning content, productivity tips, how-to guides, documentaries about learning
-- Entertainment: Music videos, comedy, vlogs, movie trailers, TV shows, fun/leisure content, memes (NOT gaming videos)
-- News: News reports, current events, political news, breaking news, journalism, news analysis, world events
-- Games: Gaming videos, gameplay, game reviews, game walkthroughs, esports, gaming streams, game-related content
-- Other: Everything that doesn't clearly fit Productive, Entertainment, News, or Games
-
-CRITICAL: You must respond with ONLY one word: either "Productive", "Entertainment", "News", "Games", or "Other". Do not include any other text, explanations, or punctuation.
-
-Video Information:
-Title: "${videoTitle}"
-Channel: "${channelName}"
-Description: "${descriptionText}"
-
-Your response (one word only):`;
-
-        // Try API endpoints in order until one works
-        let response = null;
-        let lastError = null;
-        
-        for (let i = currentApiUrlIndex; i < API_MODELS.length; i++) {
-            try {
-                console.log(`TimeSetu: Trying API endpoint ${i + 1}/${API_MODELS.length}`);
-                response = await fetch(API_MODELS[i], {
+        const backendUrl = await getBackendUrl();
+        const response = await fetch(`${backendUrl}/classify/youtube`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: prompt
-                            }]
-                        }]
+                title: videoTitle,
+                channelName,
+                description: descriptionText
             })
         });
 
-                if (response.ok) {
-                    currentApiUrlIndex = i; // Remember which endpoint worked
-                    console.log(`TimeSetu: Successfully using API endpoint ${i + 1}`);
-                    break;
-                } else {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData?.error?.message || errorData?.error || 'Unknown error';
-                    const errorDetails = errorData?.error || errorData;
-                    lastError = `API endpoint ${i + 1} failed with status ${response.status}: ${errorMessage}`;
-                    console.error(`TimeSetu: ${lastError}`);
-                    console.error('TimeSetu: Full error details:', errorDetails);
-                    console.error('TimeSetu: Endpoint tried:', API_MODELS[i]);
-                    if (i < API_MODELS.length - 1) {
-                        continue; // Try next endpoint
-                    }
-                }
-            } catch (err) {
-                lastError = `API endpoint ${i + 1} error: ${err.message}`;
-                console.warn(`TimeSetu: ${lastError}`);
-                if (i < API_MODELS.length - 1) {
-                    continue; // Try next endpoint
-                }
-            }
-        }
-
-        if (!response || !response.ok) {
-            throw new Error(`All API endpoints failed. Last error: ${lastError || 'Unknown error'}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData?.error || `HTTP ${response.status}`;
+            throw new Error(`Backend classification failed: ${errorMessage}`);
         }
 
         const data = await response.json();
-        console.log('TimeSetu: Raw Gemini response:', data);
-        
-        // Extract the text from Gemini response
-        let rawCategory = '';
-        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
-            rawCategory = data.candidates[0].content.parts[0].text.trim();
-        } else {
-            throw new Error('Unexpected response structure from Gemini API');
-        }
-        
-        console.log('TimeSetu: Raw category from Gemini:', rawCategory);
-        
-        // Clean and normalize the response - remove quotes, extra whitespace, punctuation
-        let category = rawCategory.replace(/["'`]/g, '').replace(/[\.:;\-]+$/g, '').trim().toLowerCase();
-        
-        // Extract first word if response contains multiple words
-        const firstWord = category.split(/\s+/)[0];
-        
-        // More precise category matching - check exact matches first
-        let matchedCategory = null;
-        
-        // Check exact match on first word
-        if (firstWord === 'productive' || firstWord === 'education' || firstWord === 'educational') {
-            matchedCategory = 'Productive';
-        } else if (firstWord === 'news') {
-            matchedCategory = 'News';
-        } else if (firstWord === 'games' || firstWord === 'gaming' || firstWord === 'game') {
-            matchedCategory = 'Games';
-        } else if (firstWord === 'entertainment' || firstWord === 'entertain') {
-            matchedCategory = 'Entertainment';
-        } else if (firstWord === 'other') {
-            matchedCategory = 'Other';
-        } else {
-            // Fallback to keyword matching in the full response (prioritize Productive, News, Games, then Entertainment)
-            if (category.includes('productive') || category.includes('education') || category.includes('tutorial') || category.includes('learn') || category.includes('course')) {
-                matchedCategory = 'Productive';
-            } else if (category.includes('news') && !category.includes('entertainment')) {
-                matchedCategory = 'News';
-            } else if (category.includes('game') && !category.includes('entertainment')) {
-                matchedCategory = 'Games';
-            } else if (category.includes('entertain')) {
-                matchedCategory = 'Entertainment';
-            } else {
-                matchedCategory = 'Other';
-            }
-        }
-        
-        category = matchedCategory;
+        let category = data.category || 'Other';
+        const rawCategory = data.rawCategory || '';
 
-        const allowed = ['Productive', 'Entertainment', 'News', 'Games', 'Other'];
-        if (!allowed.includes(category)) {
-            console.warn('TimeSetu: Invalid category returned, defaulting to Other. Raw value:', rawCategory, 'Processed:', category);
-            category = 'Other';
-        }
-
-        console.log(`TimeSetu: Final classification result: ${category} (from raw: "${rawCategory}")`);
+        console.log(`TimeSetu: Final classification result from backend: ${category} (raw: "${rawCategory}")`);
 
         // Check if this category is blocked
         const { blockedYouTubeCategories = [] } = await chrome.storage.local.get('blockedYouTubeCategories');
@@ -252,25 +125,11 @@ Your response (one word only):`;
         lastProcessedUrl = currentUrl; // Mark success so we don't reprocess until URL changes
 
     } catch (error) {
-        console.error('TimeSetu: Error during video classification:', error);
+        console.error('TimeSetu: Error during video classification via backend:', error);
         console.error('TimeSetu: Error stack:', error.stack);
         
-        // Track API failures to avoid wasting quota
-        const { apiFailureCount = 0 } = await chrome.storage.local.get('apiFailureCount');
-        const newFailureCount = apiFailureCount + 1;
-        await chrome.storage.local.set({ apiFailureCount: newFailureCount });
-        
-        // If too many failures, disable API calls for a while
-        if (newFailureCount >= 5) {
-            console.warn('TimeSetu: Too many API failures. Disabling API calls temporarily. Using fallback categorization.');
-            await chrome.storage.local.set({ 
-                apiDisabled: true, 
-                apiDisabledUntil: Date.now() + (60 * 60 * 1000) // Disable for 1 hour
-            });
-        }
-        
-        // ALWAYS use fallback categorization when API fails
-        console.log('TimeSetu: API failed, using fallback keyword-based categorization');
+        // ALWAYS use fallback categorization when backend/API fails
+        console.log('TimeSetu: Backend failed, using fallback keyword-based categorization');
         const fallbackCategory = getFallbackCategory(videoTitle, channelName, descriptionText);
         console.log(`TimeSetu: Fallback category determined: ${fallbackCategory}`);
         
